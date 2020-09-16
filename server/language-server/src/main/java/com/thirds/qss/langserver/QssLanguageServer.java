@@ -9,13 +9,16 @@ import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
 public class QssLanguageServer implements LanguageServer, LanguageClientAware {
-    public static URI rootUri;
+    private static QssLanguageServer instance;
+
+    public URI rootUri;
     private final TextDocumentService textDocumentService;
     private final WorkspaceService workspaceService;
     private LanguageClient client;
     private int errorCode = 1;
 
     public QssLanguageServer() {
+        instance = this;
         this.textDocumentService = new QssTextDocumentService();
         this.workspaceService = new QssWorkspaceService();
     }
@@ -27,11 +30,19 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
      * Basically just syntactic sugar for <code>rootUri.relativize(URI.create(...))</code>.
      */
     public static URI relativize(String uri) {
-        return rootUri.relativize(URI.create(uri));
+        return instance.rootUri.relativize(URI.create(uri));
     }
 
     public static Path getRootDir() {
-        return Paths.get(rootUri.getPath());
+        return Paths.get(instance.rootUri.getPath());
+    }
+
+    public static QssLanguageServer getInstance() {
+        return instance;
+    }
+
+    public LanguageClient getClient() {
+        return client;
     }
 
     @Override

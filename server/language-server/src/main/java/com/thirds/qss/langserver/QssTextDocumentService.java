@@ -1,6 +1,9 @@
 package com.thirds.qss.langserver;
 
 import com.thirds.qss.compiler.Compiler;
+import com.thirds.qss.compiler.Message;
+import com.thirds.qss.compiler.Messenger;
+import com.thirds.qss.compiler.lexing.TokenStream;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
@@ -129,7 +132,29 @@ public class QssTextDocumentService implements TextDocumentService {
             }
 
             Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
-            compiler.compile(Paths.get(uri.getPath()), change.getText());
+            Messenger<TokenStream> result = compiler.compile(Paths.get(uri.getPath()), change.getText());
+            //QssLogger.logger.atInfo().log("Compile result: %s", result);
+            PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
+            diagnostics.setUri(params.getTextDocument().getUri());
+            for (Message message : result.getMessages()) {
+                Diagnostic diagnostic = new Diagnostic();
+                diagnostic.setRange(new Range(
+                        new Position(message.range.start.line, message.range.start.character),
+                        new Position(message.range.end.line, message.range.end.character)
+                ));
+                switch (message.severity) {
+                    case WARNING:
+                        diagnostic.setSeverity(DiagnosticSeverity.Warning);
+                        break;
+                    case ERROR:
+                        diagnostic.setSeverity(DiagnosticSeverity.Error);
+                        break;
+                }
+                diagnostic.setMessage(message.message);
+                diagnostic.setSource("qss");
+                diagnostics.getDiagnostics().add(diagnostic);
+            }
+            QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);
         }
     }
 
