@@ -1,4 +1,6 @@
 .gradle
+.idea
 language-server/build
 launcher/build
 export/build
+compiler/build

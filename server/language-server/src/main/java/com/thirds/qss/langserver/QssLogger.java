@@ -42,7 +42,7 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
     private static final Logger l = Logger.getGlobal();
 
     private static Path getLogDir() {
-        return Paths.get(".qss", "logs");
+        return Paths.get(QssLanguageServer.rootUri.getPath(), ".qss", "logs");
     }
 
     static {

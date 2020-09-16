@@ -1,10 +1,12 @@
 package com.thirds.qss.langserver;
 
+import com.thirds.qss.compiler.Compiler;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -117,9 +119,18 @@ public class QssTextDocumentService implements TextDocumentService {
     }
 
     @Override
-    public void didChange(DidChangeTextDocumentParams didChangeTextDocumentParams) {
-        URI uri = QssLanguageServer.relativize(didChangeTextDocumentParams.getTextDocument().getUri());
-        QssLogger.logger.atInfo().log("File %s changed", uri);
+    public void didChange(DidChangeTextDocumentParams params) {
+        URI uri = QssLanguageServer.relativize(params.getTextDocument().getUri());
+        //QssLogger.logger.atInfo().log("File %s changed", uri);
+
+        for (TextDocumentContentChangeEvent change : params.getContentChanges()) {
+            if (change.getRange() != null || change.getRangeLength() != null) {
+                QssLogger.logger.atSevere().log("Incremental file change not supported: %s", params);
+            }
+
+            Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
+            compiler.compile(Paths.get(uri.getPath()), change.getText());
+        }
     }
 
     @Override

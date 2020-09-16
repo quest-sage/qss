@@ -4,6 +4,8 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.*;
 
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
 public class QssLanguageServer implements LanguageServer, LanguageClientAware {
@@ -26,6 +28,10 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
      */
     public static URI relativize(String uri) {
         return rootUri.relativize(URI.create(uri));
+    }
+
+    public static Path getRootDir() {
+        return Paths.get(rootUri.getPath());
     }
 
     @Override

@@ -1,8 +1,10 @@
-rootProject.name = 'hellols-parent'
+rootProject.name = 'qss-langserver'
 include ':langserver-core'
 include ':launcher'
 include ':export'
+include ':compiler'
 
 project(':langserver-core').projectDir = "$rootDir/language-server" as File
 project(':launcher').projectDir = "$rootDir/launcher" as File
 project(':export').projectDir = "$rootDir/export" as File
+project(':compiler').projectDir = "$rootDir/compiler" as File

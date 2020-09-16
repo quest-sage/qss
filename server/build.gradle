@@ -14,9 +14,4 @@ subprojects {
 
         maven { url "https://repo.maven.apache.org/maven2" }
     }
-
-
-    dependencies {
-        compile group: 'org.eclipse.lsp4j', name: 'org.eclipse.lsp4j', version:'0.4.1'
-    }
 }

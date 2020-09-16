@@ -4,5 +4,6 @@ plugins {
 
 description = ''
 dependencies {
-    compile project(':langserver-core')
+    implementation project(':langserver-core')
+    implementation group: 'org.eclipse.lsp4j', name: 'org.eclipse.lsp4j', version:'0.4.1'
 }
