@@ -1,0 +1,6 @@
+rootProject.name = 'hellols-parent'
+include ':langserver-core'
+include ':launcher'
+
+project(':langserver-core').projectDir = "$rootDir/language-server" as File
+project(':launcher').projectDir = "$rootDir/launcher" as File
