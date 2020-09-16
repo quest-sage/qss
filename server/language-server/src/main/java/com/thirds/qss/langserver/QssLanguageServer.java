@@ -47,7 +47,7 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
 
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams initializeParams) {
-        rootUri = URI.create(initializeParams.getRootUri());
+        rootUri = initializeParams.getRootUri() == null ? null : URI.create(initializeParams.getRootUri());
 
         // Initialize the InitializeResult for this LS.
         final InitializeResult initializeResult = new InitializeResult(new ServerCapabilities());

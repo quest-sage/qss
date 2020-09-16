@@ -6,6 +6,7 @@ public class Range {
     public Range(Position where) {
         this.start = where.copy();
         this.end = where.copy();
+        this.end.character++;
     }
 
     public Range(Position start, Position end) {

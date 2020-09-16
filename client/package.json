@@ -3,6 +3,7 @@
 	"displayName": "QSS Language Support",
 	"description": "Support for the Quest Sage Script language",
 	"version": "0.0.1",
+	"publisher": "thirds",
 	"engines": {
 		"vscode": "^1.38.0"
 	},

@@ -6,5 +6,7 @@ public enum TokenType {
     LBRACE, RBRACE,  // { }
 
     STRUCT,
-    IDENTIFIER
+    IDENTIFIER,
+
+    STRING_LITERAL, INTEGER_LITERAL,
 }

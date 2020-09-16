@@ -27,23 +27,104 @@ public class Lexer {
                 case '(':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.LPARENTH, position);
                     break;
+                case ')':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RPARENTH, position);
+                    break;
+                case '{':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.LBRACE, position);
+                    break;
+                case '}':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RBRACE, position);
+                    break;
+                case '[':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.LSQUARE, position);
+                    break;
+                case ']':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RSQUARE, position);
+                    break;
+                case '"':
+                {
+                    // This is a string literal.
+                    Position start = position.copy();
+                    codePoints.next();
+                    position.character++;
+
+                    StringBuilder content = new StringBuilder();
+                    boolean failed = false;
+                    int codePoint;
+                    while ((codePoint = codePoints.peek()) != '"') {
+                        if (codePoint == -1 || codePoint == '\n') {
+                            messages.add(new Message(
+                                    new Range(start, position),
+                                    Message.MessageSeverity.ERROR,
+                                    "Unclosed string literal"
+                            ));
+                            failed = true;
+                            break;
+                        }
+
+                        codePoints.next();
+                        position.character++;
+                        if (codePoint == '\\') {
+                            // This is an escape sequence.
+                            // TODO parse this
+                        } else {
+                            content.append(Character.toString(codePoint));
+                        }
+                    }
+
+                    if (!failed) {
+                        codePoints.next();  // Consume the end quote character.
+                        position.character++;
+                    }
+
+                    tokens.add(new Token(TokenType.STRING_LITERAL, content.toString(), new Range(start, position)));
+                    break;
+                }
                 case '\n':
                     position.line++;
                     position.character = 0;
                     codePoints.next();
                     break;
                 default:
-                    messages.add(new Message(
-                            new Range(position),
-                            Message.MessageSeverity.ERROR,
-                            "Character '" + Character.toString(peek) + "' (U+" + String.format("%04x", peek) + ") not recognised"
-                    ));
-                    position.character++;
-                    codePoints.next();
+                {
+                    // The character must be a keyword, identifier, whitespace character or number.
+                    if (Character.isWhitespace(peek)) {
+                        codePoints.next();
+                        position.character++;
+                    } else if (isIdentifierStart(peek)) {
+                        // This is an identifier.
+                        StringBuilder identifier = new StringBuilder();
+                        Position start = position.copy();
+                        do {
+                            identifier.append(Character.toString(codePoints.next()));
+                            position.character++;
+                        } while (isIdentifierPart(codePoints.peek()));
+                        tokens.add(new Token(TokenType.IDENTIFIER, identifier.toString(), new Range(start, position)));
+                    } else if (Character.isDigit(peek)) {
+                        // This is a number.
+                    } else {
+                        messages.add(new Message(
+                                new Range(position),
+                                Message.MessageSeverity.ERROR,
+                                "Character '" + Character.toString(peek) + "' (U+" + String.format("%04x", peek) + ") not recognised"
+                        ));
+                        position.character++;
+                        codePoints.next();
+                    }
+                }
             }
         }
 
         return Messenger.success(new TokenStream(tokens), messages);
+    }
+
+    private boolean isIdentifierStart(int codePoint) {
+        return Character.isLetter(codePoint);
+    }
+
+    private boolean isIdentifierPart(int codePoint) {
+        return Character.isLetter(codePoint) || Character.isDigit(codePoint);
     }
 
     private void oneCharacter(ArrayList<Token> tokens, CodePointIterator codePoints, int codePoint, TokenType type, Position position) {

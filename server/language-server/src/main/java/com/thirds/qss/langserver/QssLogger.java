@@ -42,6 +42,8 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
     private static final Logger l = Logger.getGlobal();
 
     private static Path getLogDir() {
+        if (QssLanguageServer.getInstance().rootUri == null)
+            return null;
         return Paths.get(QssLanguageServer.getInstance().rootUri.getPath(), ".qss", "logs");
     }
 
@@ -53,31 +55,33 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
 
         setLogLevel(Level.FINE);
 
-        getLogDir().toFile().mkdirs();
+        if (getLogDir() != null) {
+            getLogDir().toFile().mkdirs();
 
-        // Delete old log files, so that there are only a maximum of nine remaining.
-        // Then, another log is generated, leaving a maximum of ten logs in the log folder at once.
-        try (Stream<Path> walk = Files.walk(getLogDir())) {
-            TreeSet<Path> paths = new TreeSet<>();
-            walk.forEach(paths::add);
-            Iterator<Path> it = paths.iterator();
-            for (int i = 0; i < paths.size() - 9; i++) {
-                it.next().toFile().delete();
+            // Delete old log files, so that there are only a maximum of nine remaining.
+            // Then, another log is generated, leaving a maximum of ten logs in the log folder at once.
+            try (Stream<Path> walk = Files.walk(getLogDir())) {
+                TreeSet<Path> paths = new TreeSet<>();
+                walk.forEach(paths::add);
+                Iterator<Path> it = paths.iterator();
+                for (int i = 0; i < paths.size() - 9; i++) {
+                    it.next().toFile().delete();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
-        String datetime = format.format(new Date(System.currentTimeMillis()));
-        File logfile = getLogDir().resolve(datetime + ".log").toFile();
-        try {
-            logfile.createNewFile();
-            FileHandler fh = new FileHandler(getLogDir().resolve(datetime + ".log").toString(), false);
-            fh.setFormatter(new LogFormatter());
-            l.addHandler(fh);
-        } catch (IOException e) {
-            e.printStackTrace();
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
+            String datetime = format.format(new Date(System.currentTimeMillis()));
+            File logfile = getLogDir().resolve(datetime + ".log").toFile();
+            try {
+                logfile.createNewFile();
+                FileHandler fh = new FileHandler(getLogDir().resolve(datetime + ".log").toString(), false);
+                fh.setFormatter(new LogFormatter());
+                l.addHandler(fh);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
         logger = new QssLogger(new SimpleLoggerBackend(l));

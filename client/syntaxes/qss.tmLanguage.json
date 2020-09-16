@@ -19,7 +19,7 @@
 		"strings": {
 			"name": "string.quoted.double.qss",
 			"begin": "\"",
-			"end": "\"",
+			"end": "[\\n\"]",
 			"patterns": [
 				{
 					"name": "constant.character.escape.qss",
