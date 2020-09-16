@@ -1,4 +1,4 @@
-import org.hello.ls.langserver.HelloLanguageServer;
+import com.thirds.qss.langserver.QssLanguageServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -12,7 +12,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 /**
- * Launcher for hello language server.
+ * Launcher for QSS language server.
  */
 public class StdioLauncher {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
@@ -35,16 +35,16 @@ public class StdioLauncher {
      * @throws InterruptedException Unable to start the server
      */
     private static void startServer(InputStream in, OutputStream out) throws ExecutionException, InterruptedException {
-        // Initialize the HelloLanguageServer
-        HelloLanguageServer helloLanguageServer = new HelloLanguageServer();
-        // Create JSON RPC launcher for HelloLanguageServer instance.
-        Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(helloLanguageServer, in, out);
+        // Initialize the QssLanguageServer
+        QssLanguageServer qssLanguageServer = new QssLanguageServer();
+        // Create JSON RPC launcher for QssLanguageServer instance.
+        Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(qssLanguageServer, in, out);
 
         // Get the client that request to launch the LS.
         LanguageClient client = launcher.getRemoteProxy();
 
         // Set the client to language server
-        helloLanguageServer.connect(client);
+        qssLanguageServer.connect(client);
 
         // Start the listener for JsonRPC
         Future<?> startListening = launcher.startListening();

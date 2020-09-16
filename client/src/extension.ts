@@ -14,7 +14,7 @@ import { LanguageClient, LanguageClientOptions, ServerOptions } from 'vscode-lan
 const main: string = 'StdioLauncher';
 
 export function activate(context: vscode.ExtensionContext) {
-	console.log('Congratulations, your extension "helloFalks" is now active!');
+	console.log('Activating QSS plugin');
 
 	// Get the java home from the process environment.
 	const { JAVA_HOME } = process.env;
@@ -44,11 +44,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
 		// Register the server for plain text documents
-		documentSelector: [{ scheme: 'file', language: 'hello' }]
+		documentSelector: [{ scheme: 'file', language: 'qss' }]
 	};
 
 	// Create the language client and start the client.
-	let disposable = new LanguageClient('helloLS', 'HelloFalks Language Server', serverOptions, clientOptions).start();
+	let disposable = new LanguageClient('qssLS', 'Quest Sage Script Language Server', serverOptions, clientOptions).start();
 
 	// Disposables to remove on deactivation.
 	context.subscriptions.push(disposable);
@@ -56,5 +56,5 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() { 
-	console.log('Your extension "helloFalks" is now deactivated!');
+	console.log('Deactivating QSS plugin');
 }

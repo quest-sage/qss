@@ -1,4 +1,4 @@
-package org.hello.ls.langserver;
+package com.thirds.qss.langserver;
 
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-public class HelloTextDocumentService implements TextDocumentService {
+public class QssTextDocumentService implements TextDocumentService {
     @Override
     public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
         // Provide completion item.

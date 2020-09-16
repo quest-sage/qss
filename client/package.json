@@ -1,7 +1,7 @@
 {
-	"name": "helloFalks",
-	"displayName": "HelloFalks",
-	"description": "Plugin for awesome HelloFalks lang ",
+	"name": "quest-sage-script",
+	"displayName": "QSS Language Support",
+	"description": "Support for the Quest Sage Script language",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.38.0"
@@ -10,35 +10,36 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onLanguage:hello",
-		"onCommand:extension.helloWorld"
+		"onLanguage:qss",
+		"onCommand:extension.qss"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "extension.helloWorld",
-				"title": "Hello World"
+				"command": "extension.qss",
+				"title": "Quest Sage Script"
 			}
 		],
 		"languages": [
 			{
-				"id": "hello",
+				"id": "qss",
 				"aliases": [
-					"HelloFalks",
-					"hello"
+					"Quest Sage Script",
+					"QSS",
+					"qss"
 				],
 				"extensions": [
-					".hello"
+					".qss"
 				],
 				"configuration": "./language-configuration.json"
 			}
 		],
 		"grammars": [
 			{
-				"language": "hello",
-				"scopeName": "source.hello",
-				"path": "./syntaxes/hello.tmLanguage.json"
+				"language": "qss",
+				"scopeName": "source.qss",
+				"path": "./syntaxes/qss.tmLanguage.json"
 			}
 		]
 	},

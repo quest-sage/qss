@@ -1,6 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-	"name": "HelloFalks",
+	"name": "QSS",
 	"patterns": [
 		{
 			"include": "#keywords"
@@ -12,21 +12,21 @@
 	"repository": {
 		"keywords": {
 			"patterns": [{
-				"name": "keyword.control.hello",
+				"name": "keyword.control.qss",
 				"match": "\\b(if|while|for|return)\\b"
 			}]
 		},
 		"strings": {
-			"name": "string.quoted.double.hello",
+			"name": "string.quoted.double.qss",
 			"begin": "\"",
 			"end": "\"",
 			"patterns": [
 				{
-					"name": "constant.character.escape.hello",
+					"name": "constant.character.escape.qss",
 					"match": "\\\\."
 				}
 			]
 		}
 	},
-	"scopeName": "source.hello"
+	"scopeName": "source.qss"
 }

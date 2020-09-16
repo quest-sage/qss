@@ -1,7 +1,5 @@
 allprojects  {
-    apply plugin: 'maven'
-
-    group = 'org.hello.ls'
+    group = 'com.thirds.qss'
     version = '0.0.1-SNAPSHOT'
 }
 

@@ -1,4 +1,4 @@
-package org.hello.ls.langserver;
+package com.thirds.qss.langserver;
 
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
@@ -13,15 +13,15 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 
 import java.util.concurrent.CompletableFuture;
 
-public class HelloLanguageServer implements LanguageServer, LanguageClientAware {
+public class QssLanguageServer implements LanguageServer, LanguageClientAware {
     private TextDocumentService textDocumentService;
     private WorkspaceService workspaceService;
     private LanguageClient client;
     private int errorCode = 1;
 
-    public HelloLanguageServer() {
-        this.textDocumentService = new HelloTextDocumentService();
-        this.workspaceService = new HelloWorkspaceService();
+    public QssLanguageServer() {
+        this.textDocumentService = new QssTextDocumentService();
+        this.workspaceService = new QssWorkspaceService();
     }
 
     @Override
