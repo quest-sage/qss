@@ -10,6 +10,7 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/export" />
             <option value="$PROJECT_DIR$/language-server" />
             <option value="$PROJECT_DIR$/launcher" />
           </set>

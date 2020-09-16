@@ -1,5 +1,4 @@
 .gradle
 language-server/build
 launcher/build
-language-server/target
-launcher/target
+export/build

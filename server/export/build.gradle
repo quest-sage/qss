@@ -1,0 +1,12 @@
+plugins {
+    id "application"
+}
+apply plugin : "java"
+ext {
+    javaMainClass = "com.thirds.qss.Export"
+}
+
+application {
+    mainClassName = javaMainClass
+}
+run.dependsOn(':launcher:shadowJar')
