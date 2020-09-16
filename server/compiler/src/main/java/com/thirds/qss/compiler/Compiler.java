@@ -9,12 +9,20 @@ public class Compiler {
     private final Path bundleRoot;
     private final Path indexRoot;
 
+    /**
+     * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
+     *                   to access imported files.
+     */
     public Compiler(Path bundleRoot) {
         this.bundleRoot = bundleRoot;
 
-        // Create the index directory, if it does not exist.
-        indexRoot = bundleRoot.resolve(".qss").resolve("index");
-        indexRoot.toFile().mkdirs();
+        if (bundleRoot != null) {
+            // Create the index directory, if it does not exist.
+            indexRoot = bundleRoot.resolve(".qss").resolve("index");
+            indexRoot.toFile().mkdirs();
+        } else {
+            indexRoot = null;
+        }
     }
 
     public Messenger<TokenStream> compile(Path path, String fileContents) {

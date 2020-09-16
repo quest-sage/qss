@@ -1,6 +1,8 @@
 package com.thirds.qss.compiler;
 
-public class Range {
+import java.util.Objects;
+
+public final class Range {
     public final Position start, end;
 
     public Range(Position where) {
@@ -17,5 +19,19 @@ public class Range {
     @Override
     public String toString() {
         return start + "-" + end;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Range range = (Range) o;
+        return start.equals(range.start) &&
+                end.equals(range.end);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(start, end);
     }
 }

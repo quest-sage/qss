@@ -17,7 +17,7 @@ public class CodePointIterator {
             peekedCodePoint = internal.nextInt();
         else
             peekedCodePoint = -1;
-        return peekedCodePoint;
+        return next;
     }
 
     public int peek() {

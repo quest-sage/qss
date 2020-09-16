@@ -1,6 +1,8 @@
 package com.thirds.qss.compiler;
 
-public class Position {
+import java.util.Objects;
+
+public final class Position {
     /**
      * Zero-indexed line and column numbers.
      */
@@ -18,5 +20,19 @@ public class Position {
 
     public Position copy() {
         return new Position(line, character);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Position position = (Position) o;
+        return line == position.line &&
+                character == position.character;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(line, character);
     }
 }
