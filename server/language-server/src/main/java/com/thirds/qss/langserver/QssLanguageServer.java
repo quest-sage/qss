@@ -1,21 +1,15 @@
 package com.thirds.qss.langserver;
 
-import org.eclipse.lsp4j.CompletionOptions;
-import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
-import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.LanguageClientAware;
-import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.lsp4j.services.TextDocumentService;
-import org.eclipse.lsp4j.services.WorkspaceService;
+import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.services.*;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 public class QssLanguageServer implements LanguageServer, LanguageClientAware {
-    private TextDocumentService textDocumentService;
-    private WorkspaceService workspaceService;
+    public static URI rootUri;
+    private final TextDocumentService textDocumentService;
+    private final WorkspaceService workspaceService;
     private LanguageClient client;
     private int errorCode = 1;
 
@@ -24,8 +18,20 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
         this.workspaceService = new QssWorkspaceService();
     }
 
+    /**
+     * Returns a URI relative to the root of the workspace. For example, if uri was "file:///mnt/c/code/test",
+     * the and the workspace was "file:///mnt/c/code", the return value would be "test".
+     *
+     * Basically just syntactic sugar for <code>rootUri.relativize(URI.create(...))</code>.
+     */
+    public static URI relativize(String uri) {
+        return rootUri.relativize(URI.create(uri));
+    }
+
     @Override
     public CompletableFuture<InitializeResult> initialize(InitializeParams initializeParams) {
+        rootUri = URI.create(initializeParams.getRootUri());
+
         // Initialize the InitializeResult for this LS.
         final InitializeResult initializeResult = new InitializeResult(new ServerCapabilities());
 
@@ -33,6 +39,9 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
         initializeResult.getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Full);
         CompletionOptions completionOptions = new CompletionOptions();
         initializeResult.getCapabilities().setCompletionProvider(completionOptions);
+
+        QssLogger.logger.atConfig().log("Initialising QSS language server in %s with capabilities: %s", rootUri, initializeResult.getCapabilities());
+
         return CompletableFuture.supplyAsync(()->initializeResult);
     }
 
