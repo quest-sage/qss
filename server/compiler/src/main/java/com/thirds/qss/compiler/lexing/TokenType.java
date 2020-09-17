@@ -6,6 +6,7 @@ public enum TokenType {
     LBRACE, RBRACE,  // { }
 
     TYPE,  // :
+    SCOPE_RESOLUTION,  // ::
     SEMICOLON,  // ;
 
     STRUCT,

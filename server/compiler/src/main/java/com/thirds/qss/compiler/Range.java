@@ -16,6 +16,26 @@ public final class Range {
         this.end = end.copy();
     }
 
+    /**
+     * Returns a range encompassing both ranges. This may be larger than the union of both ranges, if there is space
+     * in between the two ranges.
+     */
+    public static Range combine(Range a, Range b) {
+        Position newStart, newEnd;
+
+        if (a.start.compareTo(b.start) < 0)
+            newStart = a.start;
+        else
+            newStart = b.start;
+
+        if (a.end.compareTo(b.end) > 0)
+            newEnd = a.end;
+        else
+            newEnd = b.end;
+
+        return new Range(newStart, newEnd);
+    }
+
     @Override
     public String toString() {
         return start + "-" + end;

@@ -42,9 +42,15 @@ public class Lexer {
                 case ']':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RSQUARE, position);
                     break;
-                case ':':
-                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.TYPE, position);
+                case ':': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == ':') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.SCOPE_RESOLUTION, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.TYPE, position);
+                    }
                     break;
+                }
                 case ';':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.SEMICOLON, position);
                     break;
@@ -153,5 +159,12 @@ public class Lexer {
                 Character.toString(codePoint),
                 new Range(position)));
         position.character++;
+    }
+
+    private void twoCharacters(ArrayList<Token> tokens, CodePointIterator codePoints, int codePoint1, int codePoint2, TokenType type, Position position) {
+        tokens.add(new Token(type,
+                Character.toString(codePoint1) + Character.toString(codePoint2),
+                new Range(position)));
+        position.character += 2;
     }
 }

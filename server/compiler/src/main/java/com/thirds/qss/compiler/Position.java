@@ -2,7 +2,7 @@ package com.thirds.qss.compiler;
 
 import java.util.Objects;
 
-public final class Position {
+public final class Position implements Comparable<Position> {
     /**
      * Zero-indexed line and column numbers.
      */
@@ -34,5 +34,13 @@ public final class Position {
     @Override
     public int hashCode() {
         return Objects.hash(line, character);
+    }
+
+    @Override
+    public int compareTo(Position o) {
+        int compare = Integer.compare(line, o.line);
+        if (compare != 0)
+            return compare;
+        return Integer.compare(character, o.character);
     }
 }
