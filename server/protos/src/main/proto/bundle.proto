@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "BundleProtos";
+
+import "google/protobuf/timestamp.proto";
+
+import "name.proto";
+import "locale.proto";
+
+message Bundle {
+  string name = 1;
+  google.protobuf.Timestamp buildTimestamp = 2;
+  // A list of all the scripts in the bundle
+  repeated QualifiedName scripts = 3;
+  // Contains the plain-text contents of the tex.atlas file
+  string textureAtlas = 4;
+  // A list of all the i18n files in the bundle
+  repeated I18nEntry i18n = 5;
+}
+
+message I18nEntry {
+  Locale locale = 1;
+  QualifiedName name = 2;
+}
+

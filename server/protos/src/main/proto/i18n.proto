@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "I18nProtos";
+
+import "name.proto";
+import "locale.proto";
+
+message I18n {
+  Locale locale = 1;
+  repeated StructTranslation structs = 2;
+  repeated PlainTranslation plain = 3;
+  repeated FormattedTranslation formatted = 4;
+}
+
+message StructTranslation {
+  QualifiedName structName = 1;
+  string translation = 2;
+}
+
+message PlainTranslation {
+  QualifiedName key = 1;
+  string translation = 2;
+}
+
+message FormattedTranslation {
+  QualifiedName key = 1;
+  string translation = 2;
+}

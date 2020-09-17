@@ -117,6 +117,36 @@ public class Lexer {
                             case "struct":
                                 type = TokenType.STRUCT;
                                 break;
+                            case "Int":
+                                type = TokenType.INT;
+                                break;
+                            case "Bool":
+                                type = TokenType.BOOL;
+                                break;
+                            case "String":
+                                type = TokenType.STRING;
+                                break;
+                            case "Text":
+                                type = TokenType.TEXT;
+                                break;
+                            case "Entity":
+                                type = TokenType.ENTITY;
+                                break;
+                            case "Ratio":
+                                type = TokenType.RATIO;
+                                break;
+                            case "Col":
+                                type = TokenType.COL;
+                                break;
+                            case "Pos":
+                                type = TokenType.POS;
+                                break;
+                            case "Texture":
+                                type = TokenType.TEXTURE;
+                                break;
+                            case "Player":
+                                type = TokenType.PLAYER;
+                                break;
                             default:
                                 type = TokenType.IDENTIFIER;
                         }

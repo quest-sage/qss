@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "NameProtos";
+
+message QualifiedName {
+  repeated string segments = 1;
+}

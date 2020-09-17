@@ -11,6 +11,15 @@ public class Type extends Node {
         super(range);
     }
 
+    public static class PrimitiveType extends Type {
+        private final Token token;
+
+        public PrimitiveType(Token token) {
+            super(token.range);
+            this.token = token;
+        }
+    }
+
     public static class StructType extends Type {
         private final NameLiteral structName;
 

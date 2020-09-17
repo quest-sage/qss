@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "LocaleProtos";
+
+// See Locale.java. Country and variant are optional (but if variant is set, you should set country too).
+message Locale {
+  string lang = 1;
+  string country = 2;
+  string variant = 3;
+}

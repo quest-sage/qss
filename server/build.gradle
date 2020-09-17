@@ -3,8 +3,19 @@ allprojects  {
     version = '0.0.1-SNAPSHOT'
 }
 
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        google()
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.12'
+    }
+}
+
 subprojects {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     sourceCompatibility = 11
     targetCompatibility = 11
 

@@ -96,6 +96,21 @@ public class Parser {
     }
 
     public Messenger<Type> parseType(TokenStream tokens) {
+        if (tokens.peek().isPresent()) {
+            switch (tokens.peek().get().type) {
+                case INT:
+                case BOOL:
+                case STRING:
+                case TEXT:
+                case ENTITY:
+                case RATIO:
+                case COL:
+                case POS:
+                case TEXTURE:
+                case PLAYER:
+                    return consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.PrimitiveType(tk)));
+            }
+        }
         return parseName(tokens).map(name -> Messenger.success(new Type.StructType(name.getRange(), name)));
     }
 

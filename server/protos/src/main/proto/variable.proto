@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "VariableProtos";
+
+import "name.proto";
+import "user.proto";
+import "type.proto";
+
+// Represents a concrete variable, not a reference of any kind
+// (apart from entities - they may be referenced freely, since they can't be copied!).
+message Variable {
+  oneof value {
+    sint64 int = 1;
+    string string = 2;
+    bool bool = 3;
+    // The int64 is the entity's ID.
+    int64 entity = 4;
+    // Packed in 32-bit RGBA8888 form.
+    sint32 col = 5;
+    Ratio ratio = 6;
+    Pos pos = 7;
+    Maybe maybe = 8;
+    PathWithEntity variableOfPath = 10;
+    User player = 11;
+    Struct struct = 12;
+    Texture texture = 13;
+
+    List list = 16;
+    Map map = 17;
+  }
+
+  // Denominator should be non-negative.
+  message Ratio {
+    sint64 numerator = 1;
+    int64 denominator = 2;
+  }
+
+  message Pos {
+    sint32 x = 1;
+    sint32 y = 2;
+  }
+
+  message Maybe {
+    Variable value = 1;
+    Type contentsType = 2;
+  }
+
+  message PathWithEntity {
+    Path path = 1;
+    int64 entity = 2;
+  }
+
+  message Struct {
+    QualifiedName name = 1;
+    repeated Field fields = 2;
+
+    message Field {
+      QualifiedName fieldName = 1;
+      Variable value = 2;
+    }
+  }
+
+  message Texture {
+    string bundle = 1;
+    QualifiedName name = 2;
+  }
+
+  message List {
+    repeated Variable elements = 1;
+    Type elementType = 2;
+  }
+
+  message Map {
+    repeated Entry entries = 1;
+    Type keyType = 2;
+    Type valueType = 3;
+    message Entry {
+      Variable key = 1;
+      Variable value = 2;
+    }
+  }
+}
+
+// A way of addressing a variable inside various data structures e.g. entities/components/lists/maps.
+// Does not store the variable's value itself, just uniquely references it (so good for serialisation etc).
+// This also does NOT specify a specific entity that contains it!
+message Path {
+  oneof value {
+    QualifiedName component = 1;
+    Field field = 2;
+    IndexList indexList = 3;
+    IndexMap indexMap = 4;
+    // A name of a variable that is stored inside every Entity,
+    // e.g. name, pos, col
+    string intrinsicInsideEntity = 5;
+  }
+
+  // Retrieves a field from the struct denoted by the given path.
+  message Field {
+    Path path = 1;
+    QualifiedName field = 2;
+  }
+
+  // Gets a variable at a given position from a list.
+  message IndexList {
+    Path path = 1;
+    int32 index = 2;
+  }
+
+  // Gets a variable with a given key from a map.
+  message IndexMap {
+    Path path = 1;
+    Variable index = 2;
+  }
+}

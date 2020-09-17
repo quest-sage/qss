@@ -3,8 +3,10 @@ include ':langserver-core'
 include ':launcher'
 include ':export'
 include ':compiler'
+include ':protos'
 
 project(':langserver-core').projectDir = "$rootDir/language-server" as File
 project(':launcher').projectDir = "$rootDir/launcher" as File
 project(':export').projectDir = "$rootDir/export" as File
 project(':compiler').projectDir = "$rootDir/compiler" as File
+project(':protos').projectDir = "$rootDir/protos" as File

@@ -1,0 +1,314 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "ScriptProtos";
+
+import "name.proto";
+import "type.proto";
+
+message Tag {
+  string key = 1;
+  Value value = 2;
+  message Value {
+    oneof value {
+      string s = 1;
+      sint64 i = 2;
+    }
+  }
+}
+
+message Decl {
+  string name = 1;
+  Type type = 2;
+  string docs = 3;
+  repeated Tag tags = 4;
+}
+
+message Struct {
+  QualifiedName name = 1;
+  string docs = 2;
+  repeated Tag tags = 3;
+  repeated Decl decls = 4;
+
+  // This is set if this struct is an action (i.e. it has the 'action' tag set)
+  Action action = 5;
+
+  // This is set if this struct is a component (i.e. it has the 'component' tag set)
+  bool component = 6;
+
+  message Action {
+    QualifiedName actionFunc = 1;
+    repeated string menuPath = 2;
+    string shortcutKey = 3;
+    // If this is true, the first field of the struct is set to the current selection that the user has made.
+    // This allows for types like List Pos to be used in actions - you can select more than one value.
+    bool firstFieldIsSelection = 4;
+  }
+}
+
+message FieldReference {
+  QualifiedName structName = 1;
+  QualifiedName fieldName = 2;
+}
+
+message Stmt {
+  oneof value {
+    // CHEAP SERIALISATION (https://developers.google.com/protocol-buffers/docs/proto#assigning_field_numbers)
+
+    Compound compoundStmt = 1;
+    // Doesn't work on fields (e.g. struct.value = expression), this is handled using functions
+    Assign assignStmt = 2;
+    Expr exprStmt = 3;
+    If ifStmt = 4;
+    ExprBlock forStmt = 5;
+    ExprBlock whileStmt = 6;
+    ExprBlock causeStmt = 7;
+    Match matchStmt = 8;
+
+    // Just set these to true to denote that this value is the one set.
+    bool returnStmt = 9;  // Return statements are desugared like "return value;" -> "result = value; return;" (this means that return statements are always empty)
+    bool breakStmt = 10;
+    bool continueStmt = 11;
+    bool ignoreStmt = 12;
+
+    // EXPENSIVE SERIALISATION
+
+    // Used by Generator.java to generate set functions automatically
+    AssignFieldNoHooks assignFieldNoHooks = 16;
+  }
+
+  message Compound {
+    repeated Stmt stmts = 1;
+  }
+  message Assign {
+    Expr lvalue = 1;
+    Expr rvalue = 2;
+  }
+  message If {
+    Expr condition = 1;
+    Stmt trueBlock = 2;
+    Stmt falseBlock = 3;
+  }
+  // Represents statements of the form:
+  // <keyword> <expr> { <block> }
+  // E.g. for, cause, while
+  message ExprBlock {
+    Expr expr = 1;
+    Compound block = 2;
+  }
+  message Match {
+    Expr expr = 1;
+    repeated Case cases = 2;;
+    message Case {
+      string option = 1;
+      Compound block = 2;
+    }
+  }
+
+  // Assigns a field without triggering get/set hooks.
+  message AssignFieldNoHooks {
+    Expr object = 1;
+    FieldReference field = 2;
+    Expr expr = 3;
+  }
+}
+
+message Expr {
+  oneof value {
+    // CHEAP SERIALISATION (https://developers.google.com/protocol-buffers/docs/proto#assigning_field_numbers)
+    int64 intLiteral = 1;
+    string stringLiteral = 2;
+    string textLiteral = 3;
+    // Represents "true" if true and "false" if false.
+    bool booleanLiteral = 4;
+    // Represents the local variable with the given ID. See NameResolver for more info on local variable IDs.
+    int32 localVariable = 5;
+    Binary addInt = 6;
+    Binary subtractInt = 7;
+    Binary multiplyInt = 8;
+    Binary divideInt = 9;
+    // If this is set, negate the argument.
+    Expr negateInt = 10;
+    // If this is set, invert the argument.
+    Expr notBool = 11;
+    Binary andBool = 12;
+    Binary orBool = 13;
+    int32 parameter = 14;
+    // If true, represents the containing function itself. If false, represents the result of the current function.
+    bool functionOrResult = 15;
+
+    // EXPENSIVE SERIALISATION
+    Binary equalInt = 16;
+    Binary notEqualInt = 17;
+    Binary lessInt = 18;
+    Binary greaterInt = 19;
+    Binary lessEqualInt = 20;
+    Binary greaterEqualInt = 21;
+    // from lhs..rhs
+    Binary rangeInt = 22;
+    // lhs = object, rhs = index
+    Binary index = 23;
+    QualifiedName namedVariable = 24;
+    // Used by Generator.java to generate get functions automatically
+    FieldNoHooks fieldNoHooks = 25;
+    Invoke invoke = 26;
+    NewStruct newStruct = 27;
+    FieldReference namedGetFunc = 28;
+    FieldReference namedSetFunc = 29;
+
+    Binary addRatio = 30;
+    Binary subtractRatio = 31;
+    Binary multiplyRatio = 32;
+    Binary divideRatio = 33;
+    // If this is set, negate the argument.
+    Expr negateRatio = 34;
+
+    // Returns true if the given maybe contains an actual value.
+    Expr maybeExists = 35;
+    // Encapsulates a concrete value in a maybe.
+    Expr just = 36;
+    // Unboxes a maybe value, assuming it actually contains something.
+    Expr unbox = 37;
+    // Represents a null literal of the given type.
+    Type nullLiteral = 38;
+
+    // left = Int, right = element type
+    Binary indexList = 39;
+    // left = key type, right = value type
+    Binary indexMap = 40;
+
+    NewList newList = 41;
+    NewMap newMap = 42;
+
+    // Retrieves the size of a list.
+    Expr size = 43;
+
+    // Retrieves the named component from an entity (or null if not found).
+    GetComponent getComponent = 44;
+
+    // Represents a dynamic dispatch function declared in a trait.
+    TraitFunction traitFunction = 45;
+
+    // There is nothing to represent "this", because the keyword "this" is really just the first function parameter,
+    // and thus always has param ID 0.
+  }
+
+  // A binary expression. Types are already deduced, so we don't really care about saying whether this is
+  // an operation on integers or booleans or whatever.
+  message Binary {
+    Expr left = 1;
+    Expr right = 2;
+  }
+
+  // Retrieves a field without triggering get/set hooks.
+  message FieldNoHooks {
+    Expr object = 1;
+    FieldReference field = 2;
+  }
+
+  message Invoke {
+    Expr func = 1;
+    repeated Expr args = 2;
+  }
+
+  message NewStruct {
+    QualifiedName structName = 1;
+    repeated NewStructAssignment assignments = 2;
+  }
+
+  message NewStructAssignment {
+    QualifiedName fieldName = 1;
+    Expr value = 2;
+  }
+
+  message NewList {
+    repeated Expr exprs = 1;
+    Type elementType = 2;
+  }
+
+  message NewMap {
+    // left = key, right = value
+    repeated Binary entries = 1;
+    Type keyType = 2;
+    Type valueType = 3;
+  }
+
+  message GetComponent {
+    Expr entity = 1;
+    QualifiedName component = 2;
+  }
+
+  message TraitFunction {
+    QualifiedName trait = 1;
+    string func = 2;
+  }
+}
+
+message Func {
+  // The name of the function (if an actual function) or the name of the field (if this is a get/set function).
+  QualifiedName name = 1;
+  string docs = 2;
+  repeated Tag tags = 3;
+  // If the return type is not given, it is considered to not return anything.
+  Type returnType = 4;
+  // If compound statement is not given, function is "native".
+  Stmt.Compound block = 5;
+  // A list of parameter types.
+  repeated Type params = 6;
+  // How many local variables do we have, in addition to the function itself, the return value, and the parameters?
+  int32 localVarCount = 7;
+
+  bool eager = 8;
+  bool pure = 9;
+  bool userInterface = 11;
+
+  // What kind of function is this?
+  FuncType type = 10;
+
+  message FuncType {
+    oneof value {
+      bool normalFunction = 1;
+      // The value of getStructField is the struct that the field is contained within.
+      QualifiedName getStructField = 2;
+      // The value of setStructField is the struct that the field is contained within.
+      QualifiedName setStructField = 3;
+    }
+  }
+}
+
+message Hook {
+  oneof value {
+    // The name of the function is the name of the hooked function.
+    Func functionHook = 1;
+    // The name of the function is the name of the field being retrieved. The name of the containing structure is stored inside FieldHook.
+    FieldHook getHook = 2;
+    // The name of the function is the name of the field being assigned. The name of the containing structure is stored inside FieldHook.
+    FieldHook setHook = 3;
+    // The name of the function is the name of the struct that is being created.
+    Func createHook = 4;
+  }
+
+  message FieldHook {
+    QualifiedName struct = 1;
+    Func func = 2;
+  }
+}
+
+message TraitImpl {
+  QualifiedName trait = 1;
+  Type type = 2;
+  // The "name" of each of these funcs should have only one segment - the name of the function.
+  repeated Func funcs = 3;
+}
+
+// Trait definitions are not serialised along with the script.
+message Script {
+  QualifiedName package = 1;
+  repeated Struct structs = 2;
+  repeated Func funcs = 3;
+  repeated Hook beforeHooks = 4;
+  repeated Hook afterHooks = 5;
+  repeated TraitImpl traitImpls = 6;
+}

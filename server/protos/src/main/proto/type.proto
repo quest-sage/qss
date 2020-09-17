@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "TypeProtos";
+
+import "name.proto";
+
+message Type {
+  oneof value {
+    bool bool = 1;
+    bool int = 2;
+    bool string = 3;
+    bool text = 4;
+    bool entity = 5;
+    bool ratio = 6;
+    bool col = 7;
+    bool pos = 8;
+    bool stat = 9;
+    bool texture = 10;
+    bool player = 11;
+
+    Func func = 16;
+    QualifiedName struct = 17;
+    Type maybe = 18;
+    Type list = 19;
+    Map map = 20;
+    bool anyStruct = 21;  // will eventually be deprecated in favour of traits
+    QualifiedName trait = 22;
+  }
+
+  message Map {
+    Type keyType = 1;
+    Type valueType = 2;
+  }
+
+  message Func {
+    repeated Type params = 1;
+    Type returnType = 2;
+    // If true, function is called with syntax: receiver.function(args).
+    // This is true if and only if the first parameter of the function is named "this".
+    bool receiverStyle = 3;
+  }
+}

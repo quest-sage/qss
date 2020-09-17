@@ -1,0 +1,24 @@
+sourceCompatibility = 11
+
+apply plugin: "java-library"
+apply plugin: 'com.google.protobuf'
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        // Download from repositories
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+    generatedFilesBaseDir = "$projectDir/proto-gen"
+}
+
+dependencies {
+    //testImplementation('junit:junit:4.13')
+    implementation 'com.google.protobuf:protobuf-java:3.11.0'
+}
+
+sourceSets {
+    main {
+        java.srcDirs += 'proto-gen/main/java'
+    }
+}

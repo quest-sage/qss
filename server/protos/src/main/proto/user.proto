@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package qss;
+
+option java_package = "com.thirds.qss.protos";
+option java_outer_classname = "UserProtos";
+
+// Who is this user?
+message User {
+  oneof value {
+    // Represents the concept of no user. This is useful when you want to state
+    // that something has no user, but without the clutter and uncertainty
+    // of a null reference.
+    bool none = 1;
+    // Represents a "dummy" user that is not signed in to any platform, suitable
+    // for integrated servers.
+    int32 local = 2;
+
+    Itch itch = 3;
+  }
+
+  // Represents a user variable with data received from itch.io servers.
+  message Itch {
+    int32 uid = 1;
+    string username = 2;
+    string displayName = 3;
+    string icon_url = 4;
+  }
+}
