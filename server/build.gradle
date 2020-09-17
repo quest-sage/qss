@@ -26,3 +26,7 @@ subprojects {
         maven { url "https://repo.maven.apache.org/maven2" }
     }
 }
+
+project('compiler').dependencies {
+    api project('protos')
+}
