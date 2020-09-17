@@ -4,3 +4,5 @@ language-server/build
 launcher/build
 export/build
 compiler/build
+protos/build
+protos/proto-gen
