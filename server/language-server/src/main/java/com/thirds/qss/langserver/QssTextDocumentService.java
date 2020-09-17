@@ -3,7 +3,7 @@ package com.thirds.qss.langserver;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.lexing.TokenStream;
+import com.thirds.qss.compiler.tree.Script;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
@@ -131,9 +131,10 @@ public class QssTextDocumentService implements TextDocumentService {
                 QssLogger.logger.atSevere().log("Incremental file change not supported: %s", params);
             }
 
+            QssLogger.logger.atInfo().log("Compiling %s", uri);
             Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
-            Messenger<TokenStream> result = compiler.compile(Paths.get(uri.getPath()), change.getText());
-            //QssLogger.logger.atInfo().log("Compile result: %s", result);
+            Messenger<Script> result = compiler.compile(Paths.get(uri.getPath()), change.getText());
+            QssLogger.logger.atInfo().log("Compile result: %s", result);
             PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
             diagnostics.setUri(params.getTextDocument().getUri());
             for (Message message : result.getMessages()) {
@@ -143,6 +144,12 @@ public class QssTextDocumentService implements TextDocumentService {
                         new Position(message.range.end.line, message.range.end.character)
                 ));
                 switch (message.severity) {
+                    case HINT:
+                        diagnostic.setSeverity(DiagnosticSeverity.Hint);
+                        break;
+                    case INFORMATION:
+                        diagnostic.setSeverity(DiagnosticSeverity.Information);
+                        break;
                     case WARNING:
                         diagnostic.setSeverity(DiagnosticSeverity.Warning);
                         break;

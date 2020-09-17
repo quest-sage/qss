@@ -68,7 +68,7 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
                     it.next().toFile().delete();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                // can't print to stdout
             }
 
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
@@ -80,7 +80,7 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
                 fh.setFormatter(new LogFormatter());
                 l.addHandler(fh);
             } catch (IOException e) {
-                e.printStackTrace();
+                // can't print to stdout
             }
         }
 

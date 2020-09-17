@@ -3,6 +3,7 @@ package com.thirds.qss.compiler;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -10,18 +11,24 @@ import java.util.stream.Stream;
  * Encapsulates a variable, but may also carry errors and other messages.
  * This is often returned by functions that may emit errors.
  *
- * The method {@link #with} allows you to use the variable inside the messenger if the prior computation succeeded.
+ * The method {@link #map} allows you to use the variable inside the messenger if the prior computation succeeded.
  */
 public class Messenger<T> {
-    private final T value;
+    T value;
     private final ArrayList<Message> messages;
 
-    private Messenger(T value, ArrayList<Message> messages) {
+    Messenger(T value, ArrayList<Message> messages) {
         this.value = value;
         this.messages = messages;
     }
 
+    public static <T> Messenger<T> success(T value) {
+        return success(value, new ArrayList<>(0));
+    }
+
     public static <T> Messenger<T> success(T value, ArrayList<Message> messages) {
+        if (value == null)
+            throw new NullPointerException();
         return new Messenger<>(value, messages);
     }
 
@@ -33,7 +40,7 @@ public class Messenger<T> {
      * If this messenger was a <code>success</code>, the given function is applied to the result.
      * The messages from this messenger and from the resultant messenger are combined to form the returned message.
      */
-    public <U> Messenger<U> with(Function<T, Messenger<U>> func) {
+    public <U> Messenger<U> map(Function<T, Messenger<U>> func) {
         if (value != null) {
             Messenger<U> otherMessenger = func.apply(value);
 
@@ -52,7 +59,15 @@ public class Messenger<T> {
     }
 
     /**
-     * Use {@link #with} if possible; this is a less useful method.
+     * If this messenger was a <code>success</code>, the given supplier is evaluated.
+     * The messages from this messenger and from the resultant messenger are combined to form the returned message.
+     */
+    public <U> Messenger<U> then(Supplier<Messenger<U>> func) {
+        return map(m -> func.get());
+    }
+
+    /**
+     * Use {@link #map} if possible; this is a less useful method.
      *
      * @return If the computation represented by this messenger failed, this will return an empty optional.
      */

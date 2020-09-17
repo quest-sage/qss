@@ -13,7 +13,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.qss",
-				"match": "\\b(if|while|for|return)\\b"
+				"match": "\\b(struct)\\b"
 			}]
 		},
 		"strings": {

@@ -42,6 +42,12 @@ public class Lexer {
                 case ']':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RSQUARE, position);
                     break;
+                case ':':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.TYPE, position);
+                    break;
+                case ';':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.SEMICOLON, position);
+                    break;
                 case '"':
                 {
                     // This is a string literal.
@@ -99,10 +105,25 @@ public class Lexer {
                         do {
                             identifier.append(Character.toString(codePoints.next()));
                             position.character++;
-                        } while (isIdentifierPart(codePoints.peek()));
-                        tokens.add(new Token(TokenType.IDENTIFIER, identifier.toString(), new Range(start, position)));
+                        } while (codePoints.peek() != -1 && isIdentifierPart(codePoints.peek()));
+                        TokenType type;
+                        switch (identifier.toString()) {
+                            case "struct":
+                                type = TokenType.STRUCT;
+                                break;
+                            default:
+                                type = TokenType.IDENTIFIER;
+                        }
+                        tokens.add(new Token(type, identifier.toString(), new Range(start, position)));
                     } else if (Character.isDigit(peek)) {
                         // This is a number.
+                        StringBuilder identifier = new StringBuilder();
+                        Position start = position.copy();
+                        do {
+                            identifier.append(Character.toString(codePoints.next()));
+                            position.character++;
+                        } while (codePoints.peek() != -1 && Character.isDigit(codePoints.peek()));
+                        tokens.add(new Token(TokenType.INTEGER_LITERAL, identifier.toString(), new Range(start, position)));
                     } else {
                         messages.add(new Message(
                                 new Range(position),

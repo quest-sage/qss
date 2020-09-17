@@ -3,6 +3,20 @@ package com.thirds.qss.compiler;
 import java.util.Objects;
 
 public class Message {
+    /**
+     * Represents a message that will be shown to the user. This represents some kind of diagnostic information,
+     * usually an error or warning.
+     * @param range Where did the error come from? Keep this range as small as possible to avoid extraneous underlining
+     *              in IDEs.
+     * @param severity How severe is this message? Use {@link MessageSeverity#ERROR} for messages that mean it is
+     *                 impossible to compile. Use {@link MessageSeverity#WARNING} for code that is probably
+     *                 unintentional. Use {@link MessageSeverity#INFORMATION} for basic lint messages.
+     * @param message The message to show to the user. It should start with a capital letter, and not have any
+     *                trailing punctuation. If the message is comprised of multiple sentences, you may use punctuation
+     *                to separate the sentences (e.g. full stops/periods) but do not put punctuation right at the end.
+     *                If the message has an "expected" part and an "actual" part, write the message in the format
+     *                "Expected ..., got ..."
+     */
     public Message(Range range, MessageSeverity severity, String message) {
         this.range = range;
         this.severity = severity;
@@ -10,6 +24,8 @@ public class Message {
     }
 
     public enum MessageSeverity {
+        HINT,
+        INFORMATION,
         WARNING,
         ERROR
     }

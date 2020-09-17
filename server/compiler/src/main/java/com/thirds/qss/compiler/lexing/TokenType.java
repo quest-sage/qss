@@ -5,6 +5,9 @@ public enum TokenType {
     LSQUARE, RSQUARE,  // [ ]
     LBRACE, RBRACE,  // { }
 
+    TYPE,  // :
+    SEMICOLON,  // ;
+
     STRUCT,
     IDENTIFIER,
 
