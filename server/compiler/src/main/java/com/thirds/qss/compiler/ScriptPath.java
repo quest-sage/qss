@@ -29,9 +29,12 @@ public class ScriptPath {
      * @param path A path relative to the bundle root.
      */
     public ScriptPath(Path path) {
-        segments.ensureCapacity(path.getNameCount());
-        for (int i = 0; i < path.getNameCount(); i++) {
-            segments.add(path.getName(i).toString());
+        while (path != null) {
+            segments.add(0, path.getFileName().toString());
+            path = path.getParent();
+        }
+        if (segments.isEmpty()) {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -39,6 +42,8 @@ public class ScriptPath {
      * Converts the path into a Path object relative to the bundle root.
      */
     public Path toPath() {
+        if (segments.isEmpty())
+            return Paths.get(".");
         return Paths.get(segments.get(0), trimFirstSegment().segments.toArray(new String[0]));
     }
 

@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,6 +42,16 @@ public class Compiler {
      * This does NOT include subdirectories, only files.
      */
     private final Multimap<ScriptPath, ScriptPath> folderChildren = MultimapBuilder.hashKeys().arrayListValues().build();
+
+    /**
+     * Maps script names to the parsed file content.
+     */
+    private final Map<ScriptPath, Script> parsedFiles = new HashMap<>();
+
+    /**
+     * Maps package paths to their type name indices.
+     */
+    private final Map<ScriptPath, TypeNameIndex> typeNameIndices = new HashMap<>();
 
     /**
      * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
@@ -79,7 +90,7 @@ public class Compiler {
         paths.clear();
         for (File file : folderPath.toPath().toFile().listFiles()) {
             if (file.isFile() && file.getName().endsWith(".qss"))
-                paths.add(new ScriptPath(file.toPath()));
+                paths.add(folderPath.appendSegment(file.getName()));
         }
         return paths;
     }
@@ -94,19 +105,46 @@ public class Compiler {
 
     public void overwriteCachedFileContent(ScriptPath filePath, String fileContents) {
         cachedFileContent.put(filePath, fileContents);
+        // Reparse the file.
+        parsedFiles.remove(filePath);
+    }
+
+    /**
+     * Parses the file, if the parsed result is not yet cached.
+     * This does not perform any validation checks or produce any index output.
+     * This discards any messages emitted by the lexer and parser.
+     */
+    public Script getParsed(ScriptPath filePath) {
+        return parsedFiles.computeIfAbsent(filePath, k -> {
+            String fileContents = getFileContent(filePath);
+            Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
+            return tokens.map(t -> new Parser(this).parse(filePath, t)).getValue().orElse(null);
+        });
     }
 
     public Messenger<Script> compile(ScriptPath filePath) {
         String fileContents = getFileContent(filePath);
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));
+
         if (script.getValue().isEmpty()) {
             return script;
         } else {
             Script scriptParsed = script.getValue().get();
 
-            // Fill the index with each script in the package.
+            // Fill the index with each script in the package, making sure to do this script last.
+            // If it's last, any name collisions will be reported in this file's error messages.
             Messenger<TypeNameIndex> typeNameIndex = Messenger.success(new TypeNameIndex(new QualifiedName()), script.getMessages());
+            for (ScriptPath folderChild : getFolderChildren(filePath.trimLastSegment())) {
+                if (folderChild.equals(filePath))
+                    continue;
+                Script parsed = getParsed(folderChild);
+                if (parsed != null) {
+                    // Ignore error messages from outside this file.
+                    typeNameIndex = typeNameIndex.map(index -> index.addFrom(parsed).getValue()
+                            .map(Messenger::success).orElseGet(() -> Messenger.fail(new ArrayList<>(0))));
+                }
+            }
             typeNameIndex = typeNameIndex.map(index -> index.addFrom(scriptParsed));
 
             // If there were no errors up to this point, we're OK to generate the index for the package.

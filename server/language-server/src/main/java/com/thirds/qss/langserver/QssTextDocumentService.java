@@ -139,51 +139,55 @@ public class QssTextDocumentService implements TextDocumentService {
         URI uri = QssLanguageServer.relativize(params.getTextDocument().getUri());
         //QssLogger.logger.atInfo().log("File %s changed", uri);
 
-        for (TextDocumentContentChangeEvent change : params.getContentChanges()) {
-            if (change.getRange() != null || change.getRangeLength() != null) {
-                QssLogger.logger.atSevere().log("Incremental file change not supported: %s", params);
-            }
-
-            QssLogger.logger.atInfo().log("Compiling %s", uri);
-            Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
-
-            ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
-            compiler.overwriteCachedFileContent(filePath, change.getText());
-            Messenger<Script> result = compiler.compile(filePath);
-            QssLogger.logger.atInfo().log("Compile result: %s", result);
-
-            PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
-            diagnostics.setUri(params.getTextDocument().getUri());
-            for (Message message : result.getMessages()) {
-                Diagnostic diagnostic = new Diagnostic();
-                diagnostic.setRange(from(message.range));
-                switch (message.severity) {
-                    case HINT:
-                        diagnostic.setSeverity(DiagnosticSeverity.Hint);
-                        break;
-                    case INFORMATION:
-                        diagnostic.setSeverity(DiagnosticSeverity.Information);
-                        break;
-                    case WARNING:
-                        diagnostic.setSeverity(DiagnosticSeverity.Warning);
-                        break;
-                    case ERROR:
-                        diagnostic.setSeverity(DiagnosticSeverity.Error);
-                        break;
+        try {
+            for (TextDocumentContentChangeEvent change : params.getContentChanges()) {
+                if (change.getRange() != null || change.getRangeLength() != null) {
+                    QssLogger.logger.atSevere().log("Incremental file change not supported: %s", params);
                 }
-                diagnostic.setMessage(message.message);
-                diagnostic.setSource("qss");
-                ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
-                for (Message.MessageRelatedInformation info : message.infos) {
-                    infos.add(new DiagnosticRelatedInformation(
-                            new Location(uriOf(info.location.getFilePath()).toString(), from(info.location.getRange())),
-                            info.message
-                    ));
+
+                QssLogger.logger.atInfo().log("Compiling %s", uri);
+                Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
+
+                ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
+                compiler.overwriteCachedFileContent(filePath, change.getText());
+                Messenger<Script> result = compiler.compile(filePath);
+                QssLogger.logger.atInfo().log("Compile result: %s", result);
+
+                PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
+                diagnostics.setUri(params.getTextDocument().getUri());
+                for (Message message : result.getMessages()) {
+                    Diagnostic diagnostic = new Diagnostic();
+                    diagnostic.setRange(from(message.range));
+                    switch (message.severity) {
+                        case HINT:
+                            diagnostic.setSeverity(DiagnosticSeverity.Hint);
+                            break;
+                        case INFORMATION:
+                            diagnostic.setSeverity(DiagnosticSeverity.Information);
+                            break;
+                        case WARNING:
+                            diagnostic.setSeverity(DiagnosticSeverity.Warning);
+                            break;
+                        case ERROR:
+                            diagnostic.setSeverity(DiagnosticSeverity.Error);
+                            break;
+                    }
+                    diagnostic.setMessage(message.message);
+                    diagnostic.setSource("qss");
+                    ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
+                    for (Message.MessageRelatedInformation info : message.infos) {
+                        infos.add(new DiagnosticRelatedInformation(
+                                new Location(uriOf(info.location.getFilePath()).toString(), from(info.location.getRange())),
+                                info.message
+                        ));
+                    }
+                    diagnostic.setRelatedInformation(infos);
+                    diagnostics.getDiagnostics().add(diagnostic);
                 }
-                diagnostic.setRelatedInformation(infos);
-                diagnostics.getDiagnostics().add(diagnostic);
+                QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);
             }
-            QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);
+        } catch (Exception e) {
+            QssLogger.logger.atSevere().withCause(e).log("Uncaught exception");
         }
     }
 
