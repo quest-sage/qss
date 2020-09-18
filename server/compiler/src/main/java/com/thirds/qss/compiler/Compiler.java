@@ -1,7 +1,7 @@
 package com.thirds.qss.compiler;
 
-import com.thirds.qss.compiler.lexing.Lexer;
-import com.thirds.qss.compiler.lexing.TokenStream;
+import com.thirds.qss.compiler.lexer.Lexer;
+import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
 import com.thirds.qss.compiler.tree.Script;
 

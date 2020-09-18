@@ -1,9 +1,8 @@
 package com.thirds.qss.compiler.parser;
 
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.lexing.Lexer;
-import com.thirds.qss.compiler.lexing.TokenStream;
+import com.thirds.qss.compiler.lexer.Lexer;
+import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.tree.Script;
 import org.junit.jupiter.api.Test;
 

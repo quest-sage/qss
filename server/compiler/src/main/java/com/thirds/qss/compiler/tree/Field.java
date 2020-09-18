@@ -1,7 +1,7 @@
 package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.compiler.Range;
-import com.thirds.qss.compiler.lexing.Token;
+import com.thirds.qss.compiler.lexer.Token;
 
 /**
  * Represents a field of a struct.

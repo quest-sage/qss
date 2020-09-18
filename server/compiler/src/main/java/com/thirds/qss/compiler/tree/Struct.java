@@ -1,8 +1,8 @@
 package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.compiler.Range;
-import com.thirds.qss.compiler.lexing.Token;
-import com.thirds.qss.compiler.lexing.TokenType;
+import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.lexer.TokenType;
 
 public class Struct extends Node {
     private final Token name;

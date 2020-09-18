@@ -1,4 +1,4 @@
-package com.thirds.qss.compiler.lexing;
+package com.thirds.qss.compiler.lexer;
 
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;

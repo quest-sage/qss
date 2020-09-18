@@ -1,4 +1,4 @@
-package com.thirds.qss.compiler.lexing;
+package com.thirds.qss.compiler.lexer;
 
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.Compiler;
@@ -8,7 +8,6 @@ import java.util.ArrayList;
 
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 class LexerTest {
 

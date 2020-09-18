@@ -2,9 +2,9 @@ package com.thirds.qss.compiler.parser;
 
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
-import com.thirds.qss.compiler.lexing.Token;
-import com.thirds.qss.compiler.lexing.TokenStream;
-import com.thirds.qss.compiler.lexing.TokenType;
+import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.lexer.TokenStream;
+import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.*;
 
 import java.util.ArrayList;

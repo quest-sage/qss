@@ -1,4 +1,4 @@
-package com.thirds.qss.compiler.lexing;
+package com.thirds.qss.compiler.lexer;
 
 public enum TokenType {
     LPARENTH, RPARENTH,  // ( )
