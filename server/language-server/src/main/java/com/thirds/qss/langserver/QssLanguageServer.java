@@ -56,6 +56,7 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
         // Set the capabilities of the LS to inform the client.
         capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
         capabilities.setDefinitionProvider(true);
+        capabilities.setHoverProvider(true);
         CompletionOptions completionOptions = new CompletionOptions();
         capabilities.setCompletionProvider(completionOptions);
 

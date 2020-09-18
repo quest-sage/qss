@@ -16,4 +16,9 @@ public interface Symbol {
      * Where does this symbol link to when you click it?
      */
     Optional<Location> getTargetLocation();
+
+    /**
+     * What documentation shows when you hover this symbol?
+     */
+    Optional<String> getTargetDocumentation();
 }

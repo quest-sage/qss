@@ -35,4 +35,9 @@ public class Token implements Symbol {
     public Optional<Location> getTargetLocation() {
         return Optional.empty();
     }
+
+    @Override
+    public Optional<String> getTargetDocumentation() {
+        return Optional.empty();
+    }
 }

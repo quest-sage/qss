@@ -65,7 +65,21 @@ public class QssTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<Hover> hover(TextDocumentPositionParams textDocumentPositionParams) {
-        return null;
+        ScriptPath scriptPath = pathFromUri(textDocumentPositionParams.getTextDocument().getUri());
+        SymbolMap symbolMap = compiler.getSymbolMap(scriptPath);
+        Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
+        Optional<String> optionalDocs = selected.flatMap(Symbol::getTargetDocumentation);
+        if (optionalDocs.isPresent()) {
+            Hover hover = new Hover();
+            String docs = optionalDocs.get();
+            MarkupContent markupContents = new MarkupContent();
+            markupContents.setKind("markdown");
+            markupContents.setValue(docs);
+            hover.setContents(markupContents);
+            return CompletableFuture.completedFuture(hover);
+        } else {
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     @Override
@@ -80,7 +94,6 @@ public class QssTextDocumentService implements TextDocumentService {
         Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
         ArrayList<Location> locations = new ArrayList<>();
         selected.flatMap(Symbol::getTargetLocation).ifPresent(location -> locations.add(from(location)));
-        QssLogger.logger.atInfo().log("Def: %s %s %s %s", compiler, scriptPath, compiler.getParsed(scriptPath).hashCode(), symbolMap);
         return CompletableFuture.completedFuture(locations);
     }
 

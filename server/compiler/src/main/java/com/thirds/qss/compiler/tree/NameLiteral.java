@@ -15,10 +15,16 @@ import java.util.Optional;
  */
 public class NameLiteral extends Node implements Symbol {
     private final List<Token> segments;
+
     /**
      * Where does this name literal point to?
      */
     private Location targetLocation;
+
+    /**
+     * What is the documentation for the target of this name?
+     */
+    private String targetDocumentation;
 
     public NameLiteral(Range range, List<Token> segments) {
         super(range);
@@ -34,8 +40,14 @@ public class NameLiteral extends Node implements Symbol {
         return Optional.ofNullable(targetLocation);
     }
 
-    public void setTargetLocation(Location targetLocation) {
+    @Override
+    public Optional<String> getTargetDocumentation() {
+        return Optional.ofNullable(targetDocumentation);
+    }
+
+    public void setTarget(Location targetLocation, String targetDocumentation) {
         this.targetLocation = targetLocation;
+        this.targetDocumentation = targetDocumentation;
     }
 
     /**

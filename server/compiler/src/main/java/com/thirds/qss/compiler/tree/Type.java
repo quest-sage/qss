@@ -76,7 +76,10 @@ public abstract class Type extends Node {
 
                 QualifiedName qualifiedName = typeNameIndex.getPackage().appendSegment(s);
                 if (structName.matches(qualifiedName)) {
-                    structName.setTargetLocation(definition.getLocation());
+                    structName.setTarget(
+                            definition.getLocation(),
+                            definition.getDocumentation()
+                    );
                     return Optional.of(new VariableType.Struct(qualifiedName));
                 }
             }

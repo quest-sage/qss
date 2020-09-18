@@ -24,10 +24,16 @@ public class TypeNameIndex {
     }
 
     public static class StructDefinition {
+        private final String documentation;
         private final Location location;
 
-        private StructDefinition(Location location) {
+        private StructDefinition(String documentation, Location location) {
+            this.documentation = documentation;
             this.location = location;
+        }
+
+        public String getDocumentation() {
+            return documentation;
         }
 
         public Location getLocation() {
@@ -65,6 +71,7 @@ public class TypeNameIndex {
             }
 
             structDefinitions.put(name, new StructDefinition(
+                    struct.getDocumentation().map(tk -> tk.contents).orElse(null),
                     new Location(script.getFilePath(), struct.getContent().getRange())
             ));
         }

@@ -3,6 +3,7 @@ package com.thirds.qss.compiler.tree;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -24,8 +25,8 @@ public class Documentable<T extends Node> extends Node {
         this.content = content;
     }
 
-    public Token getDocumentation() {
-        return documentation;
+    public Optional<Token> getDocumentation() {
+        return Optional.ofNullable(documentation);
     }
 
     public T getContent() {
