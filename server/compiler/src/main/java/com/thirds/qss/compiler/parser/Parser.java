@@ -69,7 +69,7 @@ public class Parser {
 
             Struct struct = new Struct(
                     new Range(start, tokens.currentPosition()),
-                    identifier
+                    identifier, fields
             );
 
             return Messenger.success(struct);

@@ -86,4 +86,12 @@ public class Messenger<T> {
         Stream<Message> stream = messages.stream().skip(1);
         return value + " (messages: " + messages.get(0) + stream.map(m -> "\n" + m.toString()).collect(Collectors.joining()) + ")";
     }
+
+    public boolean hasErrors() {
+        for (Message message : messages) {
+            if (message.severity == Message.MessageSeverity.ERROR)
+                return true;
+        }
+        return false;
+    }
 }

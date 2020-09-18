@@ -1,6 +1,8 @@
 package com.thirds.qss.compiler;
 
-import com.thirds.qss.compiler.indexer.Indexer;
+import com.thirds.qss.QualifiedName;
+import com.thirds.qss.compiler.indexer.TypeIndex;
+import com.thirds.qss.compiler.indexer.TypeNameIndex;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
@@ -31,7 +33,27 @@ public class Compiler {
     public Messenger<Script> compile(Path filePath, String fileContents) {
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));
-        Messenger<Script> index = script.map(s -> new Indexer(this).addFrom(s).map(result -> Messenger.success(s)));
-        return index;
+        if (script.getValue().isEmpty()) {
+            return script;
+        } else {
+            Script scriptParsed = script.getValue().get();
+
+            // Fill the index with each script in the package.
+            Messenger<TypeNameIndex> typeNameIndex = Messenger.success(new TypeNameIndex(new QualifiedName()), script.getMessages());
+            typeNameIndex = typeNameIndex.map(index -> index.addFrom(scriptParsed));
+
+            // If there were no errors up to this point, we're OK to generate the index for the package.
+            if (typeNameIndex.hasErrors()) {
+                return typeNameIndex.then(() -> Messenger.success(scriptParsed));
+            }
+
+            // We will go ahead and generate the index. There might be errors (e.g. field of undeclared type)
+            // but we'll just generate the index anyway.
+            Messenger<TypeIndex> typeIndex = typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx)));
+            typeIndex = typeIndex.map(index -> index.addFrom(scriptParsed));
+
+            // Return the parsed script.
+            return typeIndex.then(() -> Messenger.success(scriptParsed));
+        }
     }
 }

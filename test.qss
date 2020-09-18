@@ -1,11 +1,8 @@
 struct A {
-    q: s::s::w::r::asdoiajsldojasldhkjashdflkjhasdlfkjhasdklfjh
+    q: Int
+    aa: B
 }
 
-struct B {}
-
-struct B {}
-
-sayHello() {
-    print("hello")
+struct B {
+    a: A
 }

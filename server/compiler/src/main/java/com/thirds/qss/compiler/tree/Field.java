@@ -7,7 +7,20 @@ import com.thirds.qss.compiler.lexer.Token;
  * Represents a field of a struct.
  */
 public class Field extends Node {
+    private final Token name;
+    private final Type type;
+
     public Field(Range range, Token name, Type type) {
         super(range);
+        this.name = name;
+        this.type = type;
+    }
+
+    public Token getName() {
+        return name;
+    }
+
+    public Type getType() {
+        return type;
     }
 }
