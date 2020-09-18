@@ -5,4 +5,5 @@ struct A {
 
 struct B {
     a: A
+    c: C
 }

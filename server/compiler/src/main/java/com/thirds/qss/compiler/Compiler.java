@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * The Compiler class encapsulates the compilation process for a given bundle.
@@ -122,6 +124,27 @@ public class Compiler {
         });
     }
 
+    /**
+     * Executes the given function on each of the script's neighbours in its package, then on the script itself.
+     *
+     * This discards messages that came from different source files.
+     */
+    private <T> Messenger<T> forNeighbours(ScriptPath filePath, Script scriptParsed, Messenger<T> initial, BiFunction<Script, T, Messenger<T>> func) {
+        Messenger<T> result = initial;
+        for (ScriptPath folderChild : getFolderChildren(filePath.trimLastSegment())) {
+            if (folderChild.equals(filePath))
+                continue;
+            Script parsed = getParsed(folderChild);
+            if (parsed != null) {
+                // Ignore error messages from outside this file.
+                result = result.map(value -> func.apply(parsed, value).getValue()
+                        .map(Messenger::success).orElseGet(() -> Messenger.fail(new ArrayList<>(0))));
+            }
+        }
+        result = result.map(value -> func.apply(scriptParsed, value));
+        return result;
+    }
+
     public Messenger<Script> compile(ScriptPath filePath) {
         String fileContents = getFileContent(filePath);
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
@@ -134,18 +157,9 @@ public class Compiler {
 
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
-            Messenger<TypeNameIndex> typeNameIndex = Messenger.success(new TypeNameIndex(new QualifiedName()), script.getMessages());
-            for (ScriptPath folderChild : getFolderChildren(filePath.trimLastSegment())) {
-                if (folderChild.equals(filePath))
-                    continue;
-                Script parsed = getParsed(folderChild);
-                if (parsed != null) {
-                    // Ignore error messages from outside this file.
-                    typeNameIndex = typeNameIndex.map(index -> index.addFrom(parsed).getValue()
-                            .map(Messenger::success).orElseGet(() -> Messenger.fail(new ArrayList<>(0))));
-                }
-            }
-            typeNameIndex = typeNameIndex.map(index -> index.addFrom(scriptParsed));
+            Messenger<TypeNameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
+                    Messenger.success(new TypeNameIndex(new QualifiedName()), script.getMessages()),
+                    (script2, index) -> index.addFrom(script2));
 
             // If there were no errors up to this point, we're OK to generate the index for the package.
             if (typeNameIndex.hasErrors()) {
@@ -154,8 +168,10 @@ public class Compiler {
 
             // We will go ahead and generate the index. There might be errors (e.g. field of undeclared type)
             // but we'll just generate the index anyway.
-            Messenger<TypeIndex> typeIndex = typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx)));
-            typeIndex = typeIndex.map(index -> index.addFrom(scriptParsed));
+            // We'll do the same thing where we generate this script last.
+            Messenger<TypeIndex> typeIndex = forNeighbours(filePath, scriptParsed,
+                    typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx))),
+                    (script2, index) -> index.addFrom(script2));
 
             // Return the parsed script.
             return typeIndex.then(() -> Messenger.success(scriptParsed));
