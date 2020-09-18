@@ -12,7 +12,7 @@ public class Indexer {
         this.compiler = compiler;
     }
 
-    public Messenger<Object> addFrom(String fileName, Script script) {
-        return new TypeNameIndex(new QualifiedName()).addFrom(fileName, script);
+    public Messenger<Object> addFrom(Script script) {
+        return new TypeNameIndex(new QualifiedName()).addFrom(script);
     }
 }

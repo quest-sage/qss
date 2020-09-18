@@ -1,6 +1,5 @@
 package com.thirds.qss.langserver;
 
-import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
@@ -123,12 +122,8 @@ public class QssTextDocumentService implements TextDocumentService {
 
     }
 
-    private URI uriOf(QualifiedName packageName, String fileName) {
-        Path packagePath = QssLanguageServer.getRootDir();
-        if (!packageName.getSegments().isEmpty()) {
-            packagePath = packagePath.resolve(Paths.get(packageName.firstSegment(), packageName.trimFirstSegment().getSegments().toArray(new String[0])));
-        }
-        return packagePath.resolve(fileName).toUri();
+    private URI uriOf(Path filePath) {
+        return QssLanguageServer.getRootDir().resolve(filePath).toUri();
     }
 
     private Position from(com.thirds.qss.compiler.Position position) {
@@ -177,7 +172,7 @@ public class QssTextDocumentService implements TextDocumentService {
                 ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
                 for (Message.MessageRelatedInformation info : message.infos) {
                     infos.add(new DiagnosticRelatedInformation(
-                            new Location(uriOf(info.location.getPackageName(), info.location.getFileName()).toString(), from(info.location.getRange())),
+                            new Location(uriOf(info.location.getFilePath()).toString(), from(info.location.getRange())),
                             info.message
                     ));
                 }

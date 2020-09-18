@@ -28,10 +28,10 @@ public class Compiler {
         }
     }
 
-    public Messenger<Script> compile(Path path, String fileContents) {
+    public Messenger<Script> compile(Path filePath, String fileContents) {
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
-        Messenger<Script> script = tokens.map(t -> new Parser(this).parse(t));
-        Messenger<Script> index = script.map(s -> new Indexer(this).addFrom(path.getFileName().toString(), s).map(result -> Messenger.success(s)));
+        Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));
+        Messenger<Script> index = script.map(s -> new Indexer(this).addFrom(s).map(result -> Messenger.success(s)));
         return index;
     }
 }

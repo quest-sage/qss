@@ -7,6 +7,7 @@ import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.*;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +23,8 @@ public class Parser {
         this.compiler = compiler;
     }
 
-    public Messenger<Script> parse(TokenStream tokens) {
-        Messenger<Script> script = parseScript(tokens);
+    public Messenger<Script> parse(Path filePath, TokenStream tokens) {
+        Messenger<Script> script = parseScript(filePath, tokens);
 
         tokens.peek().ifPresent(token -> script.getMessages().add(new Message(
                 token.range,
@@ -34,13 +35,13 @@ public class Parser {
         return script;
     }
 
-    public Messenger<Script> parseScript(TokenStream tokens) {
+    public Messenger<Script> parseScript(Path filePath, TokenStream tokens) {
         Position start = tokens.currentPosition();
 
         ListMessenger<Struct> structs = parseGreedy(() -> parseStruct(tokens));
 
         return structs.map(structs2 -> Messenger.success(new Script(
-                new Range(start, tokens.currentPosition()),
+                filePath, new Range(start, tokens.currentPosition()),
                 structs2
         )));
     }

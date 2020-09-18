@@ -38,7 +38,7 @@ public class TypeNameIndex {
      * Adds types to this index from the given script.
      * @param script The package of this script must match the package of the index itself.
      */
-    public Messenger<Object> addFrom(String fileName, Script script) {
+    public Messenger<Object> addFrom(Script script) {
         ArrayList<Message> messages = new ArrayList<>();
         for (Struct struct : script.getStructs()) {
             String name = struct.getName().contents;
@@ -58,7 +58,7 @@ public class TypeNameIndex {
             }
 
             structDefinitions.put(name, new StructDefinition(
-                    new Location(new QualifiedName(), fileName, struct.getRange())
+                    new Location(script.getFilePath(), struct.getRange())
             ));
         }
         return Messenger.success(new Object(), messages);
