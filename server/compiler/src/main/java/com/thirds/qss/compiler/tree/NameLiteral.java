@@ -1,17 +1,24 @@
 package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.QualifiedName;
+import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.Symbol;
 import com.thirds.qss.compiler.lexer.Token;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * This can represent a qualified name such as <code>std::entity::spawn</code>, or a local name like <code>foo</code>.
  */
-public class NameLiteral extends Node {
+public class NameLiteral extends Node implements Symbol {
     private final List<Token> segments;
+    /**
+     * Where does this name literal point to?
+     */
+    private Location targetLocation;
 
     public NameLiteral(Range range, List<Token> segments) {
         super(range);
@@ -20,6 +27,15 @@ public class NameLiteral extends Node {
 
     public List<Token> getSegments() {
         return segments;
+    }
+
+    @Override
+    public Optional<Location> getTargetLocation() {
+        return Optional.ofNullable(targetLocation);
+    }
+
+    public void setTargetLocation(Location targetLocation) {
+        this.targetLocation = targetLocation;
     }
 
     /**
@@ -48,5 +64,10 @@ public class NameLiteral extends Node {
         if (segments.size() != 1)
             return false;
         return segments.get(0).contents.equals(localName);
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + "->" + targetLocation;
     }
 }

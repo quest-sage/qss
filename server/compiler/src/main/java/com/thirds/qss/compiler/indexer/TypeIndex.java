@@ -81,7 +81,7 @@ public class TypeIndex {
             for (Field field : struct.getFields()) {
                 if (def.fields.containsKey(field.getName().contents)) {
                     messages.add(new Message(
-                            field.getName().range,
+                            field.getName().getRange(),
                             Message.MessageSeverity.ERROR,
                             "Field " + field.getName().contents + " was already defined"
                     ).addInfo(new Message.MessageRelatedInformation(

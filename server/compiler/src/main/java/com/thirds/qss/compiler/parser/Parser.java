@@ -26,7 +26,7 @@ public class Parser {
         Messenger<Script> script = parseScript(filePath, tokens);
 
         tokens.peek().ifPresent(token -> script.getMessages().add(new Message(
-                token.range,
+                token.getRange(),
                 Message.MessageSeverity.ERROR,
                 "Unexpected extra data at end of file"
         )));
@@ -90,7 +90,7 @@ public class Parser {
         consumeToken(tokens, TokenType.IDENTIFIER).map(identifier ->
         consumeToken(tokens, TokenType.TYPE).then(() ->
         parseType(tokens).map(type -> Messenger.success(new Field(
-                Range.combine(identifier.range, type.getRange()),
+                Range.combine(identifier.getRange(), type.getRange()),
                 identifier, type
         ))))));
     }

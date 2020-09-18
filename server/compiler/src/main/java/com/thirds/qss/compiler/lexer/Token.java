@@ -1,11 +1,15 @@
 package com.thirds.qss.compiler.lexer;
 
+import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.Symbol;
 
-public class Token {
+import java.util.Optional;
+
+public class Token implements Symbol {
     public final TokenType type;
     public final String contents;
-    public final Range range;
+    private final Range range;
 
     public Token(TokenType type, String contents, Range range) {
         this.type = type;
@@ -18,7 +22,17 @@ public class Token {
         return "Token{" +
                 "type=" + type +
                 ", contents='" + contents + '\'' +
-                ", range=" + range +
+                ", range=" + getRange() +
                 '}';
+    }
+
+    @Override
+    public Range getRange() {
+        return range;
+    }
+
+    @Override
+    public Optional<Location> getTargetLocation() {
+        return Optional.empty();
     }
 }

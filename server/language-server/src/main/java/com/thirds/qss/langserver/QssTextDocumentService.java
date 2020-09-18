@@ -1,21 +1,32 @@
 package com.thirds.qss.langserver;
 
+import com.thirds.qss.QssLogger;
+import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.Message;
-import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.SymbolMap;
 import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class QssTextDocumentService implements TextDocumentService {
+    private Compiler compiler;
+
+    public void initialise(Path rootDir) {
+        compiler = new Compiler(rootDir);
+    }
+
     @Override
     public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
         // Provide completion item.
@@ -64,7 +75,13 @@ public class QssTextDocumentService implements TextDocumentService {
 
     @Override
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams textDocumentPositionParams) {
-        return null;
+        ScriptPath scriptPath = pathFromUri(textDocumentPositionParams.getTextDocument().getUri());
+        SymbolMap symbolMap = compiler.getSymbolMap(scriptPath);
+        Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
+        ArrayList<Location> locations = new ArrayList<>();
+        selected.flatMap(Symbol::getTargetLocation).ifPresent(location -> locations.add(from(location)));
+        QssLogger.logger.atInfo().log("Def: %s %s %s %s", compiler, scriptPath, compiler.getParsed(scriptPath).hashCode(), symbolMap);
+        return CompletableFuture.completedFuture(locations);
     }
 
     @Override
@@ -122,6 +139,10 @@ public class QssTextDocumentService implements TextDocumentService {
 
     }
 
+    private ScriptPath pathFromUri(String uri) {
+        return new ScriptPath(Paths.get(QssLanguageServer.relativize(uri).getPath()));
+    }
+
     private URI uriOf(ScriptPath filePath) {
         return QssLanguageServer.getRootDir().resolve(filePath.toPath()).toUri();
     }
@@ -130,8 +151,19 @@ public class QssTextDocumentService implements TextDocumentService {
         return new Position(position.line, position.character);
     }
 
+    private com.thirds.qss.compiler.Position from(Position position) {
+        return new com.thirds.qss.compiler.Position(position.getLine(), position.getCharacter());
+    }
+
     private Range from(com.thirds.qss.compiler.Range range) {
         return new Range(from(range.start), from(range.end));
+    }
+
+    private Location from(com.thirds.qss.compiler.Location location) {
+        return new Location(
+                location.getFilePath().toPath().toUri().toString(),
+                from(location.getRange())
+        );
     }
 
     @Override
@@ -146,12 +178,10 @@ public class QssTextDocumentService implements TextDocumentService {
                 }
 
                 QssLogger.logger.atInfo().log("Compiling %s", uri);
-                Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
-
                 ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
                 compiler.overwriteCachedFileContent(filePath, change.getText());
                 Messenger<Script> result = compiler.compile(filePath);
-                QssLogger.logger.atInfo().log("Compile result: %s", result);
+                QssLogger.logger.atInfo().log("Compile result: %s %s", compiler, result);
 
                 PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
                 diagnostics.setUri(params.getTextDocument().getUri());

@@ -22,11 +22,15 @@ public class TypeNameIndex {
         return thePackage;
     }
 
-    private static class StructDefinition {
+    public static class StructDefinition {
         private final Location location;
 
         private StructDefinition(Location location) {
             this.location = location;
+        }
+
+        public Location getLocation() {
+            return location;
         }
     }
 
@@ -50,7 +54,7 @@ public class TypeNameIndex {
             String name = struct.getName().contents;
             if (structDefinitions.containsKey(name)) {
                 messages.add(new Message(
-                        struct.getName().range,
+                        struct.getName().getRange(),
                         Message.MessageSeverity.ERROR,
                         "Struct " + name + " was already defined"
                 ).addInfo(new Message.MessageRelatedInformation(

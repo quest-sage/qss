@@ -29,6 +29,6 @@ public class TokenStream {
     }
 
     public Position currentPosition() {
-        return peek().map(tk -> tk.range.start).orElseGet(() -> tokens.get(tokens.size() - 1).range.end);
+        return peek().map(tk -> tk.getRange().start).orElseGet(() -> tokens.get(tokens.size() - 1).getRange().end);
     }
 }

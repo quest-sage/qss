@@ -3,6 +3,8 @@ package com.thirds.qss.compiler.tree;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
 
+import java.util.function.Consumer;
+
 /**
  * Represents a field of a struct.
  */
@@ -22,5 +24,10 @@ public class Field extends Node {
 
     public Type getType() {
         return type;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        consumer.accept(type);
     }
 }

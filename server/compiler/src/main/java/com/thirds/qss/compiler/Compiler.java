@@ -1,7 +1,10 @@
 package com.thirds.qss.compiler;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.indexer.TypeIndex;
 import com.thirds.qss.compiler.indexer.TypeNameIndex;
@@ -9,17 +12,19 @@ import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
 import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.SymbolMap;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * The Compiler class encapsulates the compilation process for a given bundle.
@@ -51,9 +56,22 @@ public class Compiler {
     private final Map<ScriptPath, Script> parsedFiles = new HashMap<>();
 
     /**
+     * Caches the locations of all the symbols in a given file so that we can do efficient hover and jump-to-definition.
+     */
+    private final Cache<ScriptPath, SymbolMap> symbolMaps = CacheBuilder.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(1))
+            .maximumSize(25)
+            .build();
+
+    /**
      * Maps package paths to their type name indices.
      */
     private final Map<ScriptPath, TypeNameIndex> typeNameIndices = new HashMap<>();
+
+    /**
+     * Maps package paths to their type indices.
+     */
+    private final Map<ScriptPath, TypeIndex> typeIndices = new HashMap<>();
 
     /**
      * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
@@ -63,10 +81,13 @@ public class Compiler {
         this.bundleRoot = bundleRoot;
 
         if (bundleRoot != null) {
+            QssLogger.initialise(bundleRoot.resolve(".qss").resolve("logs"));
+
             // Create the index directory, if it does not exist.
             indexRoot = bundleRoot.resolve(".qss").resolve("index");
             indexRoot.toFile().mkdirs();
         } else {
+            QssLogger.initialise(null);
             indexRoot = null;
         }
     }
@@ -108,7 +129,12 @@ public class Compiler {
     public void overwriteCachedFileContent(ScriptPath filePath, String fileContents) {
         cachedFileContent.put(filePath, fileContents);
         // Reparse the file.
+        deleteCachedContent(filePath);
+    }
+
+    private void deleteCachedContent(ScriptPath filePath) {
         parsedFiles.remove(filePath);
+        refreshSymbolMap(filePath);
     }
 
     /**
@@ -122,6 +148,26 @@ public class Compiler {
             Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
             return tokens.map(t -> new Parser(this).parse(filePath, t)).getValue().orElse(null);
         });
+    }
+
+    /**
+     * Computes (if not cached) the symbol map for the given script.
+     */
+    public SymbolMap getSymbolMap(ScriptPath filePath) {
+        try {
+            return symbolMaps.get(filePath, () -> {
+                Script script = getParsed(filePath);
+                if (script == null)
+                    throw new UnsupportedOperationException();
+                return new SymbolMap(script);
+            });
+        } catch (ExecutionException e) {
+            return null;
+        }
+    }
+
+    public void refreshSymbolMap(ScriptPath filePath) {
+        symbolMaps.invalidate(filePath);
     }
 
     /**
@@ -146,6 +192,7 @@ public class Compiler {
     }
 
     public Messenger<Script> compile(ScriptPath filePath) {
+        ScriptPath packagePath = filePath.trimLastSegment();
         String fileContents = getFileContent(filePath);
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));
@@ -154,6 +201,8 @@ public class Compiler {
             return script;
         } else {
             Script scriptParsed = script.getValue().get();
+            deleteCachedContent(filePath);
+            parsedFiles.put(filePath, scriptParsed);
 
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
@@ -166,12 +215,14 @@ public class Compiler {
                 return typeNameIndex.then(() -> Messenger.success(scriptParsed));
             }
 
-            // We will go ahead and generate the index. There might be errors (e.g. field of undeclared type)
-            // but we'll just generate the index anyway.
+            // We will go ahead and generate the index. There might be errors when we do this
+            // (e.g. field of undeclared type) but we'll just generate the index anyway.
             // We'll do the same thing where we generate this script last.
             Messenger<TypeIndex> typeIndex = forNeighbours(filePath, scriptParsed,
                     typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx))),
                     (script2, index) -> index.addFrom(script2));
+
+            typeIndex.getValue().map(idx -> typeIndices.put(packagePath, idx));
 
             // Return the parsed script.
             return typeIndex.then(() -> Messenger.success(scriptParsed));

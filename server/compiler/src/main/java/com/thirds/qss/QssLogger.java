@@ -1,4 +1,4 @@
-package com.thirds.qss.langserver;
+package com.thirds.qss;
 
 import com.google.common.flogger.AbstractLogger;
 import com.google.common.flogger.LogContext;
@@ -15,7 +15,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -30,7 +29,7 @@ import java.util.stream.Stream;
  * Adapted from FluentLogger.
  */
 public final class QssLogger extends AbstractLogger<QssLogger.Api> {
-    public static final QssLogger logger;
+    public static QssLogger logger;
 
     // Singleton instance of the no-op API. This variable is purposefully declared as an instance of
     // the NoOp type instead of the Api type. This helps ProGuard optimization recognize the type of
@@ -41,13 +40,15 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
 
     private static final Logger l = Logger.getGlobal();
 
-    private static Path getLogDir() {
-        if (QssLanguageServer.getInstance().rootUri == null)
-            return null;
-        return Paths.get(QssLanguageServer.getInstance().rootUri.getPath(), ".qss", "logs");
-    }
+    /**
+     * May be called multiple times; only the first invocation will actually do anything.
+     * @param logDir The directory in which to output log files. No output is emitted to stdout.
+     *               If null, no output will be emitted, but calls to "log" functions will not fail.
+     */
+    public static void initialise(Path logDir) {
+        if (logger != null)
+            return;
 
-    static {
         // Copy the handlers list so we don't end up modifying the list as we're editing it.
         for (Handler handler : List.of(l.getHandlers())) {
             l.removeHandler(handler);
@@ -55,12 +56,12 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
 
         setLogLevel(Level.FINE);
 
-        if (getLogDir() != null) {
-            getLogDir().toFile().mkdirs();
+        if (logDir != null) {
+            logDir.toFile().mkdirs();
 
             // Delete old log files, so that there are only a maximum of nine remaining.
             // Then, another log is generated, leaving a maximum of ten logs in the log folder at once.
-            try (Stream<Path> walk = Files.walk(getLogDir())) {
+            try (Stream<Path> walk = Files.walk(logDir)) {
                 TreeSet<Path> paths = new TreeSet<>();
                 walk.forEach(paths::add);
                 Iterator<Path> it = paths.iterator();
@@ -73,10 +74,10 @@ public final class QssLogger extends AbstractLogger<QssLogger.Api> {
 
             SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
             String datetime = format.format(new Date(System.currentTimeMillis()));
-            File logfile = getLogDir().resolve(datetime + ".log").toFile();
+            File logfile = logDir.resolve(datetime + ".log").toFile();
             try {
                 logfile.createNewFile();
-                FileHandler fh = new FileHandler(getLogDir().resolve(datetime + ".log").toString(), false);
+                FileHandler fh = new FileHandler(logDir.resolve(datetime + ".log").toString(), false);
                 fh.setFormatter(new LogFormatter());
                 l.addHandler(fh);
             } catch (IOException e) {

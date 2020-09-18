@@ -1,5 +1,6 @@
 package com.thirds.qss.langserver;
 
+import com.thirds.qss.QssLogger;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.services.*;
 
@@ -12,8 +13,8 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
     private static QssLanguageServer instance;
 
     public URI rootUri;
-    private final TextDocumentService textDocumentService;
-    private final WorkspaceService workspaceService;
+    private final QssTextDocumentService textDocumentService;
+    private final QssWorkspaceService workspaceService;
     private LanguageClient client;
     private int errorCode = 1;
 
@@ -50,16 +51,22 @@ public class QssLanguageServer implements LanguageServer, LanguageClientAware {
         rootUri = initializeParams.getRootUri() == null ? null : URI.create(initializeParams.getRootUri());
 
         // Initialize the InitializeResult for this LS.
-        final InitializeResult initializeResult = new InitializeResult(new ServerCapabilities());
+        ServerCapabilities capabilities = new ServerCapabilities();
 
         // Set the capabilities of the LS to inform the client.
-        initializeResult.getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Full);
+        capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
+        capabilities.setDefinitionProvider(true);
         CompletionOptions completionOptions = new CompletionOptions();
-        initializeResult.getCapabilities().setCompletionProvider(completionOptions);
+        capabilities.setCompletionProvider(completionOptions);
 
-        QssLogger.logger.atConfig().log("Initialising QSS language server in %s with capabilities: %s", rootUri, initializeResult.getCapabilities());
+        textDocumentService.initialise(getRootDir());
+        if (rootUri != null)
+            QssLogger.initialise(Paths.get(rootUri.getPath(), ".qss", "logs"));
+        else
+            QssLogger.initialise(null);
+        QssLogger.logger.atConfig().log("Initialising QSS language server in %s with capabilities: %s", rootUri, capabilities);
 
-        return CompletableFuture.supplyAsync(()->initializeResult);
+        return CompletableFuture.supplyAsync(() -> new InitializeResult(capabilities));
     }
 
     @Override

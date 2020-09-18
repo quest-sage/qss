@@ -6,7 +6,9 @@ import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.indexer.TypeNameIndex;
 import com.thirds.qss.compiler.lexer.Token;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Represents a data type.
@@ -26,7 +28,7 @@ public abstract class Type extends Node {
         private final Token token;
 
         public PrimitiveType(Token token) {
-            super(token.range);
+            super(token.getRange());
             this.token = token;
         }
 
@@ -68,13 +70,22 @@ public abstract class Type extends Node {
 
         @Override
         public Optional<VariableType> resolve(TypeNameIndex typeNameIndex) {
-            for (String s : typeNameIndex.getStructDefinitions().keySet()) {
+            for (Map.Entry<String, TypeNameIndex.StructDefinition> entry : typeNameIndex.getStructDefinitions().entrySet()) {
+                String s = entry.getKey();
+                TypeNameIndex.StructDefinition definition = entry.getValue();
+
                 QualifiedName qualifiedName = typeNameIndex.getPackage().appendSegment(s);
                 if (structName.matches(qualifiedName)) {
+                    structName.setTargetLocation(definition.getLocation());
                     return Optional.of(new VariableType.Struct(qualifiedName));
                 }
             }
             return Optional.empty();
+        }
+
+        @Override
+        public void forChildren(Consumer<Node> consumer) {
+            consumer.accept(structName);
         }
     }
 }

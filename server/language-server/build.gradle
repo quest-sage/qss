@@ -2,7 +2,5 @@ description = ''
 
 dependencies {
     implementation project(':compiler')
-    implementation 'com.google.flogger:flogger:0.5.1'
-    implementation 'com.google.flogger:flogger-system-backend:0.5.1'
     implementation group: 'org.eclipse.lsp4j', name: 'org.eclipse.lsp4j', version:'0.4.1'
 }

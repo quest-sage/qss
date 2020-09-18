@@ -54,4 +54,8 @@ public final class Range {
     public int hashCode() {
         return Objects.hash(start, end);
     }
+
+    public boolean contains(Position position) {
+        return start.compareTo(position) <= 0 && end.compareTo(position) >= 0;
+    }
 }

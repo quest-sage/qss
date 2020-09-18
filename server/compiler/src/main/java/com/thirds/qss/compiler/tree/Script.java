@@ -4,6 +4,7 @@ import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.ScriptPath;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 public class Script extends Node {
     /**
@@ -32,5 +33,12 @@ public class Script extends Node {
 
     public ScriptPath getFilePath() {
         return filePath;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        for (Struct struct : structs) {
+            consumer.accept(struct);
+        }
     }
 }

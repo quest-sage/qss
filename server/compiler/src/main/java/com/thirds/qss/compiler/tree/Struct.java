@@ -5,6 +5,8 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenType;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.function.Consumer;
 
 public class Struct extends Node {
     private final Token name;
@@ -25,6 +27,13 @@ public class Struct extends Node {
 
     public ArrayList<Field> getFields() {
         return fields;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        for (Field field : fields) {
+            consumer.accept(field);
+        }
     }
 
     @Override

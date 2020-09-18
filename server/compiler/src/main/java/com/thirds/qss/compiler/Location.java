@@ -19,4 +19,9 @@ public class Location {
     public Range getRange() {
         return range;
     }
+
+    @Override
+    public String toString() {
+        return filePath + "@" + range;
+    }
 }
