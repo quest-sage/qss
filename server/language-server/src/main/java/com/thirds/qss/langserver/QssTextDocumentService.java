@@ -8,7 +8,10 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -146,8 +149,12 @@ public class QssTextDocumentService implements TextDocumentService {
 
             QssLogger.logger.atInfo().log("Compiling %s", uri);
             Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
-            Messenger<Script> result = compiler.compile(Paths.get(uri.getPath()), change.getText());
+
+            Path filePath = Paths.get(uri.getPath());
+            compiler.overwriteCachedFileContent(filePath, change.getText());
+            Messenger<Script> result = compiler.compile(filePath);
             QssLogger.logger.atInfo().log("Compile result: %s", result);
+
             PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
             diagnostics.setUri(params.getTextDocument().getUri());
             for (Message message : result.getMessages()) {
