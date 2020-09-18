@@ -1,23 +1,18 @@
 package com.thirds.qss.compiler;
 
-import java.nio.file.Path;
-
 /**
  * Represents a location inside any text file - not necessarily the one currently being validated/parsed.
  */
 public class Location {
-    /**
-     * Relative to the workspace root.
-     */
-    private final Path filePath;
+    private final ScriptPath filePath;
     private final Range range;
 
-    public Location(Path filePath, Range range) {
+    public Location(ScriptPath filePath, Range range) {
         this.filePath = filePath;
         this.range = range;
     }
 
-    public Path getFilePath() {
+    public ScriptPath getFilePath() {
         return filePath;
     }
 

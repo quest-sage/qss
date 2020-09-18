@@ -1,18 +1,18 @@
 package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.ScriptPath;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 
 public class Script extends Node {
     /**
      * Relative to the workspace root.
      */
-    private final Path filePath;
+    private final ScriptPath filePath;
     private final ArrayList<Struct> structs;
 
-    public Script(Path filePath, Range range, ArrayList<Struct> structs) {
+    public Script(ScriptPath filePath, Range range, ArrayList<Struct> structs) {
         super(range);
         this.filePath = filePath;
         this.structs = structs;
@@ -30,7 +30,7 @@ public class Script extends Node {
         return structs;
     }
 
-    public Path getFilePath() {
+    public ScriptPath getFilePath() {
         return filePath;
     }
 }

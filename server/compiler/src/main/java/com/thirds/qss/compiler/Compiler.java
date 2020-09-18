@@ -34,13 +34,13 @@ public class Compiler {
      *
      * TODO consider moving this to a guava Cache - making sure not to evict entries whose file content has been overwritten by overwriteCachedFileContent
      */
-    private final Map<Path, String> cachedFileContent = new HashMap<>();
+    private final Map<ScriptPath, String> cachedFileContent = new HashMap<>();
 
     /**
      * Maps folder paths (relative to the bundle root) to the list of children files (also relative to the bundle root).
      * This does NOT include subdirectories, only files.
      */
-    private final Multimap<Path, Path> folderChildren = MultimapBuilder.hashKeys().arrayListValues().build();
+    private final Multimap<ScriptPath, ScriptPath> folderChildren = MultimapBuilder.hashKeys().arrayListValues().build();
 
     /**
      * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
@@ -61,10 +61,10 @@ public class Compiler {
     /**
      * @return Null if the file could not be read.
      */
-    public String getFileContent(Path filePath) {
+    public String getFileContent(ScriptPath filePath) {
         return cachedFileContent.computeIfAbsent(filePath, k -> {
             try {
-                return Files.readString(bundleRoot.resolve(k));
+                return Files.readString(bundleRoot.resolve(k.toPath()));
             } catch (IOException e) {
                 return null;
             }
@@ -74,29 +74,29 @@ public class Compiler {
     /**
      * @return The new, updated collection of child paths.
      */
-    public Collection<Path> updateFolderChildren(Path folderPath) {
-        Collection<Path> paths = folderChildren.get(folderPath);
+    public Collection<ScriptPath> updateFolderChildren(ScriptPath folderPath) {
+        Collection<ScriptPath> paths = folderChildren.get(folderPath);
         paths.clear();
-        for (File file : folderPath.toFile().listFiles()) {
+        for (File file : folderPath.toPath().toFile().listFiles()) {
             if (file.isFile() && file.getName().endsWith(".qss"))
-                paths.add(file.toPath());
+                paths.add(new ScriptPath(file.toPath()));
         }
         return paths;
     }
 
-    public Collection<Path> getFolderChildren(Path folderPath) {
-        Collection<Path> paths = folderChildren.get(folderPath);
+    public Collection<ScriptPath> getFolderChildren(ScriptPath folderPath) {
+        Collection<ScriptPath> paths = folderChildren.get(folderPath);
         if (paths.isEmpty()) {
             return updateFolderChildren(folderPath);
         }
         return paths;
     }
 
-    public void overwriteCachedFileContent(Path filePath, String fileContents) {
+    public void overwriteCachedFileContent(ScriptPath filePath, String fileContents) {
         cachedFileContent.put(filePath, fileContents);
     }
 
-    public Messenger<Script> compile(Path filePath) {
+    public Messenger<Script> compile(ScriptPath filePath) {
         String fileContents = getFileContent(filePath);
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));

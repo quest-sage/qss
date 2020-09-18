@@ -3,16 +3,13 @@ package com.thirds.qss.langserver;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
+import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.Script;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,8 +122,8 @@ public class QssTextDocumentService implements TextDocumentService {
 
     }
 
-    private URI uriOf(Path filePath) {
-        return QssLanguageServer.getRootDir().resolve(filePath).toUri();
+    private URI uriOf(ScriptPath filePath) {
+        return QssLanguageServer.getRootDir().resolve(filePath.toPath()).toUri();
     }
 
     private Position from(com.thirds.qss.compiler.Position position) {
@@ -150,7 +147,7 @@ public class QssTextDocumentService implements TextDocumentService {
             QssLogger.logger.atInfo().log("Compiling %s", uri);
             Compiler compiler = new Compiler(QssLanguageServer.getRootDir());
 
-            Path filePath = Paths.get(uri.getPath());
+            ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
             compiler.overwriteCachedFileContent(filePath, change.getText());
             Messenger<Script> result = compiler.compile(filePath);
             QssLogger.logger.atInfo().log("Compile result: %s", result);
