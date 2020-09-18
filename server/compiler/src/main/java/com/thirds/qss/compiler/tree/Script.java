@@ -18,4 +18,8 @@ public class Script extends Node {
                 "structs=" + structs +
                 '}';
     }
+
+    public ArrayList<Struct> getStructs() {
+        return structs;
+    }
 }

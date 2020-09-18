@@ -4,6 +4,8 @@ struct A {
 
 struct B {}
 
+struct B {}
+
 sayHello() {
     print("hello")
 }

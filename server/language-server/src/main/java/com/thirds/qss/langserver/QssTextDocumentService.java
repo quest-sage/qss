@@ -1,5 +1,6 @@
 package com.thirds.qss.langserver;
 
+import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
@@ -9,6 +10,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,6 +123,22 @@ public class QssTextDocumentService implements TextDocumentService {
 
     }
 
+    private URI uriOf(QualifiedName packageName, String fileName) {
+        Path packagePath = QssLanguageServer.getRootDir();
+        if (!packageName.getSegments().isEmpty()) {
+            packagePath = packagePath.resolve(Paths.get(packageName.firstSegment(), packageName.trimFirstSegment().getSegments().toArray(new String[0])));
+        }
+        return packagePath.resolve(fileName).toUri();
+    }
+
+    private Position from(com.thirds.qss.compiler.Position position) {
+        return new Position(position.line, position.character);
+    }
+
+    private Range from(com.thirds.qss.compiler.Range range) {
+        return new Range(from(range.start), from(range.end));
+    }
+
     @Override
     public void didChange(DidChangeTextDocumentParams params) {
         URI uri = QssLanguageServer.relativize(params.getTextDocument().getUri());
@@ -139,10 +157,7 @@ public class QssTextDocumentService implements TextDocumentService {
             diagnostics.setUri(params.getTextDocument().getUri());
             for (Message message : result.getMessages()) {
                 Diagnostic diagnostic = new Diagnostic();
-                diagnostic.setRange(new Range(
-                        new Position(message.range.start.line, message.range.start.character),
-                        new Position(message.range.end.line, message.range.end.character)
-                ));
+                diagnostic.setRange(from(message.range));
                 switch (message.severity) {
                     case HINT:
                         diagnostic.setSeverity(DiagnosticSeverity.Hint);
@@ -159,6 +174,14 @@ public class QssTextDocumentService implements TextDocumentService {
                 }
                 diagnostic.setMessage(message.message);
                 diagnostic.setSource("qss");
+                ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
+                for (Message.MessageRelatedInformation info : message.infos) {
+                    infos.add(new DiagnosticRelatedInformation(
+                            new Location(uriOf(info.location.getPackageName(), info.location.getFileName()).toString(), from(info.location.getRange())),
+                            info.message
+                    ));
+                }
+                diagnostic.setRelatedInformation(infos);
                 diagnostics.getDiagnostics().add(diagnostic);
             }
             QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);

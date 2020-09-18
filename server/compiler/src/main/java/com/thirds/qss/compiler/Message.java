@@ -1,8 +1,11 @@
 package com.thirds.qss.compiler;
 
+import java.util.ArrayList;
 import java.util.Objects;
 
 public class Message {
+    public final ArrayList<MessageRelatedInformation> infos = new ArrayList<>();
+
     /**
      * Represents a message that will be shown to the user. This represents some kind of diagnostic information,
      * usually an error or warning.
@@ -21,6 +24,28 @@ public class Message {
         this.range = range;
         this.severity = severity;
         this.message = message;
+    }
+
+    /**
+     * @return <code>this</code> for chaining.
+     */
+    public Message addInfo(MessageRelatedInformation info) {
+        infos.add(info);
+        return this;
+    }
+
+    /**
+     * Represents a related location to a message. Useful for linking to places that may have caused an error, e.g.
+     * name clashes.
+     */
+    public static class MessageRelatedInformation {
+        public final Location location;
+        public final String message;
+
+        public MessageRelatedInformation(Location location, String message) {
+            this.location = location;
+            this.message = message;
+        }
     }
 
     public enum MessageSeverity {

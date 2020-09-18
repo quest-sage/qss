@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler;
 
+import com.thirds.qss.compiler.indexer.Indexer;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
@@ -30,6 +31,7 @@ public class Compiler {
     public Messenger<Script> compile(Path path, String fileContents) {
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(t));
-        return script;
+        Messenger<Script> index = script.map(s -> new Indexer(this).addFrom(path.getFileName().toString(), s).map(result -> Messenger.success(s)));
+        return index;
     }
 }
