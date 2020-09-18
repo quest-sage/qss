@@ -93,6 +93,53 @@ public class Lexer {
                     tokens.add(new Token(TokenType.STRING_LITERAL, content.toString(), new Range(start, position)));
                     break;
                 }
+                case '*':
+                {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '*') {
+                        codePoints.next();
+
+                        // This is a documentation comment.
+                        Position start = position.copy();
+                        position.character += 2;
+                        codePoints.next();
+
+                        StringBuilder content = new StringBuilder();
+                        boolean failed = false;
+                        int codePoint;
+                        while (true) {
+                            codePoint = codePoints.peek();
+
+                            if (codePoint == -1) {
+                                messages.add(new Message(
+                                        new Range(start, position),
+                                        Message.MessageSeverity.ERROR,
+                                        "Unclosed documentation comment"
+                                ));
+                                failed = true;
+                                break;
+                            }
+
+                            codePoints.next();
+                            position.character++;
+                            if (codePoint == '*' && codePoints.peek() == '*') {
+                                break;
+                            } else {
+                                content.append(Character.toString(codePoint));
+                            }
+                        }
+
+                        if (!failed) {
+                            codePoints.next();  // Consume the end star character.
+                            position.character++;
+                        }
+
+                        tokens.add(new Token(TokenType.DOCUMENTATION_COMMENT, content.toString(), new Range(start, position)));
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.STAR, position);
+                    }
+                    break;
+                }
                 case '\n':
                     position.line++;
                     position.character = 0;

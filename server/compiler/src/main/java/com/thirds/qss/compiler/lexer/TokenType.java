@@ -15,4 +15,8 @@ public enum TokenType {
     INT, BOOL, STRING, TEXT, ENTITY, RATIO, COL, POS, TEXTURE, PLAYER,
 
     STRING_LITERAL, INTEGER_LITERAL,
+
+    PLUS, MINUS, STAR, SLASH,  // + - * /
+
+    DOCUMENTATION_COMMENT,  // ** ... **
 }

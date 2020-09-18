@@ -11,9 +11,9 @@ public class Script extends Node {
      * Relative to the workspace root.
      */
     private final ScriptPath filePath;
-    private final ArrayList<Struct> structs;
+    private final ArrayList<Documentable<Struct>> structs;
 
-    public Script(ScriptPath filePath, Range range, ArrayList<Struct> structs) {
+    public Script(ScriptPath filePath, Range range, ArrayList<Documentable<Struct>> structs) {
         super(range);
         this.filePath = filePath;
         this.structs = structs;
@@ -27,7 +27,7 @@ public class Script extends Node {
                 '}';
     }
 
-    public ArrayList<Struct> getStructs() {
+    public ArrayList<Documentable<Struct>> getStructs() {
         return structs;
     }
 
@@ -37,7 +37,7 @@ public class Script extends Node {
 
     @Override
     public void forChildren(Consumer<Node> consumer) {
-        for (Struct struct : structs) {
+        for (Documentable<Struct> struct : structs) {
             consumer.accept(struct);
         }
     }

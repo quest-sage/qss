@@ -4,6 +4,7 @@ import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
+import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Struct;
 
@@ -50,11 +51,11 @@ public class TypeNameIndex {
      */
     public Messenger<TypeNameIndex> addFrom(Script script) {
         ArrayList<Message> messages = new ArrayList<>();
-        for (Struct struct : script.getStructs()) {
-            String name = struct.getName().contents;
+        for (Documentable<Struct> struct : script.getStructs()) {
+            String name = struct.getContent().getName().contents;
             if (structDefinitions.containsKey(name)) {
                 messages.add(new Message(
-                        struct.getName().getRange(),
+                        struct.getContent().getName().getRange(),
                         Message.MessageSeverity.ERROR,
                         "Struct " + name + " was already defined"
                 ).addInfo(new Message.MessageRelatedInformation(
@@ -64,7 +65,7 @@ public class TypeNameIndex {
             }
 
             structDefinitions.put(name, new StructDefinition(
-                    new Location(script.getFilePath(), struct.getRange())
+                    new Location(script.getFilePath(), struct.getContent().getRange())
             ));
         }
         return Messenger.success(this, messages);

@@ -7,6 +7,9 @@
 		},
 		{
 			"include": "#strings"
+		},
+		{
+			"include": "#comments"
 		}
 	],
 	"repository": {
@@ -32,6 +35,11 @@
 					"match": "\\\\."
 				}
 			]
+		},
+		"comments": {
+			"name": "comment.block.documentation.qss",
+			"begin": "\\*\\*",
+			"end": "\\*\\*"
 		}
 	},
 	"scopeName": "source.qss"

@@ -5,7 +5,6 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenType;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.function.Consumer;
 
 public class Struct extends Node {

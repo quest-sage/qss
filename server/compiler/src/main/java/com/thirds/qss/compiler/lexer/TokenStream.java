@@ -20,7 +20,7 @@ public class TokenStream {
     }
 
     public Token next() {
-        currentIndex += 1;
+        currentIndex++;
         return tokens.get(currentIndex);
     }
 
@@ -30,5 +30,9 @@ public class TokenStream {
 
     public Position currentPosition() {
         return peek().map(tk -> tk.getRange().start).orElseGet(() -> tokens.get(tokens.size() - 1).getRange().end);
+    }
+
+    public void rewind() {
+        currentIndex--;
     }
 }

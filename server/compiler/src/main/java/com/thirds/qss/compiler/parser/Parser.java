@@ -28,21 +28,48 @@ public class Parser {
         tokens.peek().ifPresent(token -> script.getMessages().add(new Message(
                 token.getRange(),
                 Message.MessageSeverity.ERROR,
-                "Unexpected extra data at end of file"
+                "Unexpected extra data at end of file, got " + token.type
         )));
 
         return script;
     }
 
+    @SuppressWarnings("unchecked")
     public Messenger<Script> parseScript(ScriptPath filePath, TokenStream tokens) {
         Position start = tokens.currentPosition();
 
-        ListMessenger<Struct> structs = parseGreedy(() -> parseStruct(tokens));
+        ListMessenger<Documentable<?>> items = parseGreedy(() -> parseItem(tokens));
 
-        return structs.map(structs2 -> Messenger.success(new Script(
-                filePath, new Range(start, tokens.currentPosition()),
-                structs2
-        )));
+        return items.map(items2 -> {
+            ArrayList<Documentable<Struct>> structs = new ArrayList<>();
+            for (Documentable<?> documentable : items2) {
+                Node content = documentable.getContent();
+                if (content instanceof Struct)
+                    structs.add((Documentable<Struct>) documentable);
+            }
+            return Messenger.success(new Script(
+                    filePath, new Range(start, tokens.currentPosition()),
+                    structs
+            ));
+        });
+    }
+
+    public Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {
+        Token docs;
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
+            docs = tokens.next();
+        } else {
+            docs = null;
+        }
+
+        Optional<Messenger<Struct>> struct = parseStruct(tokens);
+        if (struct.isPresent()) {
+            return Optional.of(struct.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+        }
+
+        if (docs != null)
+            tokens.rewind();
+        return Optional.empty();
     }
 
     /**

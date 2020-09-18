@@ -3,6 +3,7 @@ struct A {
     aa: B
 }
 
+** Abcdef **
 struct B {
     a: A
     c: C

@@ -4,6 +4,7 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
+import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Field;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Struct;
@@ -73,12 +74,12 @@ public class TypeIndex {
      */
     public Messenger<TypeIndex> addFrom(Script script) {
         ArrayList<Message> messages = new ArrayList<>();
-        for (Struct struct : script.getStructs()) {
+        for (Documentable<Struct> struct : script.getStructs()) {
             StructDefinition def = new StructDefinition(
-                    new Location(script.getFilePath(), struct.getRange())
+                    new Location(script.getFilePath(), struct.getContent().getRange())
             );
 
-            for (Field field : struct.getFields()) {
+            for (Field field : struct.getContent().getFields()) {
                 if (def.fields.containsKey(field.getName().contents)) {
                     messages.add(new Message(
                             field.getName().getRange(),
@@ -105,7 +106,7 @@ public class TypeIndex {
                 }
             }
 
-            structDefinitions.put(struct.getName().contents, def);
+            structDefinitions.put(struct.getContent().getName().contents, def);
         }
         return Messenger.success(this, messages);
     }

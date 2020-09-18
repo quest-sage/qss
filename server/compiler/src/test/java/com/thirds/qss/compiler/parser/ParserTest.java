@@ -1,6 +1,7 @@
 package com.thirds.qss.compiler.parser;
 
 import com.thirds.qss.compiler.Compiler;
+import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.tree.Script;
@@ -17,7 +18,7 @@ class ParserTest {
         Compiler compiler = new Compiler(null);
         Optional<TokenStream> tokens = new Lexer(compiler).process("struct struct struct A { }").getValue();
         assertTrue(tokens.isPresent());
-        Optional<Script> script = new Parser(compiler).parse(Paths.get("unit_test.qss"), tokens.get()).getValue();
+        Optional<Script> script = new Parser(compiler).parse(new ScriptPath(Paths.get("unit_test.qss")), tokens.get()).getValue();
         assertTrue(script.isPresent());
     }
 }
