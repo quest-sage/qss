@@ -38,9 +38,12 @@ public class Parser {
     @SuppressWarnings("unchecked")
     public Messenger<Script> parseScript(ScriptPath filePath, TokenStream tokens) {
         Position start = tokens.currentPosition();
+
+        ListMessenger<Import> imports = parseGreedy(() -> parseImport(tokens));
+
         ListMessenger<Documentable<?>> items = parseGreedy(() -> parseItem(tokens));
 
-        return items.map(items2 -> {
+        return imports.map(imports2 -> items.map(items2 -> {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
@@ -77,9 +80,18 @@ public class Parser {
                     filePath, new Range(start, tokens.currentPosition()),
                     packageName,
                     packagePath,
+                    imports2,
                     structs
             ), messages);
-        });
+        }));
+    }
+
+    public Optional<Messenger<Import>> parseImport(TokenStream tokens) {
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.KW_IMPORT) {
+            tokens.next();  // consume the KW_IMPORT token
+            return Optional.of(parseName(tokens).map(name -> Messenger.success(new Import(name))));
+        }
+        return Optional.empty();
     }
 
     public Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {

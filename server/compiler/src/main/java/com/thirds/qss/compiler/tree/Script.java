@@ -5,7 +5,10 @@ import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.ScriptPath;
 
 import java.util.ArrayList;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Script extends Node {
     /**
@@ -14,22 +17,38 @@ public class Script extends Node {
     private final ScriptPath filePath;
     private final QualifiedName packageName;
     private final ScriptPath bundleRoot;
+    private final ArrayList<Import> imports;
+    private final Set<QualifiedName> importedPackages;
     private final ArrayList<Documentable<Struct>> structs;
 
-    public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Documentable<Struct>> structs) {
+    public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports, ArrayList<Documentable<Struct>> structs) {
         super(range);
         this.filePath = filePath;
         this.packageName = packageName;
         this.bundleRoot = bundleRoot;
+        this.imports = imports;
         this.structs = structs;
+        importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public String toString() {
         return "Script{" +
                 "filePath=" + filePath +
+                ", packageName=" + packageName +
+                ", bundleRoot=" + bundleRoot +
+                ", imports=" + imports +
                 ", structs=" + structs +
                 '}';
+    }
+
+    public ArrayList<Import> getImports() {
+        return imports;
+    }
+
+    public Set<QualifiedName> getImportedPackages() {
+        return importedPackages;
     }
 
     public ArrayList<Documentable<Struct>> getStructs() {
@@ -57,6 +76,9 @@ public class Script extends Node {
 
     @Override
     public void forChildren(Consumer<Node> consumer) {
+        for (Import anImport : imports) {
+            consumer.accept(anImport);
+        }
         for (Documentable<Struct> struct : structs) {
             consumer.accept(struct);
         }

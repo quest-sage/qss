@@ -85,10 +85,7 @@ public class TypeIndex {
                             "Previously defined here"
                     )));
                 } else {
-                    // TODO fill the import set
-                    Type.ResolveResult fieldTypeAlternatives = field.getType().resolve(Set.of(
-                            script.getPackageName()
-                    ), compiler.getTypeNameIndices());
+                    Type.ResolveResult fieldTypeAlternatives = field.getType().resolve(script.getImportedPackages(), compiler.getTypeNameIndices());
 
                     if (fieldTypeAlternatives.alternatives.isEmpty()) {
                         StringBuilder message = new StringBuilder("Could not resolve type of ").append(field.getName().contents);
