@@ -212,7 +212,6 @@ public class Compiler {
     }
 
     public Messenger<Script> compile(ScriptPath filePath) {
-        ScriptPath packagePath = filePath.trimLastSegment();
         String fileContents = getFileContent(filePath);
         Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
         Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));

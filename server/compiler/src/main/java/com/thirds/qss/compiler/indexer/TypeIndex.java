@@ -5,15 +5,9 @@ import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.tree.Documentable;
-import com.thirds.qss.compiler.tree.Field;
-import com.thirds.qss.compiler.tree.Script;
-import com.thirds.qss.compiler.tree.Struct;
+import com.thirds.qss.compiler.tree.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -91,26 +85,37 @@ public class TypeIndex {
                             "Previously defined here"
                     )));
                 } else {
-                    List<VariableType> fieldTypeAlternatives = field.getType().resolve(compiler.getTypeNameIndices());
+                    // TODO fill the import set
+                    Type.ResolveResult fieldTypeAlternatives = field.getType().resolve(Set.of(
+                            script.getPackageName()
+                    ), compiler.getTypeNameIndices());
 
-                    if (fieldTypeAlternatives.isEmpty()) {
+                    if (fieldTypeAlternatives.alternatives.isEmpty()) {
+                        StringBuilder message = new StringBuilder("Could not resolve type of ").append(field.getName().contents);
+                        if (!fieldTypeAlternatives.nonImportedAlternatives.isEmpty()) {
+                            message.append("; try one of the following:");
+                            for (Type.ResolveAlternative alt : fieldTypeAlternatives.nonImportedAlternatives) {
+                                // \u2022 is the bullet character
+                                message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                            }
+                        }
                         messages.add(new Message(
                                 field.getType().getRange(),
                                 Message.MessageSeverity.ERROR,
-                                "Could not resolve type of " + field.getName().contents
+                                message.toString()
                         ));
-                    } else if (fieldTypeAlternatives.size() > 1) {
+                    } else if (fieldTypeAlternatives.alternatives.size() > 1) {
                         messages.add(new Message(
                                 field.getType().getRange(),
                                 Message.MessageSeverity.ERROR,
                                 "Type of " + field.getName().contents + " was ambiguous, possibilities were: " +
-                                        fieldTypeAlternatives.stream().map(Object::toString).collect(Collectors.joining(", "))
+                                        fieldTypeAlternatives.alternatives.stream().map(alt -> alt.type.toString()).collect(Collectors.joining(", "))
                         ));
                     }
 
                     def.fields.put(field.getName().contents, new FieldDefinition(
                             new Location(script.getFilePath(), field.getRange()),
-                            fieldTypeAlternatives.size() == 1 ? fieldTypeAlternatives.get(0) : null
+                            fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).type : null
                     ));
                 }
             }
