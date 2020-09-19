@@ -1,0 +1,5 @@
+import bundle3
+
+struct Bundle2 {
+    b3: Bundle3
+}

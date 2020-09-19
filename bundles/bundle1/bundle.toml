@@ -1,0 +1,2 @@
+[dependencies]
+bundle2 = { path = "../bundle2" }

@@ -229,6 +229,45 @@ public class Compiler {
             Messenger<TomlTable> bundleFile = getBundleFile();
             allMessages.addAll(bundleFile.getMessages());
 
+            // This maps bundle names onto the path containing the bundle root.
+            Map<String, ScriptPath> dependencies = new HashMap<>();
+            bundleFile.getValue().ifPresent(table -> {
+                // Scan the "dependencies" key in bundle.toml for dependencies.
+                Object o = table.get("dependencies");
+                if (o instanceof TomlTable) {
+                    TomlTable dependenciesTable = (TomlTable) o;
+                    dependenciesTable.forEach((bundleName, value) -> {
+                        if (value instanceof TomlTable) {
+                            TomlTable bundleInfo = (TomlTable) value;
+                            if (bundleInfo.get("path") instanceof String) {
+                                ScriptPath dependencyBundlePath = new ScriptPath((String) bundleInfo.get("path"));
+                                if (bundleRoot.resolve(dependencyBundlePath.toPath()).resolve("bundle.toml").toFile().isFile()) {
+                                    dependencies.put(bundleName, dependencyBundlePath);
+                                } else {
+                                    allMessages.add(new Message(
+                                            new Range(new Position(0, 0)),
+                                            Message.MessageSeverity.ERROR,
+                                            "Bundle " + bundleName + " in bundle.toml had an invalid \"path\" key; " + dependencyBundlePath + " was not a directory containing a Quest Sage bundle"
+                                    ));
+                                }
+                            } else {
+                                allMessages.add(new Message(
+                                        new Range(new Position(0, 0)),
+                                        Message.MessageSeverity.ERROR,
+                                        "Bundle " + bundleName + " in bundle.toml should have a \"path\" key that is the directory of the bundle root"
+                                ));
+                            }
+                        } else {
+                            allMessages.add(new Message(
+                                    new Range(new Position(0, 0)),
+                                    Message.MessageSeverity.ERROR,
+                                    "Bundle " + bundleName + " in bundle.toml should be a table containing the \"path\" key"
+                            ));
+                        }
+                    });
+                }
+            });
+
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
             Messenger<TypeNameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
@@ -247,7 +286,6 @@ public class Compiler {
             // First, let's make sure the index is filled with all the other packages in this bundle and other
             // dependency bundles.
             for (QualifiedName packageName : getPackagesInBundle(bundleRoot.resolve("src"))) {
-                // This computes the indices for this bundle. Other bundles aren't yet supported.
                 typeNameIndices
                         .computeIfAbsent("bundle", new ScriptPath())
                         .computeIfAbsent(packageName, k -> {
@@ -256,6 +294,19 @@ public class Compiler {
                             return index;
                         });
             }
+
+            dependencies.forEach((dependencyBundle, dependencyBundlePath) -> {
+                // Compute the indices for each dependency bundle.
+                for (QualifiedName packageName : getPackagesInBundle(bundleRoot.resolve(dependencyBundlePath.toPath()).resolve("src"))) {
+                    typeNameIndices
+                            .computeIfAbsent(dependencyBundle, dependencyBundlePath)
+                            .computeIfAbsent(packageName, k -> {
+                                TypeNameIndex index = new TypeNameIndex(dependencyBundle, k);
+                                forScriptsIn(new ScriptPath(dependencyBundlePath.toPath().resolve("src").resolve(k.toPath())), index::addFrom);
+                                return index;
+                            });
+                }
+            });
 
             QssLogger.logger.atInfo().log("Indices:\n%s", typeNameIndices);
 
@@ -338,31 +389,8 @@ public class Compiler {
 
         try {
             TomlTable tomlTable = Toml.from(new StringReader(bundleFileContents));
-            ArrayList<Message> messages = new ArrayList<>(0);
-
-            Object bundleName = tomlTable.get("bundle.name");
-            if (bundleName instanceof String) {
-                String bundleName1 = (String) bundleName;
-                // Check that bundleName1 is a valid bundle name (ASCII, starts with a letter)
-                boolean validName = !bundleName1.isEmpty()
-                        && bundleName1.chars().allMatch(ch -> ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9') || ch == '_')
-                        && bundleName1.chars().limit(1).allMatch(ch -> ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'));
-                if (!validName) {
-                    messages.add(new Message(
-                            new Range(new Position(0, 0)),
-                            Message.MessageSeverity.ERROR,
-                            "Bundle name (key bundle.name) was invalid; must conform to the regex [A-Za-z][A-Za-z0-9_]*"
-                    ).setSource("qss-bundle"));
-                }
-            } else {
-                messages.add(new Message(
-                        new Range(new Position(0, 0)),
-                        Message.MessageSeverity.ERROR,
-                        "Bundle name (key bundle.name) not found"
-                ).setSource("qss-bundle"));
-            }
-
-            bundleFile = Messenger.success(tomlTable, messages);
+            // TODO maybe do some validation here?
+            bundleFile = Messenger.success(tomlTable);
             return bundleFile;
         } catch (IOException e) {
             return Messenger.fail(new ArrayList<>(List.of(new Message(

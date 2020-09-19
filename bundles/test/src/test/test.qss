@@ -1,8 +1,10 @@
 import test::internal
+import bundle1
 
 struct A {
     q: Int
     aa: Internal
+    b1: Bundle1
 }
 
 ** Abcdef **

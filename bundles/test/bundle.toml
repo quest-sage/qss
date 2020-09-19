@@ -1,2 +1,2 @@
-[bundle]
-name = "test"
+[dependencies]
+bundle1 = { path = "../bundle1" }
