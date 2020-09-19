@@ -17,6 +17,7 @@ import java.util.Map;
  * This does not cache, for example, the fields of structs or the functions of traits.
  */
 public class TypeNameIndex {
+    private final String bundleName;
     private final QualifiedName thePackage;
 
     public QualifiedName getPackage() {
@@ -46,7 +47,8 @@ public class TypeNameIndex {
      */
     private final Map<String, StructDefinition> structDefinitions = new HashMap<>();
 
-    public TypeNameIndex(QualifiedName thePackage) {
+    public TypeNameIndex(String bundleName, QualifiedName thePackage) {
+        this.bundleName = bundleName;
         this.thePackage = thePackage;
     }
 

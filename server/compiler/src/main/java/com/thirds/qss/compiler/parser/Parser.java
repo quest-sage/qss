@@ -38,9 +38,11 @@ public class Parser {
     public Messenger<Script> parseScript(ScriptPath filePath, TokenStream tokens) {
         Position start = tokens.currentPosition();
 
+        Messenger<NameLiteral> packageName = consumeToken(tokens, TokenType.KW_PACKAGE).then(() -> parseName(tokens));
+
         ListMessenger<Documentable<?>> items = parseGreedy(() -> parseItem(tokens));
 
-        return items.map(items2 -> {
+        return packageName.map(packageName2 -> items.map(items2 -> {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
@@ -49,9 +51,10 @@ public class Parser {
             }
             return Messenger.success(new Script(
                     filePath, new Range(start, tokens.currentPosition()),
+                    packageName2,
                     structs
             ));
-        });
+        }));
     }
 
     public Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {
@@ -78,13 +81,13 @@ public class Parser {
      */
     @SuppressWarnings("unchecked")
     public Optional<Messenger<Struct>> parseStruct(TokenStream tokens) {
-        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.STRUCT)
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_STRUCT)
             return Optional.empty();
 
         Position start = tokens.currentPosition();
 
         return Optional.of(parseMulti(List.of(
-                () -> consumeToken(tokens, TokenType.STRUCT),       // 0
+                () -> consumeToken(tokens, TokenType.KW_STRUCT),       // 0
                 () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
                 () -> consumeToken(tokens, TokenType.LBRACE),       // 2
                 () -> parseFields(tokens),                          // 3
@@ -125,16 +128,16 @@ public class Parser {
     public Messenger<Type> parseType(TokenStream tokens) {
         if (tokens.peek().isPresent()) {
             switch (tokens.peek().get().type) {
-                case INT:
-                case BOOL:
-                case STRING:
-                case TEXT:
-                case ENTITY:
-                case RATIO:
-                case COL:
-                case POS:
-                case TEXTURE:
-                case PLAYER:
+                case KW_INT:
+                case KW_BOOL:
+                case KW_STRING:
+                case KW_TEXT:
+                case KW_ENTITY:
+                case KW_RATIO:
+                case KW_COL:
+                case KW_POS:
+                case KW_TEXTURE:
+                case KW_PLAYER:
                     return consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.PrimitiveType(tk)));
             }
         }

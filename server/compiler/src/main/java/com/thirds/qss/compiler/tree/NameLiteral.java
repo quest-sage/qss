@@ -9,6 +9,7 @@ import com.thirds.qss.compiler.lexer.Token;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * This can represent a qualified name such as <code>std::entity::spawn</code>, or a local name like <code>foo</code>.
@@ -81,5 +82,9 @@ public class NameLiteral extends Node implements Symbol {
     @Override
     public String toString() {
         return super.toString() + "->" + targetLocation;
+    }
+
+    public QualifiedName toQualifiedName() {
+        return new QualifiedName(segments.stream().map(tk -> tk.contents).collect(Collectors.toList()));
     }
 }

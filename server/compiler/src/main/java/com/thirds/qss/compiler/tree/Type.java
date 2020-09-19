@@ -35,25 +35,25 @@ public abstract class Type extends Node {
         @Override
         public Optional<VariableType> resolve(TypeNameIndex typeNameIndex) {
             switch (token.type) {
-                case INT:
+                case KW_INT:
                     return Optional.of(VariableType.Primitive.TYPE_INT);
-                case BOOL:
+                case KW_BOOL:
                     return Optional.of(VariableType.Primitive.TYPE_BOOL);
-                case STRING:
+                case KW_STRING:
                     return Optional.of(VariableType.Primitive.TYPE_STRING);
-                case TEXT:
+                case KW_TEXT:
                     return Optional.of(VariableType.Primitive.TYPE_TEXT);
-                case ENTITY:
+                case KW_ENTITY:
                     return Optional.of(VariableType.Primitive.TYPE_ENTITY);
-                case RATIO:
+                case KW_RATIO:
                     return Optional.of(VariableType.Primitive.TYPE_RATIO);
-                case COL:
+                case KW_COL:
                     return Optional.of(VariableType.Primitive.TYPE_COL);
-                case POS:
+                case KW_POS:
                     return Optional.of(VariableType.Primitive.TYPE_POS);
-                case TEXTURE:
+                case KW_TEXTURE:
                     return Optional.of(VariableType.Primitive.TYPE_TEXTURE);
-                case PLAYER:
+                case KW_PLAYER:
                     return Optional.of(VariableType.Primitive.TYPE_PLAYER);
             }
             throw new UnsupportedOperationException(token.toString());

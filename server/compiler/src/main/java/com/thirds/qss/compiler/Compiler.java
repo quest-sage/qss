@@ -6,10 +6,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.indexer.TypeIndex;
 import com.thirds.qss.compiler.indexer.TypeNameIndex;
+import com.thirds.qss.compiler.indexer.TypeNameIndices;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
@@ -26,6 +28,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 /**
  * The Compiler class encapsulates the compilation process for a given bundle.
@@ -65,14 +68,9 @@ public class Compiler {
             .build();
 
     /**
-     * Maps package paths to their type name indices.
+     * Maps bundles and package paths to their type indices.
      */
-    private final Map<ScriptPath, TypeNameIndex> typeNameIndices = new HashMap<>();
-
-    /**
-     * Maps package paths to their type indices.
-     */
-    private final Map<ScriptPath, TypeIndex> typeIndices = new HashMap<>();
+    private final TypeNameIndices typeNameIndices = new TypeNameIndices();
 
     /**
      * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
@@ -162,7 +160,7 @@ public class Compiler {
                     throw new UnsupportedOperationException();
                 return new SymbolMap(script);
             });
-        } catch (ExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             return null;
         }
     }
@@ -192,6 +190,18 @@ public class Compiler {
         return result;
     }
 
+    /**
+     * Executes the given function on each of the scripts in this package.
+     */
+    private void forScriptsIn(ScriptPath thePackage, Consumer<Script> func) {
+        for (ScriptPath folderChild : getFolderChildren(thePackage)) {
+            Script parsed = getParsed(folderChild);
+            if (parsed != null) {
+                func.accept(parsed);
+            }
+        }
+    }
+
     public Messenger<Script> compile(ScriptPath filePath) {
         ScriptPath packagePath = filePath.trimLastSegment();
         String fileContents = getFileContent(filePath);
@@ -214,13 +224,29 @@ public class Compiler {
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
             Messenger<TypeNameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
-                    Messenger.success(new TypeNameIndex(new QualifiedName()), script.getMessages()),
+                    Messenger.success(new TypeNameIndex("bundle", scriptParsed.getPackageName().toQualifiedName()), script.getMessages()),
                     (script2, index) -> index.addFrom(script2));
+            typeNameIndex.getValue().ifPresent(idx -> typeNameIndices
+                    .computeIfAbsent("bundle", new ScriptPath())
+                    .put(scriptParsed.getPackageName().toQualifiedName(), idx));
 
             // If there were no errors up to this point, we're OK to generate the index for the package.
             if (typeNameIndex.hasErrors()) {
                 allMessages.addAll(typeNameIndex.getMessages());
                 return Messenger.success(scriptParsed, allMessages);
+            }
+
+            // First, let's make sure the index is filled with all the other packages in this bundle and other
+            // dependency bundles.
+            for (QualifiedName packageName : getPackagesInBundle(bundleRoot)) {
+                // This computes the indices for this bundle. Other bundles aren't yet supported.
+                typeNameIndices
+                        .computeIfAbsent("bundle", new ScriptPath())
+                        .computeIfAbsent(packageName, k -> {
+                            TypeNameIndex index = new TypeNameIndex("bundle", packageName);
+                            forScriptsIn(new ScriptPath(packageName.toPath()), index::addFrom);
+                            return index;
+                        });
             }
 
             // We will go ahead and generate the index. There might be errors when we do this
@@ -230,12 +256,32 @@ public class Compiler {
                     typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx))),
                     (script2, index) -> index.addFrom(script2));
 
-            typeIndex.getValue().map(idx -> typeIndices.put(packagePath, idx));
             allMessages.addAll(typeIndex.getMessages());
 
             // Return the parsed script.
             return Messenger.success(scriptParsed, allMessages);
         }
+    }
+
+    /**
+     * Recursively finds the names of all the packages in the bundle.
+     * @param bundleRoot The root directory of the bundle.
+     */
+    private ArrayList<QualifiedName> getPackagesInBundle(Path bundleRoot) {
+        ArrayList<QualifiedName> packages = new ArrayList<>();
+        File[] files = bundleRoot.toFile().listFiles();
+        if (files == null)
+            return packages;
+        for (File file : files) {
+            if (file.isDirectory()) {
+                String name = file.getName();
+                packages.add(new QualifiedName(name));
+                for (QualifiedName qualifiedName : getPackagesInBundle(file.toPath())) {
+                    packages.add(qualifiedName.prependSegment(name));
+                }
+            }
+        }
+        return packages;
     }
 
     /**

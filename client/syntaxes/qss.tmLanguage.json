@@ -16,16 +16,24 @@
 		"keywords": {
 			"patterns": [
 				{
+					"comment": "Keyword",
+					"name": "keyword.other.qss",
+					"match": "\\b(package)\\b"
+				},
+				{
+					"comment": "Type declaration",
 					"name": "storage.type.qss",
 					"match": "\\b(struct)\\b"
 				},
 				{
+					"comment": "Primitive type",
 					"name": "entity.name.type.qss",
 					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player)\\b"
 				}
 			]
 		},
 		"strings": {
+			"comment": "String literal",
 			"name": "string.quoted.double.qss",
 			"begin": "\"",
 			"end": "[\\n\"]",
@@ -37,6 +45,7 @@
 			]
 		},
 		"comments": {
+			"comment": "Documentation comment",
 			"name": "comment.block.documentation.qss",
 			"begin": "\\*\\*",
 			"end": "\\*\\*"

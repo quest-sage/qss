@@ -67,6 +67,10 @@ public class QssTextDocumentService implements TextDocumentService {
     public CompletableFuture<Hover> hover(TextDocumentPositionParams textDocumentPositionParams) {
         ScriptPath scriptPath = pathFromUri(textDocumentPositionParams.getTextDocument().getUri());
         SymbolMap symbolMap = compiler.getSymbolMap(scriptPath);
+        if (symbolMap == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
         Optional<String> optionalDocs = selected.flatMap(Symbol::getTargetDocumentation);
         if (optionalDocs.isPresent()) {

@@ -2,9 +2,12 @@ package com.thirds.qss;
 
 import com.thirds.qss.protos.NameProtos;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 public class QualifiedName {
     private final ArrayList<String> segments = new ArrayList<>();
@@ -91,5 +94,11 @@ public class QualifiedName {
 
     public ArrayList<String> getSegments() {
         return segments;
+    }
+
+    public Path toPath() {
+        if (segments.isEmpty())
+            return Paths.get(".");
+        return Paths.get(segments.get(0), trimFirstSegment().segments.toArray(new String[0]));
     }
 }

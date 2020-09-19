@@ -162,37 +162,40 @@ public class Lexer {
                         TokenType type;
                         switch (identifier.toString()) {
                             case "struct":
-                                type = TokenType.STRUCT;
+                                type = TokenType.KW_STRUCT;
+                                break;
+                            case "package":
+                                type = TokenType.KW_PACKAGE;
                                 break;
                             case "Int":
-                                type = TokenType.INT;
+                                type = TokenType.KW_INT;
                                 break;
                             case "Bool":
-                                type = TokenType.BOOL;
+                                type = TokenType.KW_BOOL;
                                 break;
                             case "String":
-                                type = TokenType.STRING;
+                                type = TokenType.KW_STRING;
                                 break;
                             case "Text":
-                                type = TokenType.TEXT;
+                                type = TokenType.KW_TEXT;
                                 break;
                             case "Entity":
-                                type = TokenType.ENTITY;
+                                type = TokenType.KW_ENTITY;
                                 break;
                             case "Ratio":
-                                type = TokenType.RATIO;
+                                type = TokenType.KW_RATIO;
                                 break;
                             case "Col":
-                                type = TokenType.COL;
+                                type = TokenType.KW_COL;
                                 break;
                             case "Pos":
-                                type = TokenType.POS;
+                                type = TokenType.KW_POS;
                                 break;
                             case "Texture":
-                                type = TokenType.TEXTURE;
+                                type = TokenType.KW_TEXTURE;
                                 break;
                             case "Player":
-                                type = TokenType.PLAYER;
+                                type = TokenType.KW_PLAYER;
                                 break;
                             default:
                                 type = TokenType.IDENTIFIER;
