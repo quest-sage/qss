@@ -19,7 +19,6 @@ import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.SymbolMap;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;

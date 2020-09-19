@@ -1,5 +1,7 @@
 package com.thirds.qss.compiler;
 
+import com.thirds.qss.QssLogger;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -29,7 +31,7 @@ public class ScriptPath {
      * @param path A path relative to the workspace root.
      */
     public ScriptPath(Path path) {
-        while (path != null) {
+        while (path != null && path.getFileName() != null) {
             segments.add(0, path.getFileName().toString());
             path = path.getParent();
         }

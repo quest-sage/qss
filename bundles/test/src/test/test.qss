@@ -3,6 +3,7 @@ import bundle1
 
 struct A {
     q: Int
+    b: B
     aa: Internal
     b1: Bundle1
 }

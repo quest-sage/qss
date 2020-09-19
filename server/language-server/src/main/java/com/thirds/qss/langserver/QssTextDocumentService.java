@@ -95,6 +95,8 @@ public class QssTextDocumentService implements TextDocumentService {
     public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams textDocumentPositionParams) {
         ScriptPath scriptPath = pathFromUri(textDocumentPositionParams.getTextDocument().getUri());
         SymbolMap symbolMap = compiler.getSymbolMap(scriptPath);
+        if (symbolMap == null)
+            return CompletableFuture.completedFuture(List.of());
         Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
         ArrayList<Location> locations = new ArrayList<>();
         selected.flatMap(Symbol::getTargetLocation).ifPresent(location -> locations.add(from(location)));
@@ -204,6 +206,12 @@ public class QssTextDocumentService implements TextDocumentService {
 
     private void compileAndPublishDiagnostics(String textDocumentUri, String fileContents) {
         URI uri = QssLanguageServer.relativize(textDocumentUri);
+
+        // Don't parse or validate any files not in the bundle root of the currently compiled bundle.
+        if (QssLanguageServer.getInstance().rootUri.relativize(URI.create(textDocumentUri)).equals(URI.create(textDocumentUri))) {
+            // The given URI was not a child of the root URI.
+            return;
+        }
 
         QssLogger.logger.atInfo().log("Compiling %s", uri);
         ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
