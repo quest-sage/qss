@@ -151,11 +151,6 @@ public class QssTextDocumentService implements TextDocumentService {
         return null;
     }
 
-    @Override
-    public void didOpen(DidOpenTextDocumentParams didOpenTextDocumentParams) {
-
-    }
-
     private ScriptPath pathFromUri(String uri) {
         return new ScriptPath(Paths.get(QssLanguageServer.relativize(uri).getPath()));
     }
@@ -184,58 +179,70 @@ public class QssTextDocumentService implements TextDocumentService {
     }
 
     @Override
-    public void didChange(DidChangeTextDocumentParams params) {
-        URI uri = QssLanguageServer.relativize(params.getTextDocument().getUri());
-        //QssLogger.logger.atInfo().log("File %s changed", uri);
+    public void didOpen(DidOpenTextDocumentParams didOpenTextDocumentParams) {
+        try {
+            compileAndPublishDiagnostics(didOpenTextDocumentParams.getTextDocument().getUri(), didOpenTextDocumentParams.getTextDocument().getText());
+        } catch (Exception e) {
+            QssLogger.logger.atSevere().withCause(e).log("Uncaught exception");
+        }
+    }
 
+    @Override
+    public void didChange(DidChangeTextDocumentParams params) {
         try {
             for (TextDocumentContentChangeEvent change : params.getContentChanges()) {
                 if (change.getRange() != null || change.getRangeLength() != null) {
                     QssLogger.logger.atSevere().log("Incremental file change not supported: %s", params);
                 }
 
-                QssLogger.logger.atInfo().log("Compiling %s", uri);
-                ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
-                compiler.overwriteCachedFileContent(filePath, change.getText());
-                Messenger<Script> result = compiler.compile(filePath);
-                QssLogger.logger.atInfo().log("Compile result: %s %s", compiler, result);
-
-                PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
-                diagnostics.setUri(params.getTextDocument().getUri());
-                for (Message message : result.getMessages()) {
-                    Diagnostic diagnostic = new Diagnostic();
-                    diagnostic.setRange(from(message.range));
-                    switch (message.severity) {
-                        case HINT:
-                            diagnostic.setSeverity(DiagnosticSeverity.Hint);
-                            break;
-                        case INFORMATION:
-                            diagnostic.setSeverity(DiagnosticSeverity.Information);
-                            break;
-                        case WARNING:
-                            diagnostic.setSeverity(DiagnosticSeverity.Warning);
-                            break;
-                        case ERROR:
-                            diagnostic.setSeverity(DiagnosticSeverity.Error);
-                            break;
-                    }
-                    diagnostic.setMessage(message.message);
-                    diagnostic.setSource("qss");
-                    ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
-                    for (Message.MessageRelatedInformation info : message.infos) {
-                        infos.add(new DiagnosticRelatedInformation(
-                                new Location(uriOf(info.location.getFilePath()).toString(), from(info.location.getRange())),
-                                info.message
-                        ));
-                    }
-                    diagnostic.setRelatedInformation(infos);
-                    diagnostics.getDiagnostics().add(diagnostic);
-                }
-                QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);
+                compileAndPublishDiagnostics(params.getTextDocument().getUri(), change.getText());
             }
         } catch (Exception e) {
             QssLogger.logger.atSevere().withCause(e).log("Uncaught exception");
         }
+    }
+
+    private void compileAndPublishDiagnostics(String textDocumentUri, String fileContents) {
+        URI uri = QssLanguageServer.relativize(textDocumentUri);
+
+        QssLogger.logger.atInfo().log("Compiling %s", uri);
+        ScriptPath filePath = new ScriptPath(Paths.get(uri.getPath()));
+        compiler.overwriteCachedFileContent(filePath, fileContents);
+        Messenger<Script> result = compiler.compile(filePath);
+        QssLogger.logger.atInfo().log("Compile result: %s %s", compiler, result);
+
+        PublishDiagnosticsParams diagnostics = new PublishDiagnosticsParams();
+        diagnostics.setUri(textDocumentUri);
+        for (Message message : result.getMessages()) {
+            Diagnostic diagnostic = new Diagnostic();
+            diagnostic.setRange(from(message.range));
+            switch (message.severity) {
+                case HINT:
+                    diagnostic.setSeverity(DiagnosticSeverity.Hint);
+                    break;
+                case INFORMATION:
+                    diagnostic.setSeverity(DiagnosticSeverity.Information);
+                    break;
+                case WARNING:
+                    diagnostic.setSeverity(DiagnosticSeverity.Warning);
+                    break;
+                case ERROR:
+                    diagnostic.setSeverity(DiagnosticSeverity.Error);
+                    break;
+            }
+            diagnostic.setMessage(message.message);
+            diagnostic.setSource("qss");
+            ArrayList<DiagnosticRelatedInformation> infos = new ArrayList<>();
+            for (Message.MessageRelatedInformation info : message.infos) {
+                infos.add(new DiagnosticRelatedInformation(
+                        new Location(uriOf(info.location.getFilePath()).toString(), from(info.location.getRange())),
+                        info.message
+                ));
+            }
+            diagnostic.setRelatedInformation(infos);
+            diagnostics.getDiagnostics().add(diagnostic);
+        }
+        QssLanguageServer.getInstance().getClient().publishDiagnostics(diagnostics);
     }
 
     @Override
