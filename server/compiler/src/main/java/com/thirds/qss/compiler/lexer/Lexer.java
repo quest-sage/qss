@@ -164,9 +164,6 @@ public class Lexer {
                             case "struct":
                                 type = TokenType.KW_STRUCT;
                                 break;
-                            case "package":
-                                type = TokenType.KW_PACKAGE;
-                                break;
                             case "Int":
                                 type = TokenType.KW_INT;
                                 break;

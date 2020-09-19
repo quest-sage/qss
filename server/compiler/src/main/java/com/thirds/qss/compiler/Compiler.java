@@ -224,11 +224,11 @@ public class Compiler {
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
             Messenger<TypeNameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
-                    Messenger.success(new TypeNameIndex("bundle", scriptParsed.getPackageName().toQualifiedName()), script.getMessages()),
+                    Messenger.success(new TypeNameIndex("bundle", scriptParsed.getPackageName())),
                     (script2, index) -> index.addFrom(script2));
             typeNameIndex.getValue().ifPresent(idx -> typeNameIndices
                     .computeIfAbsent("bundle", new ScriptPath())
-                    .put(scriptParsed.getPackageName().toQualifiedName(), idx));
+                    .put(scriptParsed.getPackageName(), idx));
 
             // If there were no errors up to this point, we're OK to generate the index for the package.
             if (typeNameIndex.hasErrors()) {

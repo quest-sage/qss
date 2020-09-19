@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * Represents the file path of a script (*.qss) file or a script package, relative to the bundle root.
+ * Represents the file path of a script (*.qss) file or a script package, relative to the workspace root.
  */
 public class ScriptPath {
     private final ArrayList<String> segments = new ArrayList<>();
@@ -26,7 +26,7 @@ public class ScriptPath {
     }
 
     /**
-     * @param path A path relative to the bundle root.
+     * @param path A path relative to the workspace root.
      */
     public ScriptPath(Path path) {
         while (path != null) {
@@ -39,7 +39,7 @@ public class ScriptPath {
     }
 
     /**
-     * Converts the path into a Path object relative to the bundle root.
+     * Converts the path into a Path object relative to the workspace root.
      */
     public Path toPath() {
         if (segments.isEmpty())

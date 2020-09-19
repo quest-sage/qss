@@ -12,13 +12,15 @@ public class Script extends Node {
      * Relative to the workspace root.
      */
     private final ScriptPath filePath;
-    private final NameLiteral packageName;
+    private final QualifiedName packageName;
+    private final ScriptPath bundleRoot;
     private final ArrayList<Documentable<Struct>> structs;
 
-    public Script(ScriptPath filePath, Range range, NameLiteral packageName, ArrayList<Documentable<Struct>> structs) {
+    public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Documentable<Struct>> structs) {
         super(range);
         this.filePath = filePath;
         this.packageName = packageName;
+        this.bundleRoot = bundleRoot;
         this.structs = structs;
     }
 
@@ -26,7 +28,6 @@ public class Script extends Node {
     public String toString() {
         return "Script{" +
                 "filePath=" + filePath +
-                ", packageName=" + packageName +
                 ", structs=" + structs +
                 '}';
     }
@@ -35,8 +36,12 @@ public class Script extends Node {
         return structs;
     }
 
-    public NameLiteral getPackageName() {
+    public QualifiedName getPackageName() {
         return packageName;
+    }
+
+    public ScriptPath getBundleRoot() {
+        return bundleRoot;
     }
 
     public ScriptPath getFilePath() {

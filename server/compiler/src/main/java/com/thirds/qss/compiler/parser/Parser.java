@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.parser;
 
+import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.lexer.Token;
@@ -37,24 +38,54 @@ public class Parser {
     @SuppressWarnings("unchecked")
     public Messenger<Script> parseScript(ScriptPath filePath, TokenStream tokens) {
         Position start = tokens.currentPosition();
-
-        Messenger<NameLiteral> packageName = consumeToken(tokens, TokenType.KW_PACKAGE).then(() -> parseName(tokens));
-
         ListMessenger<Documentable<?>> items = parseGreedy(() -> parseItem(tokens));
 
-        return packageName.map(packageName2 -> items.map(items2 -> {
+        return items.map(items2 -> {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
                 if (content instanceof Struct)
                     structs.add((Documentable<Struct>) documentable);
             }
+
+            // Deduce what package the script is in by reversing directories until we hit the bundle.toml file.
+            QualifiedName packageName = new QualifiedName();
+            ScriptPath packagePath = filePath.trimLastSegment();
+            boolean packageNameResolved = false;
+            while (!packagePath.getSegments().isEmpty()) {
+                String lastSegment = packagePath.lastSegment();
+                packagePath = packagePath.trimLastSegment();
+
+                if (packagePath.toPath().resolve("bundle.toml").toFile().isFile()) {
+                    packageNameResolved = true;
+                    break;
+                }
+
+                packageName = packageName.prependSegment(lastSegment);
+            }
+
+            ArrayList<Message> messages = new ArrayList<>(0);
+            if (!packageNameResolved) {
+                messages.add(new Message(
+                        new Range(new Position(0, 0)),
+                        Message.MessageSeverity.ERROR,
+                        "Script was not in a bundle"
+                ));
+            } else {
+                messages.add(new Message(
+                        new Range(new Position(0, 0)),
+                        Message.MessageSeverity.INFORMATION,
+                        "Script was in package " + packageName + " in bundle " + packagePath
+                ));
+            }
+
             return Messenger.success(new Script(
                     filePath, new Range(start, tokens.currentPosition()),
-                    packageName2,
+                    packageName,
+                    packagePath,
                     structs
-            ));
-        }));
+            ), messages);
+        });
     }
 
     public Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {
