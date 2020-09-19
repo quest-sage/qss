@@ -1,6 +1,7 @@
 package com.thirds.qss.compiler.indexer;
 
 import com.thirds.qss.VariableType;
+import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
@@ -11,22 +12,22 @@ import com.thirds.qss.compiler.tree.Struct;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * The type name index is an index used to store the names and fields of each type in a given package.
  */
 public class TypeIndex {
-    private final TypeNameIndex typeNameIndex;
     private final Map<String, StructDefinition> structDefinitions = new HashMap<>();
+    private final Compiler compiler;
 
     /**
      * The type name index is used for determining whether a name is defined.
-     * TODO support the use of multiple type name index objects for referencing other packages - maybe also write the type name index to disk
      */
-    public TypeIndex(TypeNameIndex typeNameIndex) {
-        this.typeNameIndex = typeNameIndex;
+    public TypeIndex(Compiler compiler) {
+        this.compiler = compiler;
     }
 
     private static class FieldDefinition {
@@ -90,18 +91,26 @@ public class TypeIndex {
                             "Previously defined here"
                     )));
                 } else {
-                    Optional<VariableType> fieldType = field.getType().resolve(typeNameIndex);
-                    if (fieldType.isEmpty()) {
+                    List<VariableType> fieldTypeAlternatives = field.getType().resolve(compiler.getTypeNameIndices());
+
+                    if (fieldTypeAlternatives.isEmpty()) {
                         messages.add(new Message(
                                 field.getType().getRange(),
                                 Message.MessageSeverity.ERROR,
                                 "Could not resolve type of " + field.getName().contents
                         ));
+                    } else if (fieldTypeAlternatives.size() > 1) {
+                        messages.add(new Message(
+                                field.getType().getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "Type of " + field.getName().contents + " was ambiguous, possibilities were: " +
+                                        fieldTypeAlternatives.stream().map(Object::toString).collect(Collectors.joining(", "))
+                        ));
                     }
 
                     def.fields.put(field.getName().contents, new FieldDefinition(
                             new Location(script.getFilePath(), field.getRange()),
-                            fieldType.orElse(null)
+                            fieldTypeAlternatives.size() == 1 ? fieldTypeAlternatives.get(0) : null
                     ));
                 }
             }

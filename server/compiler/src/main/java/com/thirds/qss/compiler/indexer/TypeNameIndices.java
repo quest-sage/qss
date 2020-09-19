@@ -22,6 +22,10 @@ public class TypeNameIndices {
         return bundles.get(bundle);
     }
 
+    public Map<String, Bundle> getBundles() {
+        return bundles;
+    }
+
     /**
      * The bundle of name "bundle" is the resource bundle we're currently compiling.
      * This is like the crate of name "crate" in Rust.
@@ -38,10 +42,6 @@ public class TypeNameIndices {
             this.pathToBundleRoot = pathToBundleRoot;
         }
 
-        public void addPackage(QualifiedName bundle, TypeNameIndex index) {
-            packages.put(bundle, index);
-        }
-
         public void remove(QualifiedName packageName) {
             packages.remove(packageName);
         }
@@ -52,6 +52,10 @@ public class TypeNameIndices {
 
         public TypeNameIndex computeIfAbsent(QualifiedName packageName, Function<QualifiedName, TypeNameIndex> func) {
             return packages.computeIfAbsent(packageName, func);
+        }
+
+        public Map<QualifiedName, TypeNameIndex> getPackages() {
+            return packages;
         }
 
         @Override

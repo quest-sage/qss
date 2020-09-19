@@ -44,6 +44,13 @@ public class Script extends Node {
         return bundleRoot;
     }
 
+    public String getBundle() {
+        if (bundleRoot.getSegments().isEmpty()) {
+            return "bundle";
+        }
+        return bundleRoot.lastSegment();
+    }
+
     public ScriptPath getFilePath() {
         return filePath;
     }

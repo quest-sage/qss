@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.tree;
 
+import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Range;

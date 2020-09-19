@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -73,7 +74,8 @@ public class Compiler {
     private final TypeNameIndices typeNameIndices = new TypeNameIndices();
 
     /**
-     * @param bundleRoot If this is null, no index files will be created or read, and the compiler will be unable
+     * @param bundleRoot The root directory of the bundle we're compiling. This should contain the bundle.toml file.
+     *                   If this is null, no index files will be created or read, and the compiler will be unable
      *                   to access imported files.
      */
     public Compiler(Path bundleRoot) {
@@ -110,7 +112,7 @@ public class Compiler {
     public Collection<ScriptPath> updateFolderChildren(ScriptPath folderPath) {
         Collection<ScriptPath> paths = folderChildren.get(folderPath);
         paths.clear();
-        File[] files = folderPath.toPath().toFile().listFiles();
+        File[] files = bundleRoot.resolve(folderPath.toPath()).toFile().listFiles();
         if (files == null)
             return paths;
         for (File file : files) {
@@ -205,6 +207,10 @@ public class Compiler {
         }
     }
 
+    public TypeNameIndices getTypeNameIndices() {
+        return typeNameIndices;
+    }
+
     public Messenger<Script> compile(ScriptPath filePath) {
         ScriptPath packagePath = filePath.trimLastSegment();
         String fileContents = getFileContent(filePath);
@@ -246,8 +252,8 @@ public class Compiler {
                 typeNameIndices
                         .computeIfAbsent("bundle", new ScriptPath())
                         .computeIfAbsent(packageName, k -> {
-                            TypeNameIndex index = new TypeNameIndex("bundle", packageName);
-                            forScriptsIn(new ScriptPath(packageName.toPath()), index::addFrom);
+                            TypeNameIndex index = new TypeNameIndex("bundle", k);
+                            forScriptsIn(new ScriptPath(Paths.get("src").resolve(k.toPath())), index::addFrom);
                             return index;
                         });
             }
@@ -258,7 +264,7 @@ public class Compiler {
             // (e.g. field of undeclared type) but we'll just generate the index anyway.
             // We'll do the same thing where we generate this script last.
             Messenger<TypeIndex> typeIndex = forNeighbours(filePath, scriptParsed,
-                    typeNameIndex.map(idx -> Messenger.success(new TypeIndex(idx))),
+                    typeNameIndex.map(idx -> Messenger.success(new TypeIndex(this))),
                     (script2, index) -> index.addFrom(script2));
 
             allMessages.addAll(typeIndex.getMessages());
@@ -270,7 +276,7 @@ public class Compiler {
 
     /**
      * Recursively finds the names of all the packages in the bundle.
-     * @param srcRoot The root directory of the QSS source in the bundle.
+     * @param srcRoot The ABSOLUTE (not relative) root directory of the QSS source in the bundle.
      */
     private ArrayList<QualifiedName> getPackagesInBundle(Path srcRoot) {
         ArrayList<QualifiedName> packages = new ArrayList<>();

@@ -1,6 +1,6 @@
 struct A {
     q: Int
-    aa: B
+    aa: Internal
 }
 
 ** Abcdef **
