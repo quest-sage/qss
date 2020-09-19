@@ -6,6 +6,7 @@ dependencies {
     implementation("com.google.guava:guava:29.0-jre")
     api 'com.google.flogger:flogger:0.5.1'
     implementation 'com.google.flogger:flogger-system-backend:0.5.1'
+    implementation 'com.github.jezza:toml:1.2-java-8'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
     testImplementation 'org.hamcrest:hamcrest:2.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'

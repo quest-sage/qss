@@ -3,8 +3,12 @@ package com.thirds.qss.compiler;
 import java.util.ArrayList;
 import java.util.Objects;
 
+/**
+ * Frontend-agnostic equivalent of LSP's Diagnostic class.
+ */
 public class Message {
     public final ArrayList<MessageRelatedInformation> infos = new ArrayList<>();
+    private String source = "qss";
 
     /**
      * Represents a message that will be shown to the user. This represents some kind of diagnostic information,
@@ -31,6 +35,14 @@ public class Message {
      */
     public Message addInfo(MessageRelatedInformation info) {
         infos.add(info);
+        return this;
+    }
+
+    /**
+     * @return <code>this</code> for chaining.
+     */
+    public Message setSource(String source) {
+        this.source = source;
         return this;
     }
 

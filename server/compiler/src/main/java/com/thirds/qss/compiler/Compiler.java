@@ -1,5 +1,7 @@
 package com.thirds.qss.compiler;
 
+import com.github.jezza.Toml;
+import com.github.jezza.TomlTable;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Multimap;
@@ -15,14 +17,13 @@ import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.SymbolMap;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
@@ -200,9 +201,15 @@ public class Compiler {
         if (script.getValue().isEmpty()) {
             return script;
         } else {
+            ArrayList<Message> allMessages = new ArrayList<>(script.getMessages());
+
             Script scriptParsed = script.getValue().get();
             deleteCachedContent(filePath);
             parsedFiles.put(filePath, scriptParsed);
+
+            // Now, parse the bundle.toml file at the bundle root.
+            Messenger<TomlTable> bundleFile = getBundleFile();
+            allMessages.addAll(bundleFile.getMessages());
 
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
@@ -212,7 +219,8 @@ public class Compiler {
 
             // If there were no errors up to this point, we're OK to generate the index for the package.
             if (typeNameIndex.hasErrors()) {
-                return typeNameIndex.then(() -> Messenger.success(scriptParsed));
+                allMessages.addAll(typeNameIndex.getMessages());
+                return Messenger.success(scriptParsed, allMessages);
             }
 
             // We will go ahead and generate the index. There might be errors when we do this
@@ -223,9 +231,87 @@ public class Compiler {
                     (script2, index) -> index.addFrom(script2));
 
             typeIndex.getValue().map(idx -> typeIndices.put(packagePath, idx));
+            allMessages.addAll(typeIndex.getMessages());
 
             // Return the parsed script.
-            return typeIndex.then(() -> Messenger.success(scriptParsed));
+            return Messenger.success(scriptParsed, allMessages);
+        }
+    }
+
+    /**
+     * If null, it will be retrieved when getBundleFile is called.
+     */
+    private Messenger<TomlTable> bundleFile;
+
+    private String bundleFileContents = null;
+
+    /**
+     * Call this when the bundle.toml file is changed.
+     */
+    public void overwriteBundleFileContents(String contents) {
+        bundleFile = null;
+        bundleFileContents = contents;
+    }
+
+    private Messenger<TomlTable> getBundleFile() {
+        if (bundleFile != null)
+            return bundleFile;
+
+        if (bundleFileContents == null) {
+            Path tomlFile = bundleRoot.resolve("bundle.toml");
+            if (tomlFile.toFile().isFile()) {
+                try {
+                    bundleFileContents = Files.readString(tomlFile);
+                } catch (IOException e) {
+                    return Messenger.fail(new ArrayList<>(List.of(new Message(
+                            new Range(new Position(0, 0)),
+                            Message.MessageSeverity.ERROR,
+                            "Cannot open bundle.toml file"
+                    ).setSource("qss-bundle"))));
+                }
+            } else {
+                return Messenger.fail(new ArrayList<>(List.of(new Message(
+                        new Range(new Position(0, 0)),
+                        Message.MessageSeverity.ERROR,
+                        "Cannot find bundle.toml file; this file should be at the bundle root"
+                ).setSource("qss-bundle"))));
+            }
+        }
+
+        try {
+            TomlTable tomlTable = Toml.from(new StringReader(bundleFileContents));
+            ArrayList<Message> messages = new ArrayList<>(0);
+
+            Object bundleName = tomlTable.get("bundle.name");
+            if (bundleName instanceof String) {
+                String bundleName1 = (String) bundleName;
+                // Check that bundleName1 is a valid bundle name (ASCII, starts with a letter)
+                boolean validName = !bundleName1.isEmpty()
+                        && bundleName1.chars().allMatch(ch -> ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ('0' <= ch && ch <= '9') || ch == '_')
+                        && bundleName1.chars().limit(1).allMatch(ch -> ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z'));
+                if (!validName) {
+                    messages.add(new Message(
+                            new Range(new Position(0, 0)),
+                            Message.MessageSeverity.ERROR,
+                            "Bundle name (key bundle.name) was invalid; must conform to the regex [A-Za-z][A-Za-z0-9_]*"
+                    ).setSource("qss-bundle"));
+                }
+            } else {
+                messages.add(new Message(
+                        new Range(new Position(0, 0)),
+                        Message.MessageSeverity.ERROR,
+                        "Bundle name (key bundle.name) not found"
+                ).setSource("qss-bundle"));
+            }
+
+            bundleFile = Messenger.success(tomlTable, messages);
+            return bundleFile;
+        } catch (IOException e) {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(new Position(0, 0)),
+                    Message.MessageSeverity.ERROR,
+                    "Cannot parse bundle.toml file"
+            ).setSource("qss-bundle"))));
         }
     }
 }
