@@ -110,7 +110,10 @@ public class Compiler {
     public Collection<ScriptPath> updateFolderChildren(ScriptPath folderPath) {
         Collection<ScriptPath> paths = folderChildren.get(folderPath);
         paths.clear();
-        for (File file : folderPath.toPath().toFile().listFiles()) {
+        File[] files = folderPath.toPath().toFile().listFiles();
+        if (files == null)
+            return paths;
+        for (File file : files) {
             if (file.isFile() && file.getName().endsWith(".qss"))
                 paths.add(folderPath.appendSegment(file.getName()));
         }
@@ -238,7 +241,7 @@ public class Compiler {
 
             // First, let's make sure the index is filled with all the other packages in this bundle and other
             // dependency bundles.
-            for (QualifiedName packageName : getPackagesInBundle(bundleRoot)) {
+            for (QualifiedName packageName : getPackagesInBundle(bundleRoot.resolve("src"))) {
                 // This computes the indices for this bundle. Other bundles aren't yet supported.
                 typeNameIndices
                         .computeIfAbsent("bundle", new ScriptPath())
@@ -248,6 +251,8 @@ public class Compiler {
                             return index;
                         });
             }
+
+            QssLogger.logger.atInfo().log("Indices:\n%s", typeNameIndices);
 
             // We will go ahead and generate the index. There might be errors when we do this
             // (e.g. field of undeclared type) but we'll just generate the index anyway.
@@ -265,16 +270,18 @@ public class Compiler {
 
     /**
      * Recursively finds the names of all the packages in the bundle.
-     * @param bundleRoot The root directory of the bundle.
+     * @param srcRoot The root directory of the QSS source in the bundle.
      */
-    private ArrayList<QualifiedName> getPackagesInBundle(Path bundleRoot) {
+    private ArrayList<QualifiedName> getPackagesInBundle(Path srcRoot) {
         ArrayList<QualifiedName> packages = new ArrayList<>();
-        File[] files = bundleRoot.toFile().listFiles();
+        File[] files = srcRoot.toFile().listFiles();
         if (files == null)
             return packages;
         for (File file : files) {
             if (file.isDirectory()) {
                 String name = file.getName();
+                if (name.startsWith("."))
+                    continue;
                 packages.add(new QualifiedName(name));
                 for (QualifiedName qualifiedName : getPackagesInBundle(file.toPath())) {
                     packages.add(qualifiedName.prependSegment(name));

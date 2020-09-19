@@ -29,6 +29,9 @@ public class TokenStream {
     }
 
     public Position currentPosition() {
+        if (tokens.isEmpty()) {
+            return new Position(0, 0);
+        }
         return peek().map(tk -> tk.getRange().start).orElseGet(() -> tokens.get(tokens.size() - 1).getRange().end);
     }
 

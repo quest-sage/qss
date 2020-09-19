@@ -71,12 +71,6 @@ public class Parser {
                         Message.MessageSeverity.ERROR,
                         "Script was not in a bundle"
                 ));
-            } else {
-                messages.add(new Message(
-                        new Range(new Position(0, 0)),
-                        Message.MessageSeverity.INFORMATION,
-                        "Script was in package " + packageName + " in bundle " + packagePath
-                ));
             }
 
             return Messenger.success(new Script(

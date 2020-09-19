@@ -53,6 +53,13 @@ public class TypeNameIndices {
         public TypeNameIndex computeIfAbsent(QualifiedName packageName, Function<QualifiedName, TypeNameIndex> func) {
             return packages.computeIfAbsent(packageName, func);
         }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            packages.forEach((p, i) -> sb.append("  ").append(p).append(": ").append(i).append("\n"));
+            return sb.toString();
+        }
     }
 
     /**
@@ -62,5 +69,12 @@ public class TypeNameIndices {
 
     public void addBundle(String bundleName, Bundle bundle) {
         bundles.put(bundleName, bundle);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        bundles.forEach((s, b) -> sb.append(s).append(":\n").append(b).append("\n"));
+        return sb.toString();
     }
 }

@@ -83,4 +83,13 @@ public class TypeNameIndex {
     public Map<String, StructDefinition> getStructDefinitions() {
         return structDefinitions;
     }
+
+    @Override
+    public String toString() {
+        return "TypeNameIndex{" +
+                "bundleName='" + bundleName + '\'' +
+                ", thePackage=" + thePackage +
+                ", structDefinitions=" + structDefinitions +
+                '}';
+    }
 }
