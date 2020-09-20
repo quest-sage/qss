@@ -9,7 +9,8 @@ public enum TokenType {
     SCOPE_RESOLUTION,  // ::
     SEMICOLON,  // ;
 
-    KW_STRUCT, KW_IMPORT,
+    KW_STRUCT, KW_FUNC, KW_BEFORE, KW_AFTER,
+    KW_IMPORT,
     IDENTIFIER,
 
     KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
@@ -17,6 +18,7 @@ public enum TokenType {
     STRING_LITERAL, INTEGER_LITERAL,
 
     PLUS, MINUS, STAR, SLASH,  // + - * /
+    DOT, COMMA,  // . ,
 
     DOCUMENTATION_COMMENT,  // ** ... **
 }

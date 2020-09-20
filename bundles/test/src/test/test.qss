@@ -10,6 +10,9 @@ struct A {
     b1: Bundle1
 }
 
+** Function `a` does a thing **
+func a(a: A, b: B)
+
 ** Abcdef **
 struct B {
     a: A

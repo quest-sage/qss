@@ -11,6 +11,7 @@ import com.thirds.qss.compiler.tree.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 /**
@@ -110,9 +111,84 @@ public class Parser {
             return Optional.of(struct.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
         }
 
+        Optional<Messenger<Func>> func = parseFunc(tokens);
+        if (func.isPresent()) {
+            return Optional.of(func.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+        }
+
         if (docs != null)
             tokens.rewind();
         return Optional.empty();
+    }
+
+    public Optional<Messenger<Func>> parseFunc(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_FUNC)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_FUNC),      // 0
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
+                () -> parseParamList(tokens),                       // 2
+                () -> parseFuncBlock(tokens)                        // 3
+        )).map(list -> {
+            Token identifier = (Token) list.get(1);
+            ParamList paramList = (ParamList) list.get(2);
+            FuncBlock funcBlock = (FuncBlock) list.get(3);
+
+            Func func = new Func(
+                    new Range(start, tokens.currentPosition()),
+                    identifier, paramList, funcBlock
+            );
+
+            return Messenger.success(func);
+        }));
+    }
+
+    /**
+     * An optional comma may be used after the last parameter.
+     */
+    private ListMessenger<Param> parseParamListInternal(TokenStream tokens) {
+        ListMessenger<Param> result = new ListMessenger<>();
+        AtomicBoolean expectingMoreParams = new AtomicBoolean(true);
+        while (expectingMoreParams.get() && tokens.peek().isPresent() && tokens.peek().get().type == TokenType.IDENTIFIER) {
+            Messenger<Param> param = parseMulti(List.of(
+                    () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 0
+                    () -> consumeToken(tokens, TokenType.TYPE),         // 1
+                    () -> parseType(tokens)                             // 2
+            )).map(list -> {
+                Token name = (Token) list.get(0);
+                Type type = (Type) list.get(2);
+
+                if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.COMMA) {
+                    consumeToken(tokens, TokenType.COMMA);
+                } else {
+                    expectingMoreParams.set(false);
+                }
+
+                return Messenger.success(new Param(Range.combine(name.getRange(), type.getRange()), name, type));
+            });
+            result.add(param);
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Messenger<ParamList> parseParamList(TokenStream tokens) {
+        Position start = tokens.currentPosition();
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.LPARENTH),     // 0
+                () -> parseParamListInternal(tokens),               // 1
+                () -> consumeToken(tokens, TokenType.RPARENTH)      // 2
+        )).map(list -> {
+            ArrayList<Param> params = (ArrayList<Param>) list.get(1);
+            return Messenger.success(new ParamList(new Range(start, tokens.currentPosition()), params));
+        });
+    }
+
+    public Messenger<FuncBlock> parseFuncBlock(TokenStream tokens) {
+        return Messenger.success(new FuncBlock(new Range(tokens.currentPosition())));
     }
 
     /**
@@ -127,7 +203,7 @@ public class Parser {
         Position start = tokens.currentPosition();
 
         return Optional.of(parseMulti(List.of(
-                () -> consumeToken(tokens, TokenType.KW_STRUCT),       // 0
+                () -> consumeToken(tokens, TokenType.KW_STRUCT),    // 0
                 () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
                 () -> consumeToken(tokens, TokenType.LBRACE),       // 2
                 () -> parseFields(tokens),                          // 3

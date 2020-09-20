@@ -42,6 +42,18 @@ public class Lexer {
                 case ']':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.RSQUARE, position);
                     break;
+                case '+':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.PLUS, position);
+                    break;
+                case '-':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.MINUS, position);
+                    break;
+                case '.':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.DOT, position);
+                    break;
+                case ',':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.COMMA, position);
+                    break;
                 case ':': {
                     int firstCodePoint = codePoints.next();
                     if (codePoints.peek() == ':') {
@@ -228,6 +240,15 @@ public class Lexer {
                         switch (identifier.toString()) {
                             case "struct":
                                 type = TokenType.KW_STRUCT;
+                                break;
+                            case "func":
+                                type = TokenType.KW_FUNC;
+                                break;
+                            case "before":
+                                type = TokenType.KW_BEFORE;
+                                break;
+                            case "after":
+                                type = TokenType.KW_AFTER;
                                 break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
