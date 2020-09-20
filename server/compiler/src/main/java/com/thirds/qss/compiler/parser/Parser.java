@@ -15,6 +15,9 @@ import java.util.function.Supplier;
 
 /**
  * Represents an LL(1) recursive descent parser for QSS.
+ *
+ * The {@link TokenStream#rewind()} method allows for acting as if it were an LL(2) parser. This is useful for
+ * pre-documentation of items and fields etc.
  */
 public class Parser {
     private final Compiler compiler;
@@ -131,7 +134,7 @@ public class Parser {
                 () -> consumeToken(tokens, TokenType.RBRACE)        // 4
         )).map(list -> {
             Token identifier = (Token) list.get(1);
-            ArrayList<Field> fields = (ArrayList<Field>) list.get(3);
+            ArrayList<Documentable<Field>> fields = (ArrayList<Documentable<Field>>) list.get(3);
 
             Struct struct = new Struct(
                     new Range(start, tokens.currentPosition()),
@@ -142,24 +145,34 @@ public class Parser {
         }));
     }
 
-    public ListMessenger<Field> parseFields(TokenStream tokens) {
+    public ListMessenger<Documentable<Field>> parseFields(TokenStream tokens) {
         return parseGreedy(() -> parseField(tokens));
     }
 
     /**
-     * <code>Field := Identifier ":" Type</code>
+     * <code>Field := Documentation? Identifier ":" Type</code>
      */
-    public Optional<Messenger<Field>> parseField(TokenStream tokens) {
-        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.IDENTIFIER)
+    public Optional<Messenger<Documentable<Field>>> parseField(TokenStream tokens) {
+        Token docs;
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
+            docs = tokens.next();
+        } else {
+            docs = null;
+        }
+
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.IDENTIFIER) {
+            if (docs != null)
+                tokens.rewind();
             return Optional.empty();
+        }
 
         return Optional.of(
         consumeToken(tokens, TokenType.IDENTIFIER).map(identifier ->
         consumeToken(tokens, TokenType.TYPE).then(() ->
-        parseType(tokens).map(type -> Messenger.success(new Field(
+        parseType(tokens).map(type -> Messenger.success(new Documentable<>(docs, new Field(
                 Range.combine(identifier.getRange(), type.getRange()),
                 identifier, type
-        ))))));
+        )))))));
     }
 
     public Messenger<Type> parseType(TokenStream tokens) {

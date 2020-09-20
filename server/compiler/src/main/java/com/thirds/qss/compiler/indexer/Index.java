@@ -90,21 +90,22 @@ public class Index {
                     new Location(script.getFilePath(), struct.getContent().getRange())
             );
 
-            for (Field field : struct.getContent().getFields()) {
-                if (def.fields.containsKey(field.getName().contents)) {
+            for (Documentable<Field> field : struct.getContent().getFields()) {
+                if (def.fields.containsKey(field.getContent().getName().contents)) {
                     messages.add(new Message(
-                            field.getName().getRange(),
+                            field.getContent().getName().getRange(),
                             Message.MessageSeverity.ERROR,
-                            "Field " + field.getName().contents + " was already defined"
+                            "Field " + field.getContent().getName().contents + " was already defined"
                     ).addInfo(new Message.MessageRelatedInformation(
-                            def.fields.get(field.getName().contents).location,
+                            def.fields.get(field.getContent().getName().contents).location,
                             "Previously defined here"
                     )));
                 } else {
-                    Type.ResolveResult fieldTypeAlternatives = field.getType().resolve(script.getImportedPackages(), compiler.getTypeNameIndices());
+                    // Resolve the field's type using the type name indices in the compiler.
+                    Type.ResolveResult fieldTypeAlternatives = field.getContent().getType().resolve(script.getImportedPackages(), compiler.getTypeNameIndices());
 
                     if (fieldTypeAlternatives.alternatives.isEmpty()) {
-                        StringBuilder message = new StringBuilder("Could not resolve type of ").append(field.getName().contents);
+                        StringBuilder message = new StringBuilder("Could not resolve type of ").append(field.getContent().getName().contents);
                         if (!fieldTypeAlternatives.nonImportedAlternatives.isEmpty()) {
                             message.append("; try one of the following:");
                             for (Type.ResolveAlternative alt : fieldTypeAlternatives.nonImportedAlternatives) {
@@ -113,20 +114,20 @@ public class Index {
                             }
                         }
                         messages.add(new Message(
-                                field.getType().getRange(),
+                                field.getContent().getType().getRange(),
                                 Message.MessageSeverity.ERROR,
                                 message.toString()
                         ));
                     } else if (fieldTypeAlternatives.alternatives.size() > 1) {
                         messages.add(new Message(
-                                field.getType().getRange(),
+                                field.getContent().getType().getRange(),
                                 Message.MessageSeverity.ERROR,
-                                "Type of " + field.getName().contents + " was ambiguous, possibilities were: " +
+                                "Type of " + field.getContent().getName().contents + " was ambiguous, possibilities were: " +
                                         fieldTypeAlternatives.alternatives.stream().map(alt -> alt.type.toString()).collect(Collectors.joining(", "))
                         ));
                     }
 
-                    def.fields.put(field.getName().contents, new FieldDefinition(
+                    def.fields.put(field.getContent().getName().contents, new FieldDefinition(
                             new Location(script.getFilePath(), field.getRange()),
                             fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).type : null
                     ));

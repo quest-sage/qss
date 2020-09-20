@@ -9,9 +9,9 @@ import java.util.function.Consumer;
 
 public class Struct extends Node {
     private final Token name;
-    private final ArrayList<Field> fields;
+    private final ArrayList<Documentable<Field>> fields;
 
-    public Struct(Range range, Token name, ArrayList<Field> fields) {
+    public Struct(Range range, Token name, ArrayList<Documentable<Field>> fields) {
         super(range);
         this.name = name;
         this.fields = fields;
@@ -24,13 +24,13 @@ public class Struct extends Node {
         return name;
     }
 
-    public ArrayList<Field> getFields() {
+    public ArrayList<Documentable<Field>> getFields() {
         return fields;
     }
 
     @Override
     public void forChildren(Consumer<Node> consumer) {
-        for (Field field : fields) {
+        for (Documentable<Field> field : fields) {
             consumer.accept(field);
         }
     }
