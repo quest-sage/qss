@@ -3,6 +3,9 @@ package com.thirds.qss.compiler.tree;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.ScriptPath;
+import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.Import;
+import com.thirds.qss.compiler.tree.script.Struct;
 
 import java.util.ArrayList;
 import java.util.Set;

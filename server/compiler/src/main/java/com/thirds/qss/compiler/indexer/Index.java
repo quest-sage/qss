@@ -6,6 +6,10 @@ import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.tree.*;
+import com.thirds.qss.compiler.tree.script.Field;
+import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.Param;
+import com.thirds.qss.compiler.tree.script.Struct;
 
 import java.util.*;
 import java.util.stream.Collectors;

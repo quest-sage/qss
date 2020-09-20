@@ -18,7 +18,7 @@
 				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
-					"match": "\\b(import|before|after|func)\\b"
+					"match": "\\b(import|before|after|native|func)\\b"
 				},
 				{
 					"comment": "Type declaration",

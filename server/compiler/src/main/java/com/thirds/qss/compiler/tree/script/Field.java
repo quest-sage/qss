@@ -1,18 +1,20 @@
-package com.thirds.qss.compiler.tree;
+package com.thirds.qss.compiler.tree.script;
 
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.tree.Node;
+import com.thirds.qss.compiler.tree.Type;
 
 import java.util.function.Consumer;
 
 /**
- * Represents a parameter of a func/hook.
+ * Represents a field of a struct.
  */
-public class Param extends Node {
+public class Field extends Node {
     private final Token name;
     private final Type type;
 
-    public Param(Range range, Token name, Type type) {
+    public Field(Range range, Token name, Type type) {
         super(range);
         this.name = name;
         this.type = type;

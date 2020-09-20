@@ -1,7 +1,8 @@
-package com.thirds.qss.compiler.tree;
+package com.thirds.qss.compiler.tree.script;
 
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.tree.Node;
 
 import java.util.function.Consumer;
 

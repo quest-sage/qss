@@ -6,7 +6,7 @@ import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
-import com.thirds.qss.compiler.tree.Struct;
+import com.thirds.qss.compiler.tree.script.Struct;
 
 import java.util.ArrayList;
 import java.util.HashMap;

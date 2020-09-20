@@ -1,4 +1,7 @@
-package com.thirds.qss.compiler.tree;
+package com.thirds.qss.compiler.tree.script;
+
+import com.thirds.qss.compiler.tree.NameLiteral;
+import com.thirds.qss.compiler.tree.Node;
 
 import java.util.function.Consumer;
 

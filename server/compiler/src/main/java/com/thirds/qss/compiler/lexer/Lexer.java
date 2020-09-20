@@ -250,6 +250,9 @@ public class Lexer {
                             case "after":
                                 type = TokenType.KW_AFTER;
                                 break;
+                            case "native":
+                                type = TokenType.KW_NATIVE;
+                                break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
                                 break;

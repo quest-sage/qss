@@ -14,7 +14,7 @@ public class ListMessenger<T> extends Messenger<ArrayList<T>> {
         super(new ArrayList<>(initialCapacity), new ArrayList<>(0));
     }
 
-    public void add(Messenger<T> value) {
+    public void add(Messenger<? extends T> value) {
         if (getValue().isPresent()) {
             getMessages().addAll(value.getMessages());
             if (value.getValue().isPresent()) {

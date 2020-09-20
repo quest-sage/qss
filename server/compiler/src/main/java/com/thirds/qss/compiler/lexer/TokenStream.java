@@ -19,6 +19,15 @@ public class TokenStream {
         return Optional.empty();
     }
 
+    /**
+     * @param peekAmount How many tokens to peek ahead?
+     */
+    public Optional<Token> peek(int peekAmount) {
+        if (currentIndex + peekAmount < tokens.size())
+            return Optional.of(tokens.get(currentIndex + peekAmount));
+        return Optional.empty();
+    }
+
     public Token next() {
         currentIndex++;
         return tokens.get(currentIndex);

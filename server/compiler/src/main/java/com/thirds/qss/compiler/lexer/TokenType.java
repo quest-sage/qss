@@ -9,7 +9,7 @@ public enum TokenType {
     SCOPE_RESOLUTION,  // ::
     SEMICOLON,  // ;
 
-    KW_STRUCT, KW_FUNC, KW_BEFORE, KW_AFTER,
+    KW_STRUCT, KW_FUNC, KW_BEFORE, KW_AFTER, KW_NATIVE,
     KW_IMPORT,
     IDENTIFIER,
 

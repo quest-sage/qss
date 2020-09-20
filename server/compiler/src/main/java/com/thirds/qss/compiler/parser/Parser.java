@@ -7,6 +7,9 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.*;
+import com.thirds.qss.compiler.tree.script.*;
+import com.thirds.qss.compiler.tree.statement.CompoundStatement;
+import com.thirds.qss.compiler.tree.statement.Statement;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -191,7 +194,50 @@ public class Parser {
     }
 
     public Messenger<FuncBlock> parseFuncBlock(TokenStream tokens) {
-        return Messenger.success(new FuncBlock(new Range(tokens.currentPosition())));
+        if (tokens.peek(2).isPresent() && tokens.peek(2).get().type == TokenType.KW_NATIVE) {
+            // This is a { native } block.
+            return parseMulti(List.of(
+                    () -> consumeToken(tokens, TokenType.LBRACE),       // 0
+                    () -> consumeToken(tokens, TokenType.KW_NATIVE),    // 1
+                    () -> consumeToken(tokens, TokenType.RBRACE)        // 2
+            )).map(list -> {
+                Token first = ((Token) list.get(0));
+                Token last = ((Token) list.get(2));
+                Range totalRange = Range.combine(first.getRange(), last.getRange());
+
+                return Messenger.success(new FuncBlock(totalRange, null));
+            });
+        }
+        return parseCompoundStatement(tokens).map(block -> Messenger.success(new FuncBlock(new Range(tokens.currentPosition()), block)));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Messenger<CompoundStatement> parseCompoundStatement(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 0
+                () -> parseGreedy(() -> parseStatement(tokens)),    // 1
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 2
+        )).map(list -> {
+            Token first = ((Token) list.get(0));
+            ArrayList<Statement> statements = ((ArrayList<Statement>) list.get(1));
+            Token last = ((Token) list.get(2));
+            Range totalRange = Range.combine(first.getRange(), last.getRange());
+
+            return Messenger.success(new CompoundStatement(totalRange, statements));
+        });
+    }
+
+    private Optional<Messenger<Statement>> parseStatement(TokenStream tokens) {
+        if (tokens.peek().isEmpty())
+            return Optional.empty();
+        Token peek = tokens.peek().get();
+        switch (peek.type) {
+            case LBRACE:
+                // The map(Messenger::success) downcasts the Messenger<CompoundStatement> to a Messenger<Statement>.
+                return Optional.of(parseCompoundStatement(tokens).map(Messenger::success));
+            default:
+                return Optional.empty();
+        }
     }
 
     /**
