@@ -4,6 +4,7 @@ import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.FuncHook;
 import com.thirds.qss.compiler.tree.script.Import;
 import com.thirds.qss.compiler.tree.script.Struct;
 
@@ -25,9 +26,10 @@ public class Script extends Node {
 
     private final ArrayList<Documentable<Struct>> structs;
     private final ArrayList<Documentable<Func>> funcs;
+    private final ArrayList<Documentable<FuncHook>> funcHooks;
 
     public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports,
-                  ArrayList<Documentable<Struct>> structs, ArrayList<Documentable<Func>> funcs) {
+                  ArrayList<Documentable<Struct>> structs, ArrayList<Documentable<Func>> funcs, ArrayList<Documentable<FuncHook>> funcHooks) {
         super(range);
         this.filePath = filePath;
         this.packageName = packageName;
@@ -35,13 +37,13 @@ public class Script extends Node {
         this.imports = imports;
         this.structs = structs;
         this.funcs = funcs;
+        this.funcHooks = funcHooks;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
                 .collect(Collectors.toSet());
     }
 
     @Override
-    public String
-    toString() {
+    public String toString() {
         return "Script{" +
                 "filePath=" + filePath +
                 ", packageName=" + packageName +
@@ -50,6 +52,7 @@ public class Script extends Node {
                 ", importedPackages=" + importedPackages +
                 ", structs=" + structs +
                 ", funcs=" + funcs +
+                ", funcHooks=" + funcHooks +
                 '}';
     }
 
@@ -67,6 +70,10 @@ public class Script extends Node {
 
     public ArrayList<Documentable<Func>> getFuncs() {
         return funcs;
+    }
+
+    public ArrayList<Documentable<FuncHook>> getFuncHooks() {
+        return funcHooks;
     }
 
     public QualifiedName getPackageName() {

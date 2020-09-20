@@ -11,7 +11,13 @@ struct A {
 }
 
 ** Function `a` does a thing **
-func a(a: A, b: B)
+func a(a: A, b: B) {
+
+}
+
+before func a() {
+
+}
 
 ** Abcdef **
 struct B {

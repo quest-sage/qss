@@ -53,12 +53,16 @@ public class Parser {
         return imports.map(imports2 -> items.map(items2 -> {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             ArrayList<Documentable<Func>> funcs = new ArrayList<>();
+            ArrayList<Documentable<FuncHook>> funcHooks = new ArrayList<>();
+
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
                 if (content instanceof Struct)
                     structs.add((Documentable<Struct>) documentable);
                 else if (content instanceof Func)
                     funcs.add((Documentable<Func>) documentable);
+                else if (content instanceof FuncHook)
+                    funcHooks.add((Documentable<FuncHook>) documentable);
             }
 
             // Deduce what package the script is in by reversing directories until we hit the bundle.toml file.
@@ -91,7 +95,7 @@ public class Parser {
                     packageName,
                     packagePath,
                     imports2,
-                    structs, funcs
+                    structs, funcs, funcHooks
             ), messages);
         }));
     }
@@ -122,6 +126,11 @@ public class Parser {
             return Optional.of(func.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
         }
 
+        Optional<Messenger<FuncHook>> hook = parseHook(tokens);
+        if (hook.isPresent()) {
+            return Optional.of(hook.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+        }
+
         if (docs != null)
             tokens.rewind();
         return Optional.empty();
@@ -150,6 +159,48 @@ public class Parser {
 
             return Messenger.success(func);
         }));
+    }
+
+    public Optional<Messenger<FuncHook>> parseHook(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || (tokens.peek().get().type != TokenType.KW_BEFORE && tokens.peek().get().type != TokenType.KW_AFTER))
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        Token time = tokens.next();
+
+        if (tokens.peek().isEmpty())
+            return Optional.of(Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected hook target (func), got end of file"
+            )))));
+        Token target = tokens.next();
+        if (target.type == TokenType.KW_FUNC) {
+            // This is a func hook.
+            return Optional.of(parseMulti(List.of(
+                    () -> parseName(tokens),                            // 0
+                    () -> parseParamList(tokens),                       // 1
+                    () -> parseFuncBlock(tokens)                        // 2
+            )).map(list -> {
+                NameLiteral name = (NameLiteral) list.get(0);
+                ParamList paramList = (ParamList) list.get(1);
+                FuncBlock funcBlock = (FuncBlock) list.get(2);
+
+                FuncHook hook = new FuncHook(
+                        new Range(start, tokens.currentPosition()),
+                        time, name, paramList, funcBlock
+                );
+
+                return Messenger.success(hook);
+            }));
+        } else {
+            return Optional.of(Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected hook target (func), got " + target.type
+            )))));
+        }
     }
 
     /**
