@@ -106,5 +106,8 @@ public class Script extends Node {
         for (Documentable<Func> func : funcs) {
             consumer.accept(func);
         }
+        for (Documentable<FuncHook> funcHook : funcHooks) {
+            consumer.accept(funcHook);
+        }
     }
 }

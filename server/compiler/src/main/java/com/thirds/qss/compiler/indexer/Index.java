@@ -1,17 +1,22 @@
 package com.thirds.qss.compiler.indexer;
 
+import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.tree.*;
-import com.thirds.qss.compiler.tree.script.Field;
-import com.thirds.qss.compiler.tree.script.Func;
-import com.thirds.qss.compiler.tree.script.Param;
-import com.thirds.qss.compiler.tree.script.Struct;
+import com.thirds.qss.compiler.resolve.ResolveAlternative;
+import com.thirds.qss.compiler.resolve.ResolveResult;
+import com.thirds.qss.compiler.tree.Documentable;
+import com.thirds.qss.compiler.tree.NameLiteral;
+import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.Type;
+import com.thirds.qss.compiler.tree.script.*;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -191,13 +196,13 @@ public class Index {
                             "Previously defined here"
                     )));
                 } else {
-                    // Resolve the field's type using the type name indices in the compiler.
-                    Type.ResolveResult fieldTypeAlternatives = resolveType(script, messages, field.getContent().getName().contents, field.getContent().getType());
+                    // Resolve the field's type using the name indices in the compiler.
+                    ResolveResult<VariableType> fieldTypeAlternatives = resolveType(script, messages, field.getContent().getName().contents, field.getContent().getType());
 
                     def.fields.put(field.getContent().getName().contents, new FieldDefinition(
                             field.getDocumentation().map(tk -> tk.contents).orElse(null),
                             new Location(script.getFilePath(), field.getRange()),
-                            fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).type : null
+                            fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).value : null
                     ));
                 }
             }
@@ -231,28 +236,74 @@ public class Index {
                     )));
                 } else {
                     // Resolve the parameter's type.
-                    Type.ResolveResult paramTypeAlternatives = resolveType(script, messages, param.getName().contents, param.getType());
+                    ResolveResult<VariableType> paramTypeAlternatives = resolveType(script, messages, param.getName().contents, param.getType());
 
                     def.params.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
-                            paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).type : null));
+                            paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).value : null));
                 }
             }
 
             funcDefinitions.put(func.getContent().getName().contents, def);
         }
 
+        for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
+            // Resolve the name of the function we're hooking into.
+            ResolveResult<NameIndex.FuncDefinition> superFunc = resolveFuncName(script, messages, funcHook.getContent().getName());
+        }
+
         return Messenger.success(this, messages);
     }
 
-    private Type.ResolveResult resolveType(Script script, ArrayList<Message> messages, String name, Type type) {
-        Type.ResolveResult fieldTypeAlternatives = type.resolve(script.getImportedPackages(), compiler.getTypeNameIndices());
+    private ResolveResult<NameIndex.FuncDefinition> resolveFuncName(Script script, ArrayList<Message> messages, NameLiteral funcName) {
+        ResolveResult<NameIndex.FuncDefinition> funcResolved = ResolveResult.resolveGlobalScope(compiler, script, nameIndex -> {
+            ArrayList<NameIndex.FuncDefinition> alternatives = new ArrayList<>(0);
+            nameIndex.getFuncDefinitions().forEach((name, func) -> {
+                QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(name);
+                if (funcName.matches(qualifiedName)) {
+                    alternatives.add(func);
+                }
+            });
+            return alternatives;
+        });
+
+        if (funcResolved.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve func ").append(funcName);
+            if (!funcResolved.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<NameIndex.FuncDefinition> alt : funcResolved.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (funcResolved.alternatives.size() == 1) {
+            ResolveAlternative<NameIndex.FuncDefinition> resolved = funcResolved.alternatives.get(0);
+            funcName.setTarget(resolved.value.getLocation(), resolved.value.getDocumentation());
+        } else {
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Reference to func " + funcName + " was ambiguous, possibilities were: " +
+                            funcResolved.alternatives.stream().map(alt -> alt.value.toString()).collect(Collectors.joining(", "))
+            ));
+        }
+
+        return funcResolved;
+    }
+
+    private ResolveResult<VariableType> resolveType(Script script, ArrayList<Message> messages, String name, Type type) {
+        ResolveResult<VariableType> fieldTypeAlternatives = type.resolve(compiler, script);
 
         if (fieldTypeAlternatives.alternatives.isEmpty()) {
             StringBuilder message = new StringBuilder("Could not resolve type of ").append(name);
             if (!fieldTypeAlternatives.nonImportedAlternatives.isEmpty()) {
                 message.append("; try one of the following:");
-                for (Type.ResolveAlternative alt : fieldTypeAlternatives.nonImportedAlternatives) {
+                for (ResolveAlternative<VariableType> alt : fieldTypeAlternatives.nonImportedAlternatives) {
                     // \u2022 is the bullet character
                     message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
                 }
@@ -267,7 +318,7 @@ public class Index {
                     type.getRange(),
                     Message.MessageSeverity.ERROR,
                     "Type of " + name + " was ambiguous, possibilities were: " +
-                            fieldTypeAlternatives.alternatives.stream().map(alt -> alt.type.toString()).collect(Collectors.joining(", "))
+                            fieldTypeAlternatives.alternatives.stream().map(alt -> alt.value.toString()).collect(Collectors.joining(", "))
             ));
         }
         return fieldTypeAlternatives;

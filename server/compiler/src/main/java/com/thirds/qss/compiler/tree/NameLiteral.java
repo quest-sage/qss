@@ -1,6 +1,5 @@
 package com.thirds.qss.compiler.tree;
 
-import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Range;
@@ -82,7 +81,7 @@ public class NameLiteral extends Node implements Symbol {
 
     @Override
     public String toString() {
-        return super.toString() + "->" + targetLocation;
+        return toQualifiedName().toString();
     }
 
     public QualifiedName toQualifiedName() {

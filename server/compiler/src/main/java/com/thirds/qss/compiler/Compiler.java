@@ -11,8 +11,8 @@ import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.indexer.Index;
 import com.thirds.qss.compiler.indexer.Indices;
-import com.thirds.qss.compiler.indexer.TypeNameIndex;
-import com.thirds.qss.compiler.indexer.TypeNameIndices;
+import com.thirds.qss.compiler.indexer.NameIndex;
+import com.thirds.qss.compiler.indexer.NameIndices;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
@@ -69,9 +69,9 @@ public class Compiler {
             .build();
 
     /**
-     * Maps bundles and package paths to their type name indices.
+     * Maps bundles and package paths to their name indices.
      */
-    private final TypeNameIndices typeNameIndices = new TypeNameIndices();
+    private final NameIndices typeNameIndices = new NameIndices();
 
     /**
      * Maps bundles and package paths to their detailed indices.
@@ -212,7 +212,7 @@ public class Compiler {
         }
     }
 
-    public TypeNameIndices getTypeNameIndices() {
+    public NameIndices getNameIndices() {
         return typeNameIndices;
     }
 
@@ -275,8 +275,8 @@ public class Compiler {
 
             // Fill the index with each script in the package, making sure to do this script last.
             // If it's last, any name collisions will be reported in this file's error messages.
-            Messenger<TypeNameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
-                    Messenger.success(new TypeNameIndex("bundle", scriptParsed.getPackageName())),
+            Messenger<NameIndex> typeNameIndex = forNeighbours(filePath, scriptParsed,
+                    Messenger.success(new NameIndex("bundle", scriptParsed.getPackageName())),
                     (script2, index) -> index.addFrom(script2));
             typeNameIndex.getValue().ifPresent(idx -> typeNameIndices
                     .computeIfAbsent("bundle", new ScriptPath())
@@ -294,7 +294,7 @@ public class Compiler {
                 typeNameIndices
                         .computeIfAbsent("bundle", new ScriptPath())
                         .computeIfAbsent(packageName, k -> {
-                            TypeNameIndex index = new TypeNameIndex("bundle", k);
+                            NameIndex index = new NameIndex("bundle", k);
                             forScriptsIn(new ScriptPath(Paths.get("src").resolve(k.toPath())), index::addFrom);
                             return index;
                         });
@@ -306,7 +306,7 @@ public class Compiler {
                     typeNameIndices
                             .computeIfAbsent(dependencyBundle, dependencyBundlePath)
                             .computeIfAbsent(packageName, k -> {
-                                TypeNameIndex index = new TypeNameIndex(dependencyBundle, k);
+                                NameIndex index = new NameIndex(dependencyBundle, k);
                                 forScriptsIn(new ScriptPath(dependencyBundlePath.toPath().resolve("src").resolve(k.toPath())), index::addFrom);
                                 return index;
                             });

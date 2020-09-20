@@ -126,9 +126,9 @@ public class Parser {
             return Optional.of(func.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
         }
 
-        Optional<Messenger<FuncHook>> hook = parseHook(tokens);
-        if (hook.isPresent()) {
-            return Optional.of(hook.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+        Optional<Messenger<FuncHook>> funcHook = parseHook(tokens);
+        if (funcHook.isPresent()) {
+            return Optional.of(funcHook.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
         }
 
         if (docs != null)
