@@ -93,5 +93,8 @@ public class Script extends Node {
         for (Documentable<Struct> struct : structs) {
             consumer.accept(struct);
         }
+        for (Documentable<Func> func : funcs) {
+            consumer.accept(func);
+        }
     }
 }
