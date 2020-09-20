@@ -45,10 +45,26 @@
 			]
 		},
 		"comments": {
-			"comment": "Documentation comment",
-			"name": "comment.block.documentation.qss",
-			"begin": "\\*\\*",
-			"end": "\\*\\*"
+			"patterns": [
+				{
+					"comment": "Documentation comment",
+					"name": "comment.block.documentation.qss",
+					"begin": "\\*\\*",
+					"end": "\\*\\*"
+				},
+				{
+					"comment": "Line comment",
+					"name": "comment.line.double-slash.qss",
+					"begin": "//",
+					"end": "\\n"
+				},
+				{
+					"comment": "Block comment",
+					"name": "comment.block.qss",
+					"begin": "/\\*",
+					"end": "\\*/"
+				}
+			]
 		}
 	},
 	"scopeName": "source.qss"

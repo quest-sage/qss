@@ -140,6 +140,71 @@ public class Lexer {
                     }
                     break;
                 }
+                case '/':
+                {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '*') {
+                        codePoints.next();
+
+                        // This is a block comment.
+                        Position start = position.copy();
+                        position.character += 2;
+                        codePoints.next();
+
+                        boolean failed = false;
+                        int codePoint;
+                        while (true) {
+                            codePoint = codePoints.peek();
+
+                            if (codePoint == -1) {
+                                messages.add(new Message(
+                                        new Range(start, position),
+                                        Message.MessageSeverity.ERROR,
+                                        "Unclosed block comment"
+                                ));
+                                failed = true;
+                                break;
+                            }
+
+                            codePoints.next();
+                            position.character++;
+                            if (codePoint == '*' && codePoints.peek() == '/') {
+                                break;
+                            }
+                        }
+
+                        if (!failed) {
+                            codePoints.next();  // Consume the end star character.
+                            position.character++;
+                        }
+                    } else if (codePoints.peek() == '/') {
+                        codePoints.next();
+
+                        // This is a line comment.
+                        Position start = position.copy();
+                        position.character += 2;
+                        codePoints.next();
+
+                        int codePoint;
+                        while (codePoints.peek() != '\n') {
+                            codePoint = codePoints.next();
+
+                            if (codePoint == -1) {
+                                messages.add(new Message(
+                                        new Range(start, position),
+                                        Message.MessageSeverity.ERROR,
+                                        "Unclosed block comment"
+                                ));
+                                break;
+                            }
+
+                            position.character++;
+                        }
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.SLASH, position);
+                    }
+                    break;
+                }
                 case '\n':
                     position.line++;
                     position.character = 0;

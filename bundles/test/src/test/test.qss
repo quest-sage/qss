@@ -4,7 +4,9 @@ import bundle1
 struct A {
     q: Int
     b: B
+    ** Internal field **
     aa: Internal
+    ** Bundle1 field **
     b1: Bundle1
 }
 
