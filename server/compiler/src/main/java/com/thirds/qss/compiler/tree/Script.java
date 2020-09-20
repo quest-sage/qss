@@ -19,27 +19,34 @@ public class Script extends Node {
     private final ScriptPath bundleRoot;
     private final ArrayList<Import> imports;
     private final Set<QualifiedName> importedPackages;
-    private final ArrayList<Documentable<Struct>> structs;
 
-    public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports, ArrayList<Documentable<Struct>> structs) {
+    private final ArrayList<Documentable<Struct>> structs;
+    private final ArrayList<Documentable<Func>> funcs;
+
+    public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports,
+                  ArrayList<Documentable<Struct>> structs, ArrayList<Documentable<Func>> funcs) {
         super(range);
         this.filePath = filePath;
         this.packageName = packageName;
         this.bundleRoot = bundleRoot;
         this.imports = imports;
         this.structs = structs;
+        this.funcs = funcs;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
                 .collect(Collectors.toSet());
     }
 
     @Override
-    public String toString() {
+    public String
+    toString() {
         return "Script{" +
                 "filePath=" + filePath +
                 ", packageName=" + packageName +
                 ", bundleRoot=" + bundleRoot +
                 ", imports=" + imports +
+                ", importedPackages=" + importedPackages +
                 ", structs=" + structs +
+                ", funcs=" + funcs +
                 '}';
     }
 
@@ -53,6 +60,10 @@ public class Script extends Node {
 
     public ArrayList<Documentable<Struct>> getStructs() {
         return structs;
+    }
+
+    public ArrayList<Documentable<Func>> getFuncs() {
+        return funcs;
     }
 
     public QualifiedName getPackageName() {

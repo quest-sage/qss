@@ -49,10 +49,13 @@ public class Parser {
 
         return imports.map(imports2 -> items.map(items2 -> {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
+            ArrayList<Documentable<Func>> funcs = new ArrayList<>();
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
                 if (content instanceof Struct)
                     structs.add((Documentable<Struct>) documentable);
+                else if (content instanceof Func)
+                    funcs.add((Documentable<Func>) documentable);
             }
 
             // Deduce what package the script is in by reversing directories until we hit the bundle.toml file.
@@ -85,7 +88,7 @@ public class Parser {
                     packageName,
                     packagePath,
                     imports2,
-                    structs
+                    structs, funcs
             ), messages);
         }));
     }
