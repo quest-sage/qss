@@ -66,10 +66,10 @@ public abstract class Type extends Node {
     }
 
     /**
-     * Computes the qualified variable type by looking up type names in the given type index.
+     * Computes the qualified variable type by looking up type names in the given type name index.
      * @param imports The set of imported packages in the file.
      * @return A list of possible alternatives for the resolution of the name;
-     * an empty list if the type could not be found in the given type index. If the size of the alternatives list is
+     * an empty list if the type could not be found in the given type name index. If the size of the alternatives list is
      * exactly 1, the variable type is resolved.
      */
     public abstract ResolveResult resolve(Set<QualifiedName> imports, TypeNameIndices typeNameIndices);

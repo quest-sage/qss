@@ -8,10 +8,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Represents a cached version of the type name indices for all loaded packages.
- * {@link Indices} is better but only available after it has been cached.
+ * Represents a cached version of the indices for all loaded packages.
  */
-public class TypeNameIndices {
+public class Indices {
     public Bundle computeIfAbsent(String bundle, ScriptPath pathToBundleRoot) {
         return bundles.computeIfAbsent(bundle, k -> new Bundle(pathToBundleRoot));
     }
@@ -35,9 +34,9 @@ public class TypeNameIndices {
         private final ScriptPath pathToBundleRoot;
 
         /**
-         * Maps package names -> corresponding type name indices.
+         * Maps package names -> corresponding indices.
          */
-        private final Map<QualifiedName, TypeNameIndex> packages = new HashMap<>();
+        private final Map<QualifiedName, Index> packages = new HashMap<>();
 
         public Bundle(ScriptPath pathToBundleRoot) {
             this.pathToBundleRoot = pathToBundleRoot;
@@ -47,15 +46,15 @@ public class TypeNameIndices {
             packages.remove(packageName);
         }
 
-        public TypeNameIndex put(QualifiedName packageName, TypeNameIndex index) {
+        public Index put(QualifiedName packageName, Index index) {
             return packages.put(packageName, index);
         }
 
-        public TypeNameIndex computeIfAbsent(QualifiedName packageName, Function<QualifiedName, TypeNameIndex> func) {
+        public Index computeIfAbsent(QualifiedName packageName, Function<QualifiedName, Index> func) {
             return packages.computeIfAbsent(packageName, func);
         }
 
-        public Map<QualifiedName, TypeNameIndex> getPackages() {
+        public Map<QualifiedName, Index> getPackages() {
             return packages;
         }
 

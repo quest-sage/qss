@@ -11,16 +11,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * The type name index is an index used to store the names and fields of each type in a given package.
+ * The index is an index used to store the names and fields of each type in a given package.
  */
-public class TypeIndex {
+public class Index {
     private final Map<String, StructDefinition> structDefinitions = new HashMap<>();
     private final Compiler compiler;
 
     /**
-     * The type name index is used for determining whether a name is defined.
+     * The index is used for determining whether a name is defined, and the details of the name.
      */
-    public TypeIndex(Compiler compiler) {
+    public Index(Compiler compiler) {
         this.compiler = compiler;
     }
 
@@ -29,7 +29,7 @@ public class TypeIndex {
         private final VariableType variableType;
 
         /**
-         * @param variableType May be null; if so, the type in the type index will show as <code>&lt;unknown&gt;</code>.
+         * @param variableType May be null; if so, the type in the index will show as <code>&lt;unknown&gt;</code>.
          */
         private FieldDefinition(Location location, VariableType variableType) {
             this.location = location;
@@ -42,6 +42,14 @@ public class TypeIndex {
 
         public VariableType getVariableType() {
             return variableType;
+        }
+
+        @Override
+        public String toString() {
+            return "FieldDefinition{" +
+                    "location=" + location +
+                    ", variableType=" + variableType +
+                    '}';
         }
     }
 
@@ -60,6 +68,14 @@ public class TypeIndex {
         public Map<String, FieldDefinition> getFields() {
             return fields;
         }
+
+        @Override
+        public String toString() {
+            return "StructDefinition{" +
+                    "location=" + location +
+                    ", fields=" + fields +
+                    '}';
+        }
     }
 
     /**
@@ -67,7 +83,7 @@ public class TypeIndex {
      * @param script The package of this script must match the package of the index itself.
      * @return <code>this</code> for chaining.
      */
-    public Messenger<TypeIndex> addFrom(Script script) {
+    public Messenger<Index> addFrom(Script script) {
         ArrayList<Message> messages = new ArrayList<>();
         for (Documentable<Struct> struct : script.getStructs()) {
             StructDefinition def = new StructDefinition(
@@ -120,5 +136,12 @@ public class TypeIndex {
             structDefinitions.put(struct.getContent().getName().contents, def);
         }
         return Messenger.success(this, messages);
+    }
+
+    @Override
+    public String toString() {
+        return "Index{" +
+                "structDefinitions=" + structDefinitions +
+                '}';
     }
 }

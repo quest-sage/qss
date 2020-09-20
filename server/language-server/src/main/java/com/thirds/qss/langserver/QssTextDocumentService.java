@@ -97,6 +97,7 @@ public class QssTextDocumentService implements TextDocumentService {
         SymbolMap symbolMap = compiler.getSymbolMap(scriptPath);
         if (symbolMap == null)
             return CompletableFuture.completedFuture(List.of());
+
         Optional<Symbol> selected = symbolMap.getSelected(from(textDocumentPositionParams.getPosition()));
         ArrayList<Location> locations = new ArrayList<>();
         selected.flatMap(Symbol::getTargetLocation).ifPresent(location -> locations.add(from(location)));

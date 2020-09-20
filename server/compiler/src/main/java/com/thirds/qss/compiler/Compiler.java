@@ -9,7 +9,8 @@ import com.google.common.collect.MultimapBuilder;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
-import com.thirds.qss.compiler.indexer.TypeIndex;
+import com.thirds.qss.compiler.indexer.Index;
+import com.thirds.qss.compiler.indexer.Indices;
 import com.thirds.qss.compiler.indexer.TypeNameIndex;
 import com.thirds.qss.compiler.indexer.TypeNameIndices;
 import com.thirds.qss.compiler.lexer.Lexer;
@@ -68,9 +69,14 @@ public class Compiler {
             .build();
 
     /**
-     * Maps bundles and package paths to their type indices.
+     * Maps bundles and package paths to their type name indices.
      */
     private final TypeNameIndices typeNameIndices = new TypeNameIndices();
+
+    /**
+     * Maps bundles and package paths to their detailed indices.
+     */
+    private final Indices indices = new Indices();
 
     /**
      * @param bundleRoot The root directory of the bundle we're compiling. This should contain the bundle.toml file.
@@ -307,16 +313,46 @@ public class Compiler {
                 }
             });
 
-            QssLogger.logger.atInfo().log("Indices:\n%s", typeNameIndices);
+            QssLogger.logger.atInfo().log("Type Name Indices:\n%s", typeNameIndices);
 
             // We will go ahead and generate the index. There might be errors when we do this
             // (e.g. field of undeclared type) but we'll just generate the index anyway.
+            // The addFrom method uses the typeNameIndices we just generated.
             // We'll do the same thing where we generate this script last.
-            Messenger<TypeIndex> typeIndex = forNeighbours(filePath, scriptParsed,
-                    typeNameIndex.map(idx -> Messenger.success(new TypeIndex(this))),
-                    (script2, index) -> index.addFrom(script2));
+            Messenger<Index> index = forNeighbours(filePath, scriptParsed,
+                    typeNameIndex.map(idx -> Messenger.success(new Index(this))),
+                    (script2, index2) -> index2.addFrom(script2));
+            index.getValue().ifPresent(idx -> indices
+                    .computeIfAbsent("bundle", new ScriptPath())
+                    .put(scriptParsed.getPackageName(), idx));
 
-            allMessages.addAll(typeIndex.getMessages());
+            // Now, let's build the index for the whole bundle.
+            for (QualifiedName packageName : getPackagesInBundle(bundleRoot.resolve("src"))) {
+                indices
+                        .computeIfAbsent("bundle", new ScriptPath())
+                        .computeIfAbsent(packageName, k -> {
+                            Index index2 = new Index(this);
+                            forScriptsIn(new ScriptPath(Paths.get("src").resolve(k.toPath())), index2::addFrom);
+                            return index2;
+                        });
+            }
+
+            dependencies.forEach((dependencyBundle, dependencyBundlePath) -> {
+                // Compute the indices for each dependency bundle.
+                for (QualifiedName packageName : getPackagesInBundle(bundleRoot.resolve(dependencyBundlePath.toPath()).resolve("src"))) {
+                    indices
+                            .computeIfAbsent(dependencyBundle, dependencyBundlePath)
+                            .computeIfAbsent(packageName, k -> {
+                                Index index2 = new Index(this);
+                                forScriptsIn(new ScriptPath(dependencyBundlePath.toPath().resolve("src").resolve(k.toPath())), index2::addFrom);
+                                return index2;
+                            });
+                }
+            });
+
+            QssLogger.logger.atInfo().log("Indices:\n%s", indices);
+
+            allMessages.addAll(index.getMessages());
 
             // Return the parsed script.
             return Messenger.success(scriptParsed, allMessages);
