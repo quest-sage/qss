@@ -1,20 +1,18 @@
 package com.thirds.qss.compiler.tree;
 
-import com.thirds.qss.BundleQualifiedName;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.indexer.NameIndex;
-import com.thirds.qss.compiler.indexer.NameIndices;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.resolve.ResolveAlternative;
 import com.thirds.qss.compiler.resolve.ResolveResult;
+import com.thirds.qss.compiler.resolve.Resolver;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -81,7 +79,7 @@ public abstract class Type extends Node {
         @Override
         public ResolveResult<VariableType> resolve(Compiler compiler, Script script) {
             AtomicReference<NameIndex.StructDefinition> matchedDefinition = new AtomicReference<>();
-            ResolveResult<VariableType> result = ResolveResult.resolveGlobalScope(compiler, script, nameIndex -> {
+            ResolveResult<VariableType> result = Resolver.resolveGlobalScopeName(compiler, script, nameIndex -> {
                 ArrayList<VariableType> alternatives = new ArrayList<>(0);
                 for (Map.Entry<String, NameIndex.StructDefinition> entry : nameIndex.getStructDefinitions().entrySet()) {
                     String s = entry.getKey();

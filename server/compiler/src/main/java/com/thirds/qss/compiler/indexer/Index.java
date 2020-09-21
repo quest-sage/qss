@@ -1,6 +1,5 @@
 package com.thirds.qss.compiler.indexer;
 
-import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
@@ -8,8 +7,8 @@ import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.resolve.ResolveAlternative;
 import com.thirds.qss.compiler.resolve.ResolveResult;
+import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Documentable;
-import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.script.*;
@@ -249,51 +248,10 @@ public class Index {
 
         for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
             // Resolve the name of the function we're hooking into.
-            ResolveResult<NameIndex.FuncDefinition> superFunc = resolveFuncName(script, messages, funcHook.getContent().getName());
+            ResolveResult<Resolver.FuncNameAlternative> superFunc = Resolver.resolveFuncName(compiler, script, messages, funcHook.getContent().getName());
         }
 
         return Messenger.success(this, messages);
-    }
-
-    private ResolveResult<NameIndex.FuncDefinition> resolveFuncName(Script script, ArrayList<Message> messages, NameLiteral funcName) {
-        ResolveResult<NameIndex.FuncDefinition> funcResolved = ResolveResult.resolveGlobalScope(compiler, script, nameIndex -> {
-            ArrayList<NameIndex.FuncDefinition> alternatives = new ArrayList<>(0);
-            nameIndex.getFuncDefinitions().forEach((name, func) -> {
-                QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(name);
-                if (funcName.matches(qualifiedName)) {
-                    alternatives.add(func);
-                }
-            });
-            return alternatives;
-        });
-
-        if (funcResolved.alternatives.isEmpty()) {
-            StringBuilder message = new StringBuilder("Could not resolve func ").append(funcName);
-            if (!funcResolved.nonImportedAlternatives.isEmpty()) {
-                message.append("; try one of the following:");
-                for (ResolveAlternative<NameIndex.FuncDefinition> alt : funcResolved.nonImportedAlternatives) {
-                    // \u2022 is the bullet character
-                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
-                }
-            }
-            messages.add(new Message(
-                    funcName.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    message.toString()
-            ));
-        } else if (funcResolved.alternatives.size() == 1) {
-            ResolveAlternative<NameIndex.FuncDefinition> resolved = funcResolved.alternatives.get(0);
-            funcName.setTarget(resolved.value.getLocation(), resolved.value.getDocumentation());
-        } else {
-            messages.add(new Message(
-                    funcName.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    "Reference to func " + funcName + " was ambiguous, possibilities were: " +
-                            funcResolved.alternatives.stream().map(alt -> alt.value.toString()).collect(Collectors.joining(", "))
-            ));
-        }
-
-        return funcResolved;
     }
 
     private ResolveResult<VariableType> resolveType(Script script, ArrayList<Message> messages, String name, Type type) {
