@@ -1,8 +1,9 @@
 package com.thirds.qss.compiler.lexer;
 
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.Ranged;
 
-public class Token {
+public class Token implements Ranged {
     public final TokenType type;
     public final String contents;
     private final Range range;
@@ -22,6 +23,7 @@ public class Token {
                 '}';
     }
 
+    @Override
     public Range getRange() {
         return range;
     }

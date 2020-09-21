@@ -17,4 +17,12 @@ public class LetAssignStatement extends Statement {
         this.name = name;
         this.rvalue = rvalue;
     }
+
+    public Token getName() {
+        return name;
+    }
+
+    public Expression getRvalue() {
+        return rvalue;
+    }
 }

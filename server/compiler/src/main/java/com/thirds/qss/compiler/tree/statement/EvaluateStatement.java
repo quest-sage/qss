@@ -12,4 +12,8 @@ public class EvaluateStatement extends Statement {
         super(expr.getRange());
         this.expr = expr;
     }
+
+    public Expression getExpr() {
+        return expr;
+    }
 }

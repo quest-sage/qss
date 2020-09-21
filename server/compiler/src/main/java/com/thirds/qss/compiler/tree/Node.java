@@ -1,6 +1,7 @@
 package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.Ranged;
 import com.thirds.qss.compiler.lexer.Token;
 
 import java.util.function.Consumer;
@@ -9,13 +10,14 @@ import java.util.function.Consumer;
  * The tree package represents a type-safe abstract syntax tree.
  * A Node is any element of this tree.
  */
-public class Node {
+public class Node implements Ranged {
     private final Range range;
 
     public Node(Range range) {
         this.range = range;
     }
 
+    @Override
     public Range getRange() {
         return range;
     }

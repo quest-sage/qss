@@ -139,6 +139,7 @@ public class Parser {
         return Optional.empty();
     }
 
+    @SuppressWarnings("unchecked")
     public Optional<Messenger<Func>> parseFunc(TokenStream tokens) {
         if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_FUNC)
             return Optional.empty();
@@ -149,15 +150,17 @@ public class Parser {
                 () -> consumeToken(tokens, TokenType.KW_FUNC),      // 0
                 () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
                 () -> parseParamList(tokens),                       // 2
-                () -> parseFuncBlock(tokens)                        // 3
+                () -> parseReturnType(tokens),                      // 3
+                () -> parseFuncBlock(tokens)                        // 4
         )).map(list -> {
             Token identifier = (Token) list.get(1);
             ParamList paramList = (ParamList) list.get(2);
-            FuncBlock funcBlock = (FuncBlock) list.get(3);
+            Optional<Type> returnType = (Optional<Type>) list.get(3);
+            FuncBlock funcBlock = (FuncBlock) list.get(4);
 
             Func func = new Func(
                     new Range(start, tokens.currentPosition()),
-                    identifier, paramList, funcBlock
+                    identifier, paramList, returnType.orElse(null), funcBlock
             );
 
             return Messenger.success(func);
@@ -245,6 +248,14 @@ public class Parser {
             ArrayList<Param> params = (ArrayList<Param>) list.get(1);
             return Messenger.success(new ParamList(new Range(start, tokens.currentPosition()), params));
         });
+    }
+
+    public Messenger<Optional<Type>> parseReturnType(TokenStream tokens) {
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.RETURNS) {
+            tokens.next();  // consume the RETURNS token
+            return parseType(tokens).map(t -> Messenger.success(Optional.of(t)));
+        }
+        return Messenger.success(Optional.empty());
     }
 
     public Messenger<FuncBlock> parseFuncBlock(TokenStream tokens) {

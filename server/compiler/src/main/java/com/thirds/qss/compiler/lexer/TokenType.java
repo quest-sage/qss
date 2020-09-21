@@ -21,6 +21,7 @@ public enum TokenType {
     PLUS, MINUS, STAR, SLASH,  // + - * /
     DOT, COMMA,  // . ,
     ASSIGN,  // =
+    RETURNS,  // ->
 
     DOCUMENTATION_COMMENT,  // ** ... **
 }

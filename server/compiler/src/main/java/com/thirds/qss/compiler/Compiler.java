@@ -16,8 +16,11 @@ import com.thirds.qss.compiler.indexer.NameIndices;
 import com.thirds.qss.compiler.lexer.Lexer;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.parser.Parser;
+import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.SymbolMap;
+import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.type.TypeDeducer;
 
 import java.io.File;
 import java.io.IOException;
@@ -353,6 +356,13 @@ public class Compiler {
             QssLogger.logger.atInfo().log("Indices:\n%s", indices);
 
             allMessages.addAll(index.getMessages());
+
+            // Now that all the indices have been created, we can start deducing the types of everything inside
+            // function bodies.
+            TypeDeducer typeDeducer = new TypeDeducer(this);
+            for (Documentable<Func> func : scriptParsed.getFuncs()) {
+                typeDeducer.computeTypesIn(func.getContent(), allMessages);
+            }
 
             // Return the parsed script.
             return Messenger.success(scriptParsed, allMessages);

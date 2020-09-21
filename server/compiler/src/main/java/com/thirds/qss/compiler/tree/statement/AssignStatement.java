@@ -15,4 +15,12 @@ public class AssignStatement extends Statement {
         this.lvalue = lvalue;
         this.rvalue = rvalue;
     }
+
+    public Expression getLvalue() {
+        return lvalue;
+    }
+
+    public Expression getRvalue() {
+        return rvalue;
+    }
 }

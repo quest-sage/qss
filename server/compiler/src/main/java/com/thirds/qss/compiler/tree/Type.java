@@ -30,7 +30,39 @@ public abstract class Type extends Node {
      * an empty list if the type could not be found in the given name index. If the size of the alternatives list is
      * exactly 1, the variable type is resolved.
      */
-    public abstract ResolveResult<VariableType> resolve(Compiler compiler, Script script);
+    public ResolveResult<VariableType> resolve(Compiler compiler, Script script) {
+        ResolveResult<VariableType> result = resolveImpl(compiler, script);
+        resolved = true;
+        if (result.alternatives.size() == 1)
+            resolvedType = result.alternatives.get(0).value;
+        return result;
+    }
+
+    protected abstract ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script);
+
+    /**
+     * Will be set to true when resolve is called, regardless of whether the resolve was successful.
+     */
+    private boolean resolved = false;
+
+    /**
+     * If the resolve was successful, this will be set to a non-null value.
+     */
+    private VariableType resolvedType = null;
+
+    /**
+     * Will return true after {@link #resolve} is called, regardless of whether the resolve was successful.
+     */
+    public boolean isResolved() {
+        return resolved;
+    }
+
+    /**
+     * If {@link #resolve} was called, and the resolve was successful, this will return a non-null value.
+     */
+    public VariableType getResolvedType() {
+        return resolvedType;
+    }
 
     public static class PrimitiveType extends Type {
         private final Token token;
@@ -41,7 +73,7 @@ public abstract class Type extends Node {
         }
 
         @Override
-        public ResolveResult<VariableType> resolve(Compiler compiler, Script script) {
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
             switch (token.type) {
                 case KW_INT:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_INT, List.of())));
@@ -77,7 +109,7 @@ public abstract class Type extends Node {
         }
 
         @Override
-        public ResolveResult<VariableType> resolve(Compiler compiler, Script script) {
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
             AtomicReference<NameIndex.StructDefinition> matchedDefinition = new AtomicReference<>();
             ResolveResult<VariableType> result = Resolver.resolveGlobalScopeName(compiler, script, nameIndex -> {
                 ArrayList<VariableType> alternatives = new ArrayList<>(0);

@@ -16,4 +16,12 @@ public class LetWithTypeStatement extends Statement {
         this.name = name;
         this.type = type;
     }
+
+    public Token getName() {
+        return name;
+    }
+
+    public Type getType() {
+        return type;
+    }
 }
