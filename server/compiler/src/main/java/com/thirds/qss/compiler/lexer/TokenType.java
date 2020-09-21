@@ -14,11 +14,13 @@ public enum TokenType {
     IDENTIFIER,
 
     KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
+    KW_LET,
 
     STRING_LITERAL, INTEGER_LITERAL,
 
     PLUS, MINUS, STAR, SLASH,  // + - * /
     DOT, COMMA,  // . ,
+    ASSIGN,  // =
 
     DOCUMENTATION_COMMENT,  // ** ... **
 }

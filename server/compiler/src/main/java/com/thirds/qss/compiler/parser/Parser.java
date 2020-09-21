@@ -7,9 +7,12 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.*;
+import com.thirds.qss.compiler.tree.expr.Expression;
+import com.thirds.qss.compiler.tree.expr.Identifier;
+import com.thirds.qss.compiler.tree.expr.IntegerLiteral;
+import com.thirds.qss.compiler.tree.expr.StringLiteral;
 import com.thirds.qss.compiler.tree.script.*;
-import com.thirds.qss.compiler.tree.statement.CompoundStatement;
-import com.thirds.qss.compiler.tree.statement.Statement;
+import com.thirds.qss.compiler.tree.statement.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -282,13 +285,107 @@ public class Parser {
         if (tokens.peek().isEmpty())
             return Optional.empty();
         Token peek = tokens.peek().get();
+        Messenger<Statement> result;
         switch (peek.type) {
             case LBRACE:
                 // The map(Messenger::success) downcasts the Messenger<CompoundStatement> to a Messenger<Statement>.
-                return Optional.of(parseCompoundStatement(tokens).map(Messenger::success));
+                result = parseCompoundStatement(tokens).map(Messenger::success);
+                break;
+            case KW_LET:
+                result = parseLetStmt(tokens);
+                break;
+            case IDENTIFIER:
+            case INTEGER_LITERAL:
+            case STRING_LITERAL:
+                result = parseExprStmt(tokens);
+                break;
             default:
                 return Optional.empty();
         }
+        // All statements end in a semicolon.
+        return Optional.of(consumeToken(tokens, TokenType.SEMICOLON).then(() -> result));
+    }
+
+    /**
+     * Parses a statement that begins with an expression.
+     */
+    private Messenger<Statement> parseExprStmt(TokenStream tokens) {
+        Messenger<Expression> expr = parseExpr(tokens);
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.ASSIGN) {
+            // This is an assign statement.
+            // Assign := Expr '=' Expr
+            Messenger<Token> assign = consumeToken(tokens, TokenType.ASSIGN);
+            Messenger<Expression> expr2 = parseExpr(tokens);
+            return expr.map(lvalue -> assign.then(() -> expr2.map(rvalue -> Messenger.success(new AssignStatement(lvalue, rvalue)))));
+        }
+        return expr.map(expression -> Messenger.success(new EvaluateStatement(expression)));
+    }
+
+    private Messenger<Statement> parseLetStmt(TokenStream tokens) {
+        Messenger<Token> let = consumeToken(tokens, TokenType.KW_LET);
+        Messenger<Token> name = consumeToken(tokens, TokenType.IDENTIFIER);
+        if (tokens.peek().isEmpty()) {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected " + TokenType.TYPE + " or " + TokenType.ASSIGN + ", got end of file"
+            ))));
+        }
+        if (tokens.peek().get().type == TokenType.TYPE) {
+            // This is a let-with-type statement.
+            // LetWithType := "let" Identifier ":" Type
+            Messenger<Token> typeSymbol = consumeToken(tokens, TokenType.TYPE);
+            Messenger<Type> type = parseType(tokens);
+            return let.map(let2 -> name.map(name2 -> typeSymbol.then(() -> type.map(type2 -> Messenger.success(new LetWithTypeStatement(
+                    Range.combine(let2.getRange(), type2.getRange()),
+                    name2, type2
+            ))))));
+        } else if (tokens.peek().get().type == TokenType.ASSIGN) {
+            // This is a let-assign statement.
+            // LetAssign := "let" Identifier "=" Expr
+            Messenger<Token> assignSymbol = consumeToken(tokens, TokenType.ASSIGN);
+            Messenger<Expression> expr = parseExpr(tokens);
+
+            return let.map(let2 -> name.map(name2 -> assignSymbol.then(() -> expr.map(expr2 -> Messenger.success(new LetAssignStatement(
+                    Range.combine(let2.getRange(), expr2.getRange()),
+                    name2, expr2
+            ))))));
+        } else {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected " + TokenType.TYPE + " or " + TokenType.ASSIGN + ", got " + tokens.peek().get().type
+            ))));
+        }
+    }
+
+    private Messenger<Expression> parseExpr(TokenStream tokens) {
+        return parseTerm(tokens);
+    }
+
+    private Messenger<Expression> parseTerm(TokenStream tokens) {
+        if (tokens.peek().isEmpty()) {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected term, got end of file"
+            ))));
+        }
+
+        switch (tokens.peek().get().type) {
+            case IDENTIFIER:
+                return parseName(tokens).map(name -> Messenger.success(new Identifier(name)));
+            case STRING_LITERAL:
+                return Messenger.success(new StringLiteral(tokens.next()));
+            case INTEGER_LITERAL:
+                return Messenger.success(new IntegerLiteral(tokens.next()));
+        }
+
+        return Messenger.fail(new ArrayList<>(List.of(new Message(
+                new Range(tokens.currentPosition()),
+                Message.MessageSeverity.ERROR,
+                "Expected term, got " + tokens.next().type
+        ))));
     }
 
     /**
@@ -370,6 +467,9 @@ public class Parser {
         return parseName(tokens).map(name -> Messenger.success(new Type.StructType(name.getRange(), name)));
     }
 
+    /**
+     * Must start with an IDENTIFIER token.
+     */
     public Messenger<NameLiteral> parseName(TokenStream tokens) {
         Position start = tokens.currentPosition();
         ListMessenger<Token> segments = new ListMessenger<>();
@@ -408,11 +508,10 @@ public class Parser {
     /**
      * Executes the given parsers consecutively until one fails.
      */
-    @SuppressWarnings("unchecked")
     public ListMessenger<Object> parseMulti(List<Supplier<Messenger<?>>> values) {
         ListMessenger<Object> result = new ListMessenger<>(values.size());
         for (Supplier<Messenger<?>> value : values) {
-            result.add((Messenger<Object>) value.get());
+            result.add(value.get());
         }
         return result;
     }

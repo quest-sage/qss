@@ -54,6 +54,9 @@ public class Lexer {
                 case ',':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.COMMA, position);
                     break;
+                case '=':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.ASSIGN, position);
+                    break;
                 case ':': {
                     int firstCodePoint = codePoints.next();
                     if (codePoints.peek() == ':') {
@@ -255,6 +258,9 @@ public class Lexer {
                                 break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
+                                break;
+                            case "let":
+                                type = TokenType.KW_LET;
                                 break;
                             case "Int":
                                 type = TokenType.KW_INT;

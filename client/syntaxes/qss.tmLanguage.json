@@ -10,6 +10,9 @@
 		},
 		{
 			"include": "#comments"
+		},
+		{
+			"include": "#operators"
 		}
 	],
 	"repository": {
@@ -18,7 +21,7 @@
 				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
-					"match": "\\b(import|before|after|native|func)\\b"
+					"match": "\\b(import|before|after|native|func|let)\\b"
 				},
 				{
 					"comment": "Type declaration",
@@ -63,6 +66,15 @@
 					"name": "comment.block.qss",
 					"begin": "/\\*",
 					"end": "\\*/"
+				}
+			]
+		},
+		"operators": {
+			"patterns": [
+				{
+					"comment": "Basic operators",
+					"name": "keyword.operator.qss",
+					"match": "([\\+\\-\\*\\/\\.,:;])"
 				}
 			]
 		}
