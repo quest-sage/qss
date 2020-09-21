@@ -13,6 +13,7 @@ struct A {
 ** Function `a` does a thing **
 func a(a: A, b: B) {
     let r = 1;
+    let q = r;
 }
 
 before func a() {

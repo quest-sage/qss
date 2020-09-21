@@ -171,7 +171,12 @@ public class Compiler {
                 Script script = getParsed(filePath);
                 if (script == null)
                     throw new UnsupportedOperationException();
-                return new SymbolMap(script);
+                try {
+                    return new SymbolMap(script);
+                } catch (Exception e) {
+                    QssLogger.logger.atSevere().withCause(e).log("Symbol map could not be generated");
+                    throw e;
+                }
             });
         } catch (ExecutionException | UncheckedExecutionException e) {
             return null;
@@ -217,6 +222,10 @@ public class Compiler {
 
     public NameIndices getNameIndices() {
         return typeNameIndices;
+    }
+
+    public Indices getIndices() {
+        return indices;
     }
 
     public Messenger<Script> compile(ScriptPath filePath) {
@@ -359,7 +368,7 @@ public class Compiler {
 
             // Now that all the indices have been created, we can start deducing the types of everything inside
             // function bodies.
-            TypeDeducer typeDeducer = new TypeDeducer(this);
+            TypeDeducer typeDeducer = new TypeDeducer(this, filePath);
             for (Documentable<Func> func : scriptParsed.getFuncs()) {
                 typeDeducer.computeTypesIn(func.getContent(), allMessages);
             }

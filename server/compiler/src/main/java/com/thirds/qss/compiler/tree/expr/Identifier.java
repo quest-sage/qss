@@ -1,9 +1,12 @@
 package com.thirds.qss.compiler.tree.expr;
 
 import com.thirds.qss.compiler.tree.NameLiteral;
+import com.thirds.qss.compiler.tree.Node;
+
+import java.util.function.Consumer;
 
 /**
- * Represents the name of a variable, such as a local variable, a parameter or a function.
+ * References a variable, such as a local variable, a parameter or a function.
  */
 public class Identifier extends Expression {
     private final NameLiteral name;
@@ -28,5 +31,10 @@ public class Identifier extends Expression {
 
     public void setLocal(boolean local) {
         this.local = local;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        consumer.accept(name);
     }
 }

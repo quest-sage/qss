@@ -2,8 +2,11 @@ package com.thirds.qss.compiler.tree.statement;
 
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
+
+import java.util.function.Consumer;
 
 /**
  * <code>let name = rvalue;</code>
@@ -24,5 +27,10 @@ public class LetAssignStatement extends Statement {
 
     public Expression getRvalue() {
         return rvalue;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        consumer.accept(rvalue);
     }
 }

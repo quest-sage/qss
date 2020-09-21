@@ -4,6 +4,8 @@ import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.statement.CompoundStatement;
 
+import java.util.function.Consumer;
+
 public class FuncBlock extends Node {
     private final CompoundStatement block;
 
@@ -29,5 +31,11 @@ public class FuncBlock extends Node {
         return "FuncBlock{" +
                 "block=" + block +
                 '}';
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        if (block != null)
+            consumer.accept(block);
     }
 }

@@ -1,6 +1,9 @@
 package com.thirds.qss.compiler.tree.statement;
 
+import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.expr.Expression;
+
+import java.util.function.Consumer;
 
 /**
  * This kind of statement simply evaluates an expression.
@@ -15,5 +18,10 @@ public class EvaluateStatement extends Statement {
 
     public Expression getExpr() {
         return expr;
+    }
+
+    @Override
+    public void forChildren(Consumer<Node> consumer) {
+        consumer.accept(expr);
     }
 }

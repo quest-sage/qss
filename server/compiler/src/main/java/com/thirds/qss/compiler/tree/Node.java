@@ -2,7 +2,6 @@ package com.thirds.qss.compiler.tree;
 
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.Ranged;
-import com.thirds.qss.compiler.lexer.Token;
 
 import java.util.function.Consumer;
 
@@ -23,7 +22,7 @@ public class Node implements Ranged {
     }
 
     /**
-     * Executes the given function for each direct child of this node.
+     * Executes the given function for each direct <i>non-null</i> child of this node.
      * Should be overridden by subclasses.
      */
     public void forChildren(Consumer<Node> consumer) {}

@@ -3,15 +3,12 @@ package com.thirds.qss.compiler.type;
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.Message;
-import com.thirds.qss.compiler.Ranged;
-import com.thirds.qss.compiler.lexer.Token;
+import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
 import com.thirds.qss.compiler.tree.script.Func;
-import com.thirds.qss.compiler.tree.script.FuncBlock;
 import com.thirds.qss.compiler.tree.statement.*;
 
 import java.util.*;
@@ -19,10 +16,12 @@ import java.util.function.Consumer;
 
 public class VariableUsageChecker {
     private final Compiler compiler;
+    private final ScriptPath filePath;
     private final ArrayList<Message> messages;
 
-    public VariableUsageChecker(Compiler compiler, ArrayList<Message> messages) {
+    public VariableUsageChecker(Compiler compiler, ScriptPath filePath, ArrayList<Message> messages) {
         this.compiler = compiler;
+        this.filePath = filePath;
         this.messages = messages;
     }
 
@@ -121,6 +120,7 @@ public class VariableUsageChecker {
     private void deduceVariableUsageRvalue(Expression expr, ScopeTree scopeTree) {
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
+            resolveIdentifier(identifier, scopeTree);
             if (identifier.isLocal()) {
                 String variableName = identifier.getName().getSegments().get(0).contents;
                 VariableUsageState state = scopeTree.getState(variableName);
@@ -143,6 +143,7 @@ public class VariableUsageChecker {
     private void deduceVariableUsageLvalue(Expression expr, ScopeTree scopeTree) {
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
+            resolveIdentifier(identifier, scopeTree);
             if (identifier.isLocal()) {
                 String variableName = identifier.getName().getSegments().get(0).contents;
                 VariableUsageState state = scopeTree.getState(variableName);
@@ -157,6 +158,27 @@ public class VariableUsageChecker {
             if (child instanceof Expression)
                 deduceVariableUsageRvalue(((Expression) child), scopeTree);
         });
+    }
+
+    private void resolveIdentifier(Identifier identifier, ScopeTree scopeTree) {
+        for (String variableName : scopeTree.allVariableNames()) {
+            if (identifier.getName().matches(variableName)) {
+                VariableUsageState state = scopeTree.getState(variableName);
+                identifier.getName().setTarget(new Location(filePath, state.variable.getRange()), null);
+                identifier.setLocal(true);
+                return;
+            }
+        }
+
+        // TODO compiler.getIndices() resolve func names
+
+        // TODO tell user if they spelt something wrong (low Levenshtein distance to another name in scope)
+
+        messages.add(new Message(
+                identifier.getRange(),
+                Message.MessageSeverity.ERROR,
+                "Could not resolve name " + identifier.getName().toQualifiedName()
+        ));
     }
 
     /**

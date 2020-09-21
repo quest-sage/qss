@@ -43,6 +43,8 @@ public class Func extends Node {
     @Override
     public void forChildren(Consumer<Node> consumer) {
         consumer.accept(paramList);
+        if (returnType != null)
+            consumer.accept(returnType);
         consumer.accept(funcBlock);
     }
 }
