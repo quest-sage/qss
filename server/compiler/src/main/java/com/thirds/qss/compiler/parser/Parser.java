@@ -103,7 +103,7 @@ public class Parser {
     public Optional<Messenger<Import>> parseImport(TokenStream tokens) {
         if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.KW_IMPORT) {
             tokens.next();  // consume the KW_IMPORT token
-            return Optional.of(parseName(tokens).map(name -> Messenger.success(new Import(name))));
+            return Optional.of(parseName(tokens).map(name -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Import(name)))));
         }
         return Optional.empty();
     }
@@ -118,17 +118,17 @@ public class Parser {
 
         Optional<Messenger<Struct>> struct = parseStruct(tokens);
         if (struct.isPresent()) {
-            return Optional.of(struct.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+            return Optional.of(struct.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         Optional<Messenger<Func>> func = parseFunc(tokens);
         if (func.isPresent()) {
-            return Optional.of(func.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+            return Optional.of(func.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         Optional<Messenger<FuncHook>> funcHook = parseHook(tokens);
         if (funcHook.isPresent()) {
-            return Optional.of(funcHook.get().map(s -> Messenger.success(new Documentable<>(docs, s))));
+            return Optional.of(funcHook.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         if (docs != null)
@@ -450,10 +450,10 @@ public class Parser {
         return Optional.of(
         consumeToken(tokens, TokenType.IDENTIFIER).map(identifier ->
         consumeToken(tokens, TokenType.TYPE).then(() ->
-        parseType(tokens).map(type -> Messenger.success(new Documentable<>(docs, new Field(
+        parseType(tokens).map(type -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, new Field(
                 Range.combine(identifier.getRange(), type.getRange()),
                 identifier, type
-        )))))));
+        ))))))));
     }
 
     public Messenger<Type> parseType(TokenStream tokens) {
@@ -532,7 +532,10 @@ public class Parser {
                     Message.MessageSeverity.ERROR,
                     "Expected " + type + ", got end of file"
             ))));
-        if (peek.get().type != type)
+        // Match SEMICOLON and IMPLICIT_SEMICOLON.
+        if (type == TokenType.SEMICOLON)
+            type = TokenType.IMPLICIT_SEMICOLON;
+        if ((peek.get().type != type) && !(type == TokenType.IMPLICIT_SEMICOLON && peek.get().type == TokenType.SEMICOLON))
             return Messenger.fail(new ArrayList<>(List.of(new Message(
                     new Range(tokens.currentPosition()),
                     Message.MessageSeverity.ERROR,

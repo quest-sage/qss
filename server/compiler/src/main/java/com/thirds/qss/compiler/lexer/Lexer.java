@@ -221,6 +221,35 @@ public class Lexer {
                     break;
                 }
                 case '\n':
+                    // Check to see if we need to input an implicit semicolon (using rules from https://golang.org/doc/effective_go.html#semicolons).
+                    if (!tokens.isEmpty()) {
+                        Token previousToken = tokens.get(tokens.size() - 1);
+                        // Ensure the token we're checking is on the same line as this newline character.
+                        // This stops multiple semicolons being added when multiple newlines are used after a token.
+                        if (previousToken.getRange().end.line == position.line) {
+                            if (implicitSemicolonAfter(previousToken.type)) {
+                                // We should add an implicit semicolon.
+                                tokens.add(new Token(
+                                        TokenType.IMPLICIT_SEMICOLON,
+                                        "<end of line>",
+                                        new Range(position)
+                                ));
+                            }
+                            if (previousToken.type == TokenType.SEMICOLON) {
+                                // We should check if this semicolon is required or not.
+                                // Then, if it is unnecessary, we can alert the programmer.
+                                if (tokens.size() >= 2) {
+                                    if (implicitSemicolonAfter(tokens.get(tokens.size() - 2).type)) {
+                                        messages.add(new Message(
+                                                previousToken.getRange(),
+                                                Message.MessageSeverity.INFORMATION,
+                                                "This semicolon is unnecessary"
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                    }
                     position.line++;
                     position.character = 0;
                     codePoints.next();
@@ -319,6 +348,34 @@ public class Lexer {
         }
 
         return Messenger.success(new TokenStream(tokens), messages);
+    }
+
+    /**
+     * Should we implicitly insert a semicolon after this token at the end of a line?
+     * Adapted for QSS from https://golang.org/doc/effective_go.html#semicolons
+     */
+    private boolean implicitSemicolonAfter(TokenType tokenType) {
+        switch (tokenType) {
+            case IDENTIFIER:
+            case INTEGER_LITERAL:
+            case STRING_LITERAL:
+            case RPARENTH:
+            case RBRACE:
+            case RSQUARE:
+            case KW_INT:
+            case KW_BOOL:
+            case KW_STRING:
+            case KW_TEXT:
+            case KW_ENTITY:
+            case KW_RATIO:
+            case KW_COL:
+            case KW_POS:
+            case KW_TEXTURE:
+            case KW_PLAYER:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private boolean isIdentifierStart(int codePoint) {

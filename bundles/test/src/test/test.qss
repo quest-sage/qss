@@ -12,18 +12,15 @@ struct A {
 
 ** Function `a` does a thing **
 func a(a: A, b: B) {
-    let r: Int;
+    let r: Int
     {
-        r = 1;
-    };
-    let q = r;
-    let p = q;
+        r = 1
+    }
+    let q = r
+    let p = q
 
-    let z = "aaa";
-    let y = z;
-
-    p = y;
-    q = p;
+    let z = "aaa"
+    let y = z
 }
 
 before func a() {
