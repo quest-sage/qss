@@ -26,7 +26,7 @@ public class TypeDeducer {
         if (func.getFuncBlock().isNative())
             return;
 
-        VariableUsageChecker variableUsageChecker = new VariableUsageChecker(compiler, script, filePath, messages);
-        variableUsageChecker.deduceVariableUsage(func);
+        VariableTracker variableTracker = new VariableTracker(compiler, script, filePath, messages);
+        variableTracker.track(func);
     }
 }

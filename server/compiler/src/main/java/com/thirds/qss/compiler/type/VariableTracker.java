@@ -15,27 +15,37 @@ import com.thirds.qss.compiler.tree.statement.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class VariableUsageChecker {
+/**
+ * Tracks variables over the course of a function block. This class tracks:
+ * <ul>
+ *     <li>variable type</li>
+ *     <li>where the variable was assigned</li>
+ *     <li>where the variable was used</li>
+ * </ul>
+ */
+public class VariableTracker {
     private final Compiler compiler;
     private final Script script;
     private final ScriptPath filePath;
+    private final ExpressionTypeDeducer expressionTypeDeducer;
     private final ArrayList<Message> messages;
 
-    public VariableUsageChecker(Compiler compiler, Script script, ScriptPath filePath, ArrayList<Message> messages) {
+    public VariableTracker(Compiler compiler, Script script, ScriptPath filePath, ArrayList<Message> messages) {
         this.compiler = compiler;
         this.script = script;
         this.filePath = filePath;
         this.messages = messages;
+        expressionTypeDeducer = new ExpressionTypeDeducer(filePath, messages);
     }
 
     /**
      * Traverses each statement in the function looking for where and how variables are used, throwing error and warning
      * messages on invalid code.
      *
-     * @return The types of each variable used in the block.
+     * @return The types of each variable used in the block, or empty if no type could be deduced.
      */
-    public Map<String, VariableType> deduceVariableUsage(Func func) {
-        Map<String, VariableType> variableTypeMap = new HashMap<>();
+    public Map<String, Optional<VariableType>> track(Func func) {
+        Map<String, Optional<VariableType>> variableTypeMap = new HashMap<>();
         ScopeTree scopeTree = new ScopeTree(variableTypeMap);
         boolean trackResult = false;
 
@@ -111,8 +121,10 @@ public class VariableUsageChecker {
                 namesDeclaredInThisScope.add(letAssignStatement.getName().contents);
                 VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
                 state = state.assign(letAssignStatement);
-                deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree);
                 scopeTree.put(letAssignStatement.getName().contents, state);
+                ScopeTree finalScopeTree = scopeTree;
+                deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree)
+                        .ifPresent(type -> finalScopeTree.setVariableType(letAssignStatement.getName().contents, type));
             }
         } else if (statement instanceof LetWithTypeStatement) {
             LetWithTypeStatement letWithTypeStatement = (LetWithTypeStatement) statement;
@@ -146,70 +158,40 @@ public class VariableUsageChecker {
 
     /**
      * Checks the usage of variables when computing this rvalue expr.
+     * @return The type of the expression, or empty if no type could be deduced.
      */
-    private void deduceVariableUsageRvalue(Expression expr, ScopeTree scopeTree) {
+    private Optional<VariableType> deduceVariableUsageRvalue(Expression expr, ScopeTree scopeTree) {
+        Optional<VariableType> type = expressionTypeDeducer.deduceType(scopeTree, expr);
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
-            resolveIdentifier(identifier, scopeTree);
             if (identifier.isLocal()) {
                 String variableName = identifier.getName().getSegments().get(0).contents;
                 VariableUsageState state = scopeTree.getState(variableName);
                 if (state != null) {
                     scopeTree.setState(variableName, state.use(expr));
-                    return;
                 }
             }
         }
-
-        expr.forChildren(child -> {
-            if (child instanceof Expression)
-                deduceVariableUsageRvalue(((Expression) child), scopeTree);
-        });
+        return type;
     }
 
     /**
      * Checks the usage of variables when computing this lvalue expr.
+     * @return The type of the expression, or empty if no type could be deduced.
      */
-    private void deduceVariableUsageLvalue(Expression expr, ScopeTree scopeTree) {
+    private Optional<VariableType> deduceVariableUsageLvalue(Expression expr, ScopeTree scopeTree) {
+        Optional<VariableType> type = expressionTypeDeducer.deduceType(scopeTree, expr);
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
-            resolveIdentifier(identifier, scopeTree);
             if (identifier.isLocal()) {
                 String variableName = identifier.getName().getSegments().get(0).contents;
                 VariableUsageState state = scopeTree.getState(variableName);
                 if (state != null) {
                     scopeTree.setState(variableName, state.assign(expr));
-                    return;
                 }
             }
         }
-
-        expr.forChildren(child -> {
-            if (child instanceof Expression)
-                deduceVariableUsageRvalue(((Expression) child), scopeTree);
-        });
-    }
-
-    private void resolveIdentifier(Identifier identifier, ScopeTree scopeTree) {
-        for (String variableName : scopeTree.allVariableNames()) {
-            if (identifier.getName().matches(variableName)) {
-                VariableUsageState state = scopeTree.getState(variableName);
-                identifier.getName().setTarget(new Location(filePath, state.variable.getRange()), null);
-                identifier.setLocal(true);
-                identifier.setVariableType(scopeTree.getVariableType(variableName));
-                return;
-            }
-        }
-
-        // TODO compiler.getIndices() resolve func names
-
-        // TODO tell user if they spelt something wrong (low Levenshtein distance to another name in scope)
-
-        messages.add(new Message(
-                identifier.getRange(),
-                Message.MessageSeverity.ERROR,
-                "Could not resolve name " + identifier.getName().toQualifiedName()
-        ));
+        return type;
     }
 
     /**
@@ -262,11 +244,11 @@ public class VariableUsageChecker {
     /**
      * Represents the state of each locally scoped variable in a given scope.
      */
-    private static class ScopeTree {
+    static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
-        private final Map<String, VariableType> variableTypeMap;
+        private final Map<String, Optional<VariableType>> variableTypeMap;
 
-        public ScopeTree(Map<String, VariableType> variableTypeMap) {
+        public ScopeTree(Map<String, Optional<VariableType>> variableTypeMap) {
             this.variableTypeMap = variableTypeMap;
         }
 
@@ -278,16 +260,17 @@ public class VariableUsageChecker {
         }
 
         public void setVariableType(String variable, VariableType type) {
-            variableTypeMap.put(variable, type);
+            variableTypeMap.put(variable, Optional.ofNullable(type));
         }
 
         public void put(String name, VariableUsageState state) {
             stateMap.put(name, state);
+            if (!variableTypeMap.containsKey(name))
+                variableTypeMap.put(name, Optional.empty());
         }
 
         public VariableUsageState getState(String variableName) {
-            VariableUsageState state = stateMap.get(variableName);
-            return state;
+            return stateMap.get(variableName);
         }
 
         private void removeName(String name) {
@@ -324,7 +307,7 @@ public class VariableUsageChecker {
             return getState(variableName) != null;
         }
 
-        public VariableType getVariableType(String variableName) {
+        public Optional<VariableType> getVariableType(String variableName) {
             return variableTypeMap.get(variableName);
         }
     }
@@ -348,23 +331,23 @@ public class VariableUsageChecker {
          * The list of blocks in which the variable is assigned. If this is non-empty, the variable has been
          * conditionally assigned.
          */
-        private final ArrayList<Node> assignedBlocks = new ArrayList<>();
+        public final ArrayList<Node> assignedBlocks = new ArrayList<>();
         /**
          * The list of blocks in which the variable is not assigned.
          */
-        private final ArrayList<Node> nonAssignedBlocks = new ArrayList<>();
+        public final ArrayList<Node> nonAssignedBlocks = new ArrayList<>();
         /**
          * The node that defines this variable. E.g. the "a" in <code>let a = 1;</code>
          */
-        private final Ranged variable;
+        public final Ranged variable;
         /**
          * The name of this variable.
          */
-        private final String variableName;
+        public final String variableName;
         /**
          * In which block is this variable state valid?
          */
-        private Statement block;
+        public Statement block;
         /**
          * This flag is given to variables when they have been used. For example, in the following fragment of QSS:
          * <code><pre>
@@ -374,7 +357,7 @@ public class VariableUsageChecker {
          * the variable <code>a</code> has been declared, assigned and used; the variable <code>b</code> has been declared
          * and assigned but not used.
          */
-        private boolean usedAnywhere = false;
+        public boolean usedAnywhere = false;
 
         public VariableUsageState(Ranged variable, String variableName, Statement block) {
             this.variable = variable;

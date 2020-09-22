@@ -17,6 +17,10 @@ func a(a: A, b: B) {
         r = 1;
     };
     let q = r;
+    let p = q;
+
+    let z = "aaa";
+    let y = z;
 }
 
 before func a() {

@@ -4,6 +4,8 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.tree.Node;
 
+import java.util.Optional;
+
 public class Expression extends Node {
     private VariableType variableType = null;
 
@@ -11,8 +13,8 @@ public class Expression extends Node {
         super(range);
     }
 
-    public VariableType getVariableType() {
-        return variableType;
+    public Optional<VariableType> getVariableType() {
+        return Optional.ofNullable(variableType);
     }
 
     public void setVariableType(VariableType variableType) {
