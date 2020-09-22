@@ -368,7 +368,7 @@ public class Compiler {
 
             // Now that all the indices have been created, we can start deducing the types of everything inside
             // function bodies.
-            TypeDeducer typeDeducer = new TypeDeducer(this, filePath);
+            TypeDeducer typeDeducer = new TypeDeducer(this, scriptParsed, filePath);
             for (Documentable<Func> func : scriptParsed.getFuncs()) {
                 typeDeducer.computeTypesIn(func.getContent(), allMessages);
             }

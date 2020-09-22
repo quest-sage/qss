@@ -5,6 +5,7 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.tree.Node;
+import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
@@ -16,17 +17,26 @@ import java.util.function.Consumer;
 
 public class VariableUsageChecker {
     private final Compiler compiler;
+    private final Script script;
     private final ScriptPath filePath;
     private final ArrayList<Message> messages;
 
-    public VariableUsageChecker(Compiler compiler, ScriptPath filePath, ArrayList<Message> messages) {
+    public VariableUsageChecker(Compiler compiler, Script script, ScriptPath filePath, ArrayList<Message> messages) {
         this.compiler = compiler;
+        this.script = script;
         this.filePath = filePath;
         this.messages = messages;
     }
 
-    public void deduceVariableUsage(Func func) {
-        ScopeTree scopeTree = new ScopeTree();
+    /**
+     * Traverses each statement in the function looking for where and how variables are used, throwing error and warning
+     * messages on invalid code.
+     *
+     * @return The types of each variable used in the block.
+     */
+    public Map<String, VariableType> deduceVariableUsage(Func func) {
+        Map<String, VariableType> variableTypeMap = new HashMap<>();
+        ScopeTree scopeTree = new ScopeTree(variableTypeMap);
         boolean trackResult = false;
 
         Type returnType = func.getReturnType();
@@ -39,7 +49,7 @@ public class VariableUsageChecker {
         }
 
         if (func.getFuncBlock().isNative())
-            return;
+            return variableTypeMap;
 
         scopeTree = deduceVariableUsage(func.getFuncBlock().getBlock(), scopeTree);
         if (trackResult) {
@@ -60,6 +70,8 @@ public class VariableUsageChecker {
                 ));
             }
         }
+
+        return variableTypeMap;
     }
 
     /**
@@ -114,6 +126,8 @@ public class VariableUsageChecker {
                 namesDeclaredInThisScope.add(letWithTypeStatement.getName().contents);
                 VariableUsageState state = new VariableUsageState(letWithTypeStatement.getName(), letWithTypeStatement.getName().contents, block);
                 scopeTree.put(letWithTypeStatement.getName().contents, state);
+                letWithTypeStatement.getType().resolve(compiler, script);
+                scopeTree.setVariableType(letWithTypeStatement.getName().contents, letWithTypeStatement.getType().getResolvedType());
             }
         } else if (statement instanceof EvaluateStatement) {
             EvaluateStatement evaluateStatement = (EvaluateStatement) statement;
@@ -182,6 +196,7 @@ public class VariableUsageChecker {
                 VariableUsageState state = scopeTree.getState(variableName);
                 identifier.getName().setTarget(new Location(filePath, state.variable.getRange()), null);
                 identifier.setLocal(true);
+                identifier.setVariableType(scopeTree.getVariableType(variableName));
                 return;
             }
         }
@@ -249,14 +264,21 @@ public class VariableUsageChecker {
      */
     private static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
+        private final Map<String, VariableType> variableTypeMap;
 
-        public ScopeTree() {
+        public ScopeTree(Map<String, VariableType> variableTypeMap) {
+            this.variableTypeMap = variableTypeMap;
         }
 
         public ScopeTree(ScopeTree outerScopes) {
+            variableTypeMap = outerScopes.variableTypeMap;
             for (Map.Entry<String, VariableUsageState> entry : outerScopes.stateMap.entrySet()) {
                 stateMap.put(entry.getKey(), entry.getValue().duplicate());
             }
+        }
+
+        public void setVariableType(String variable, VariableType type) {
+            variableTypeMap.put(variable, type);
         }
 
         public void put(String name, VariableUsageState state) {
@@ -300,6 +322,10 @@ public class VariableUsageChecker {
 
         public boolean containsName(String variableName) {
             return getState(variableName) != null;
+        }
+
+        public VariableType getVariableType(String variableName) {
+            return variableTypeMap.get(variableName);
         }
     }
 

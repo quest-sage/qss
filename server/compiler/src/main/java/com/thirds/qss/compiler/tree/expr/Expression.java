@@ -18,4 +18,10 @@ public class Expression extends Node {
     public void setVariableType(VariableType variableType) {
         this.variableType = variableType;
     }
+
+    public String renderVariableType() {
+        if (variableType == null)
+            return "<unknown>";
+        return variableType.toString();
+    }
 }

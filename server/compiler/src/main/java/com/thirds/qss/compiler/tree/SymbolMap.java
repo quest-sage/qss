@@ -30,7 +30,8 @@ public class SymbolMap {
     }
 
     private void emplace(Symbol symbol) {
-        symbolMap.put(symbol.getRange().start, symbol);
+        if (!symbolMap.containsKey(symbol.getRange().start))
+            symbolMap.put(symbol.getRange().start, symbol);
     }
 
     /**
