@@ -14,7 +14,6 @@ struct A {
 func a(a: A, b: B) {
     let r: Int;
     {
-        let r = 1;
         r = 1;
     };
     let q = r;

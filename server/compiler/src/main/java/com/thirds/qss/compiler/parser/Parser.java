@@ -94,7 +94,7 @@ public class Parser {
             }
 
             return Messenger.success(new Script(
-                    filePath, new Range(start, tokens.currentPosition()),
+                    filePath, new Range(start, tokens.currentEndPosition()),
                     packageName,
                     packagePath,
                     imports2,
@@ -159,7 +159,7 @@ public class Parser {
             FuncBlock funcBlock = (FuncBlock) list.get(4);
 
             Func func = new Func(
-                    new Range(start, tokens.currentPosition()),
+                    new Range(start, tokens.currentEndPosition()),
                     identifier, paramList, returnType.orElse(null), funcBlock
             );
 
@@ -194,7 +194,7 @@ public class Parser {
                 FuncBlock funcBlock = (FuncBlock) list.get(2);
 
                 FuncHook hook = new FuncHook(
-                        new Range(start, tokens.currentPosition()),
+                        new Range(start, tokens.currentEndPosition()),
                         time, name, paramList, funcBlock
                 );
 
@@ -246,7 +246,7 @@ public class Parser {
                 () -> consumeToken(tokens, TokenType.RPARENTH)      // 2
         )).map(list -> {
             ArrayList<Param> params = (ArrayList<Param>) list.get(1);
-            return Messenger.success(new ParamList(new Range(start, tokens.currentPosition()), params));
+            return Messenger.success(new ParamList(new Range(start, tokens.currentEndPosition()), params));
         });
     }
 
@@ -421,7 +421,7 @@ public class Parser {
             ArrayList<Documentable<Field>> fields = (ArrayList<Documentable<Field>>) list.get(3);
 
             Struct struct = new Struct(
-                    new Range(start, tokens.currentPosition()),
+                    new Range(start, tokens.currentEndPosition()),
                     identifier, fields
             );
 
@@ -491,7 +491,7 @@ public class Parser {
             tokens.next();  // consume the scope resolution token
             segments.add(consumeToken(tokens, TokenType.IDENTIFIER));
         }
-        return segments.map(s -> Messenger.success(new NameLiteral(new Range(start, tokens.currentPosition()), s)));
+        return segments.map(s -> Messenger.success(new NameLiteral(new Range(start, tokens.currentEndPosition()), s)));
     }
 
     /**
