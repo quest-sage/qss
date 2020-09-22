@@ -550,28 +550,39 @@ public class Parser {
 
     /**
      * Add := Multiply (('+'|'-') Add)?
+     * Addition/subtraction are left-associative.
      */
     private Messenger<Expression> parseAdd(TokenStream tokens) {
-        return parseMultiply(tokens).map(left ->
-                ifConsumeToken(tokens, TokenType.PLUS, () ->
-                        parseAdd(tokens).map(right -> Messenger.success((Expression) new AddExpression(left, right)))
-                ).or(() -> ifConsumeToken(tokens, TokenType.MINUS, () ->
-                        parseAdd(tokens).map(right -> Messenger.success(new SubtractExpression(left, right)))
-                )).orElse(Messenger.success(left))
-        );
+        Messenger<Expression> expr = parseMultiply(tokens);
+        while (tokens.peek().isPresent()) {
+            Messenger<Expression> finalExpr = expr;
+            if (tokens.peek().get().type == TokenType.PLUS) {
+                expr = consumeToken(tokens, TokenType.PLUS).then(() -> parseMultiply(tokens).map(right -> finalExpr.map(e -> Messenger.success(new AddExpression(e, right)))));
+            } else if (tokens.peek().get().type == TokenType.MINUS) {
+                expr = consumeToken(tokens, TokenType.MINUS).then(() -> parseMultiply(tokens).map(right -> finalExpr.map(e -> Messenger.success(new SubtractExpression(e, right)))));
+            } else {
+                break;
+            }
+        }
+        return expr;
     }
 
     /**
      * Multiply := Prefix (('*'|'/') Multiply)?
      */
     private Messenger<Expression> parseMultiply(TokenStream tokens) {
-        return parsePrefix(tokens).map(left ->
-                ifConsumeToken(tokens, TokenType.STAR, () ->
-                        parseMultiply(tokens).map(right -> Messenger.success((Expression) new MultiplyExpression(left, right)))
-                ).or(() -> ifConsumeToken(tokens, TokenType.SLASH, () ->
-                        parseMultiply(tokens).map(right -> Messenger.success(new DivideExpression(left, right)))
-                )).orElse(Messenger.success(left))
-        );
+        Messenger<Expression> expr = parsePrefix(tokens);
+        while (tokens.peek().isPresent()) {
+            Messenger<Expression> finalExpr = expr;
+            if (tokens.peek().get().type == TokenType.STAR) {
+                expr = consumeToken(tokens, TokenType.STAR).then(() -> parsePrefix(tokens).map(right -> finalExpr.map(e -> Messenger.success(new MultiplyExpression(e, right)))));
+            } else if (tokens.peek().get().type == TokenType.SLASH) {
+                expr = consumeToken(tokens, TokenType.SLASH).then(() -> parsePrefix(tokens).map(right -> finalExpr.map(e -> Messenger.success(new DivideExpression(e, right)))));
+            } else {
+                break;
+            }
+        }
+        return expr;
     }
 
     /**
