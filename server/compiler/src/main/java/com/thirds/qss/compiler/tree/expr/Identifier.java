@@ -1,9 +1,13 @@
 package com.thirds.qss.compiler.tree.expr;
 
+import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Location;
+import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.Symbol;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
+import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
+import com.thirds.qss.compiler.type.VariableTracker;
 
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -50,5 +54,11 @@ public class Identifier extends Expression implements Symbol {
     public Optional<String> getTargetDocumentation() {
         String header = "`" + name.toQualifiedName() + ": " + renderVariableType() + "`";
         return name.getTargetDocumentation().map(s -> header + "\n\n---\n\n" + s).or(() -> Optional.of(header));
+    }
+
+    @Override
+    protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
+        expressionTypeDeducer.resolveIdentifier(scopeTree, this);
+        return getVariableType().orElse(null);
     }
 }

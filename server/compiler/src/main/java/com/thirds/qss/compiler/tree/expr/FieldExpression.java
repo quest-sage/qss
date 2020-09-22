@@ -1,8 +1,11 @@
 package com.thirds.qss.compiler.tree.expr;
 
+import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
+import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
+import com.thirds.qss.compiler.type.VariableTracker;
 
 import java.util.function.Consumer;
 
@@ -28,5 +31,10 @@ public class FieldExpression extends Expression {
     public void forChildren(Consumer<Node> consumer) {
         consumer.accept(value);
         consumer.accept(field);
+    }
+
+    @Override
+    protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
+        throw new UnsupportedOperationException();
     }
 }

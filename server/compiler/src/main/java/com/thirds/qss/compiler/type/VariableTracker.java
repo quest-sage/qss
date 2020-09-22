@@ -167,7 +167,8 @@ public class VariableTracker {
      * @return The type of the expression, or empty if no type could be deduced.
      */
     private Optional<VariableType> deduceVariableUsageRvalue(Expression expr, ScopeTree scopeTree) {
-        Optional<VariableType> type = expressionTypeDeducer.deduceType(scopeTree, expr);
+        expr.deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
+        Optional<VariableType> type = expr.getVariableType();
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
             if (identifier.isLocal()) {
@@ -186,7 +187,8 @@ public class VariableTracker {
      * @return The type of the expression, or empty if no type could be deduced.
      */
     private Optional<VariableType> deduceVariableUsageLvalue(Expression expr, ScopeTree scopeTree) {
-        Optional<VariableType> type = expressionTypeDeducer.deduceType(scopeTree, expr);
+        expr.deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
+        Optional<VariableType> type = expr.getVariableType();
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
             if (identifier.isLocal()) {
@@ -250,7 +252,7 @@ public class VariableTracker {
     /**
      * Represents the state of each locally scoped variable in a given scope.
      */
-    static class ScopeTree {
+    public static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
         private final Map<String, Optional<VariableType>> variableTypeMap;
 

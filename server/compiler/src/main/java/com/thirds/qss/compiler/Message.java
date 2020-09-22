@@ -22,7 +22,8 @@ public class Message {
      *                trailing punctuation. If the message is comprised of multiple sentences, you may use punctuation
      *                to separate the sentences (e.g. full stops/periods) but do not put punctuation right at the end.
      *                If the message has an "expected" part and an "actual" part, write the message in the format
-     *                "Expected ..., got ..."
+     *                "Expected ..., got ...". If the message has an "expected" type and an "actual" type, write
+     *                the message in the format "Expected an expression of type ..., got ...".
      */
     public Message(Range range, MessageSeverity severity, String message) {
         this.range = range;
