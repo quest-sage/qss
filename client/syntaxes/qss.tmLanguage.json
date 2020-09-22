@@ -6,7 +6,7 @@
 			"include": "#keywords"
 		},
 		{
-			"include": "#strings"
+			"include": "#literals"
 		},
 		{
 			"include": "#comments"
@@ -35,7 +35,7 @@
 				}
 			]
 		},
-		"strings": {
+		"literals": {
 			"comment": "String literal",
 			"name": "string.quoted.double.qss",
 			"begin": "\"",
@@ -44,6 +44,16 @@
 				{
 					"name": "constant.character.escape.qss",
 					"match": "\\\\."
+				},
+				{
+					"comment": "Boolean constant",
+					"name": "constant.language.boolean.qss",
+					"match": "\\b(true|false)\\b"
+				},
+				{
+					"comment": "Integer literal",
+					"name": "constant.numeric.integer.decimal.qss",
+					"match": "\\b[0-9]+\\b"
 				}
 			]
 		},

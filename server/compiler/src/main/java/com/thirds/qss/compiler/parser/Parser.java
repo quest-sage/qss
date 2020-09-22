@@ -372,6 +372,9 @@ public class Parser {
             case STRING_LITERAL:
             case MINUS:
             case NOT:
+            case KW_TRUE:
+            case KW_FALSE:
+            case LPARENTH:
                 result = parseExprStmt(tokens);
                 break;
             default:
@@ -649,6 +652,13 @@ public class Parser {
                 return Messenger.success(new StringLiteral(tokens.next()));
             case INTEGER_LITERAL:
                 return Messenger.success(new IntegerLiteral(tokens.next()));
+            case KW_TRUE:
+            case KW_FALSE:
+                return Messenger.success(new BooleanLiteral(tokens.next()));
+            case LPARENTH: {
+                tokens.next();  // consume opening parenthesis
+                return parseExpr(tokens).map(expr -> consumeToken(tokens, TokenType.RPARENTH).then(() -> Messenger.success(expr)));
+            }
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(

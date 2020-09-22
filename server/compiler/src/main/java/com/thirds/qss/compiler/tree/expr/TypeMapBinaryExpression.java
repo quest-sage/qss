@@ -71,10 +71,10 @@ public abstract class TypeMapBinaryExpression extends TypeDeducerBinaryExpressio
             sb.append("Expected left hand side of type ");
             Stream<String> sortedValidTypes = typeMap.keySet().stream().map(Object::toString).sorted();
             sb.append(sortedValidTypes.collect(Collectors.joining(" or ")));
-            sb.append(" in ").append(getExpressionTypeName()).append(" expression, got ").append(right);
+            sb.append(" in ").append(getExpressionTypeName()).append(" expression, got ").append(left);
 
             return Messenger.fail(new ArrayList<>(List.of(new Message(
-                    getRight().getRange(),
+                    getLeft().getRange(),
                     Message.MessageSeverity.ERROR,
                     sb.toString()
             ))));

@@ -377,6 +377,12 @@ public class Lexer {
                             case "Player":
                                 type = TokenType.KW_PLAYER;
                                 break;
+                            case "true":
+                                type = TokenType.KW_TRUE;
+                                break;
+                            case "false":
+                                type = TokenType.KW_FALSE;
+                                break;
                             default:
                                 type = TokenType.IDENTIFIER;
                         }
@@ -428,6 +434,8 @@ public class Lexer {
             case KW_POS:
             case KW_TEXTURE:
             case KW_PLAYER:
+            case KW_TRUE:
+            case KW_FALSE:
                 return true;
             default:
                 return false;
