@@ -13,7 +13,7 @@ class LexerTest {
 
     @Test
     void unclosedStringLiteral() {
-        ArrayList<Message> messages = new Lexer(new Compiler(null)).process("\"").getMessages();
+        ArrayList<Message> messages = new Lexer().process("\"").getMessages();
         assertThat(messages, hasItem(new Message(
                 new Range(new Position(0, 0), new Position(0, 1)),
                 Message.MessageSeverity.ERROR,
@@ -23,7 +23,7 @@ class LexerTest {
 
     @Test
     void normal() {
-        ArrayList<Message> messages = new Lexer(new Compiler(null)).process("test").getMessages();
+        ArrayList<Message> messages = new Lexer().process("test").getMessages();
         assertThat(messages, empty());
     }
 }

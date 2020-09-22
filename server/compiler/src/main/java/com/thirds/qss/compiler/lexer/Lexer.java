@@ -1,15 +1,15 @@
 package com.thirds.qss.compiler.lexer;
 
-import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.*;
+import com.thirds.qss.compiler.Message;
+import com.thirds.qss.compiler.Messenger;
+import com.thirds.qss.compiler.Position;
+import com.thirds.qss.compiler.Range;
 
 import java.util.ArrayList;
 
 public class Lexer {
-    private final Compiler compiler;
 
-    public Lexer(Compiler compiler) {
-        this.compiler = compiler;
+    public Lexer() {
     }
 
     public Messenger<TokenStream> process(String input) {

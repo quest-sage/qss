@@ -157,8 +157,8 @@ public class Compiler {
     public Script getParsed(ScriptPath filePath) {
         return parsedFiles.computeIfAbsent(filePath, k -> {
             String fileContents = getFileContent(filePath);
-            Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
-            return tokens.map(t -> new Parser(this).parse(filePath, t)).getValue().orElse(null);
+            Messenger<TokenStream> tokens = new Lexer().process(fileContents);
+            return tokens.map(t -> new Parser().parse(filePath, t)).getValue().orElse(null);
         });
     }
 
@@ -230,8 +230,8 @@ public class Compiler {
 
     public Messenger<Script> compile(ScriptPath filePath) {
         String fileContents = getFileContent(filePath);
-        Messenger<TokenStream> tokens = new Lexer(this).process(fileContents);
-        Messenger<Script> script = tokens.map(t -> new Parser(this).parse(filePath, t));
+        Messenger<TokenStream> tokens = new Lexer().process(fileContents);
+        Messenger<Script> script = tokens.map(t -> new Parser().parse(filePath, t));
 
         if (script.getValue().isEmpty()) {
             return script;

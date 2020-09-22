@@ -1,7 +1,6 @@
 package com.thirds.qss.compiler.parser;
 
 import com.thirds.qss.QualifiedName;
-import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenStream;
@@ -27,10 +26,8 @@ import java.util.function.Supplier;
  * pre-documentation of items and fields etc.
  */
 public class Parser {
-    private final Compiler compiler;
 
-    public Parser(Compiler compiler) {
-        this.compiler = compiler;
+    public Parser() {
     }
 
     public Messenger<Script> parse(ScriptPath filePath, TokenStream tokens) {
