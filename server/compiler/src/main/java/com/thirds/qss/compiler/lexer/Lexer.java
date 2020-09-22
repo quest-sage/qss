@@ -182,7 +182,12 @@ public class Lexer {
                             }
 
                             codePoints.next();
-                            position.character++;
+                            if (codePoint == '\n') {
+                                position.character = 0;
+                                position.line++;
+                            } else {
+                                position.character++;
+                            }
                             if (codePoint == '*' && codePoints.peek() == '/') {
                                 break;
                             }
