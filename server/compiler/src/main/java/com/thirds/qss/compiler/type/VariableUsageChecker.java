@@ -89,16 +89,32 @@ public class VariableUsageChecker {
 
         if (statement instanceof LetAssignStatement) {
             LetAssignStatement letAssignStatement = (LetAssignStatement) statement;
-            namesDeclaredInThisScope.add(letAssignStatement.getName().contents);
-            VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
-            state = state.assign(letAssignStatement);
-            deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree);
-            scopeTree.put(letAssignStatement.getName().contents, state);
+            if (scopeTree.containsName(letAssignStatement.getName().contents)) {
+                messages.add(new Message(
+                        letAssignStatement.getName().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Name " + letAssignStatement.getName().contents + " was defined twice in the same block"
+                ));
+            } else {
+                namesDeclaredInThisScope.add(letAssignStatement.getName().contents);
+                VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
+                state = state.assign(letAssignStatement);
+                deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree);
+                scopeTree.put(letAssignStatement.getName().contents, state);
+            }
         } else if (statement instanceof LetWithTypeStatement) {
             LetWithTypeStatement letWithTypeStatement = (LetWithTypeStatement) statement;
-            namesDeclaredInThisScope.add(letWithTypeStatement.getName().contents);
-            VariableUsageState state = new VariableUsageState(letWithTypeStatement.getName(), letWithTypeStatement.getName().contents, block);
-            scopeTree.put(letWithTypeStatement.getName().contents, state);
+            if (scopeTree.containsName(letWithTypeStatement.getName().contents)) {
+                messages.add(new Message(
+                        letWithTypeStatement.getName().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Name " + letWithTypeStatement.getName().contents + " was defined twice in the same block"
+                ));
+            } else {
+                namesDeclaredInThisScope.add(letWithTypeStatement.getName().contents);
+                VariableUsageState state = new VariableUsageState(letWithTypeStatement.getName(), letWithTypeStatement.getName().contents, block);
+                scopeTree.put(letWithTypeStatement.getName().contents, state);
+            }
         } else if (statement instanceof EvaluateStatement) {
             EvaluateStatement evaluateStatement = (EvaluateStatement) statement;
             deduceVariableUsageRvalue(evaluateStatement.getExpr(), scopeTree);
@@ -280,6 +296,10 @@ public class VariableUsageChecker {
         @Override
         public String toString() {
             return stateMap.toString();
+        }
+
+        public boolean containsName(String variableName) {
+            return getState(variableName) != null;
         }
     }
 
