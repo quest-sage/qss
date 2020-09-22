@@ -21,6 +21,8 @@ func a(a: A, b: B) {
 
     let z = "aaa"
     let y = z
+
+    a(2)[3](2, 1, 3,)
 }
 
 before func a() {

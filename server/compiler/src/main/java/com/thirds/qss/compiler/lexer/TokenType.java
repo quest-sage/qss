@@ -20,9 +20,15 @@ public enum TokenType {
     STRING_LITERAL, INTEGER_LITERAL,
 
     PLUS, MINUS, STAR, SLASH,  // + - * /
+    LOGICAL_AND, LOGICAL_OR, NOT,  // && || !
     DOT, COMMA,  // . ,
     ASSIGN,  // =
     RETURNS,  // ->
+    EQUAL, NOT_EQUAL,  // == !=
+    LESS, GREATER,  // < >
+    LESS_EQUAL, GREATER_EQUAL,  // <= >=
+
+    TYPE_AND, TYPE_OR,  // & |
 
     DOCUMENTATION_COMMENT,  // ** ... **
     ;
@@ -98,6 +104,12 @@ public enum TokenType {
                 return "star '*'";
             case SLASH:
                 return "slash '/'";
+            case LOGICAL_AND:
+                return "logical AND operator '&&'";
+            case LOGICAL_OR:
+                return "logical OR operator '||'";
+            case NOT:
+                return "logical NOT operator '!'";
             case DOT:
                 return "dot '.'";
             case COMMA:
@@ -106,6 +118,22 @@ public enum TokenType {
                 return "assign symbol '='";
             case RETURNS:
                 return "returns symbol '->'";
+            case EQUAL:
+                return "equals symbol '='";
+            case NOT_EQUAL:
+                return "not-equals symbol '!='";
+            case LESS:
+                return "less-than symbol '<'";
+            case GREATER:
+                return "greater-than symbol '>'";
+            case LESS_EQUAL:
+                return "less-than-or-equal symbol '<='";
+            case GREATER_EQUAL:
+                return "greater-than-or-equal symbol '>='";
+            case TYPE_AND:
+                return "typewise AND operator '&'";
+            case TYPE_OR:
+                return "typewise OR operator '|'";
             case DOCUMENTATION_COMMENT:
                 return "documentation comment";
         }

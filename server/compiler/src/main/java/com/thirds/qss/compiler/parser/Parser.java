@@ -6,10 +6,7 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenStream;
 import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.*;
-import com.thirds.qss.compiler.tree.expr.Expression;
-import com.thirds.qss.compiler.tree.expr.Identifier;
-import com.thirds.qss.compiler.tree.expr.IntegerLiteral;
-import com.thirds.qss.compiler.tree.expr.StringLiteral;
+import com.thirds.qss.compiler.tree.expr.*;
 import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
 
@@ -26,12 +23,14 @@ import java.util.function.Supplier;
  * pre-documentation of items and fields etc.
  */
 public class Parser {
+    private final ScriptPath filePath;
 
-    public Parser() {
+    public Parser(ScriptPath filePath) {
+        this.filePath = filePath;
     }
 
-    public Messenger<Script> parse(ScriptPath filePath, TokenStream tokens) {
-        Messenger<Script> script = parseScript(filePath, tokens);
+    public Messenger<Script> parse(TokenStream tokens) {
+        Messenger<Script> script = parseScript(tokens);
 
         tokens.peek().ifPresent(token -> script.getMessages().add(new Message(
                 token.getRange(),
@@ -42,8 +41,10 @@ public class Parser {
         return script;
     }
 
+    //#region Script-wide items
+
     @SuppressWarnings("unchecked")
-    public Messenger<Script> parseScript(ScriptPath filePath, TokenStream tokens) {
+    private Messenger<Script> parseScript(TokenStream tokens) {
         Position start = tokens.currentPosition();
 
         ListMessenger<Import> imports = parseGreedy(() -> parseImport(tokens));
@@ -100,7 +101,7 @@ public class Parser {
         }));
     }
 
-    public Optional<Messenger<Import>> parseImport(TokenStream tokens) {
+    private Optional<Messenger<Import>> parseImport(TokenStream tokens) {
         if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.KW_IMPORT) {
             tokens.next();  // consume the KW_IMPORT token
             return Optional.of(parseName(tokens).map(name -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Import(name)))));
@@ -108,7 +109,7 @@ public class Parser {
         return Optional.empty();
     }
 
-    public Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {
+    private Optional<Messenger<Documentable<?>>> parseItem(TokenStream tokens) {
         Token docs;
         if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
             docs = tokens.next();
@@ -136,8 +137,68 @@ public class Parser {
         return Optional.empty();
     }
 
+    /**
+     * <code>Struct := "struct" Identifier "{" Field* "}"</code>
+     * @return Null if the token stream did not represent a struct.
+     */
     @SuppressWarnings("unchecked")
-    public Optional<Messenger<Func>> parseFunc(TokenStream tokens) {
+    private Optional<Messenger<Struct>> parseStruct(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_STRUCT)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_STRUCT),    // 0
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 2
+                () -> parseFields(tokens),                          // 3
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 4
+        )).map(list -> {
+            Token identifier = (Token) list.get(1);
+            ArrayList<Documentable<Field>> fields = (ArrayList<Documentable<Field>>) list.get(3);
+
+            Struct struct = new Struct(
+                    new Range(start, tokens.currentEndPosition()),
+                    identifier, fields
+            );
+
+            return Messenger.success(struct);
+        }));
+    }
+
+    private ListMessenger<Documentable<Field>> parseFields(TokenStream tokens) {
+        return parseGreedy(() -> parseField(tokens));
+    }
+
+    /**
+     * <code>Field := Documentation? Identifier ":" Type</code>
+     */
+    private Optional<Messenger<Documentable<Field>>> parseField(TokenStream tokens) {
+        Token docs;
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
+            docs = tokens.next();
+        } else {
+            docs = null;
+        }
+
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.IDENTIFIER) {
+            if (docs != null)
+                tokens.rewind();
+            return Optional.empty();
+        }
+
+        return Optional.of(
+                consumeToken(tokens, TokenType.IDENTIFIER).map(identifier ->
+                        consumeToken(tokens, TokenType.TYPE).then(() ->
+                                parseType(tokens).map(type -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, new Field(
+                                        Range.combine(identifier.getRange(), type.getRange()),
+                                        identifier, type
+                                ))))))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<Messenger<Func>> parseFunc(TokenStream tokens) {
         if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_FUNC)
             return Optional.empty();
 
@@ -164,7 +225,7 @@ public class Parser {
         }));
     }
 
-    public Optional<Messenger<FuncHook>> parseHook(TokenStream tokens) {
+    private Optional<Messenger<FuncHook>> parseHook(TokenStream tokens) {
         if (tokens.peek().isEmpty() || (tokens.peek().get().type != TokenType.KW_BEFORE && tokens.peek().get().type != TokenType.KW_AFTER))
             return Optional.empty();
 
@@ -235,7 +296,7 @@ public class Parser {
     }
 
     @SuppressWarnings("unchecked")
-    public Messenger<ParamList> parseParamList(TokenStream tokens) {
+    private Messenger<ParamList> parseParamList(TokenStream tokens) {
         Position start = tokens.currentPosition();
         return parseMulti(List.of(
                 () -> consumeToken(tokens, TokenType.LPARENTH),     // 0
@@ -247,7 +308,7 @@ public class Parser {
         });
     }
 
-    public Messenger<Optional<Type>> parseReturnType(TokenStream tokens) {
+    private Messenger<Optional<Type>> parseReturnType(TokenStream tokens) {
         if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.RETURNS) {
             tokens.next();  // consume the RETURNS token
             return parseType(tokens).map(t -> Messenger.success(Optional.of(t)));
@@ -255,7 +316,7 @@ public class Parser {
         return Messenger.success(Optional.empty());
     }
 
-    public Messenger<FuncBlock> parseFuncBlock(TokenStream tokens) {
+    private Messenger<FuncBlock> parseFuncBlock(TokenStream tokens) {
         if (tokens.peek(2).isPresent() && tokens.peek(2).get().type == TokenType.KW_NATIVE) {
             // This is a { native } block.
             return parseMulti(List.of(
@@ -272,6 +333,10 @@ public class Parser {
         }
         return parseCompoundStatement(tokens).map(block -> Messenger.success(new FuncBlock(new Range(tokens.currentPosition()), block)));
     }
+
+    //#endregion
+
+    //#region Statements
 
     @SuppressWarnings("unchecked")
     private Messenger<CompoundStatement> parseCompoundStatement(TokenStream tokens) {
@@ -305,6 +370,8 @@ public class Parser {
             case IDENTIFIER:
             case INTEGER_LITERAL:
             case STRING_LITERAL:
+            case MINUS:
+            case NOT:
                 result = parseExprStmt(tokens);
                 break;
             default:
@@ -367,8 +434,192 @@ public class Parser {
         }
     }
 
+    //#endregion
+
+    //#region Expressions
+
+    /**
+     * Expression messengers make use of <code>something.map(Messenger::success)</code> so that we can
+     * downcast <code>Messenger&lt;? super T&gt;</code> to <code>Messenger&lt;T&gt;</code>.
+     */
     private Messenger<Expression> parseExpr(TokenStream tokens) {
-        return parseTerm(tokens);
+        return parseLogic(tokens);
+    }
+
+    /**
+     * Logic := Relation (("or"|"and") Relation)?
+     * Mixing use of "or"/"and" is forbidden, and will be validated against.
+     */
+    private Messenger<Expression> parseLogic(TokenStream tokens) {
+        ArrayList<Message> messages;
+        ArrayList<Expression> arguments = new ArrayList<>();
+        Token expressionType = null;
+
+        {
+            Messenger<Expression> messenger = parseRelation(tokens);
+            messages = new ArrayList<>(messenger.getMessages());
+            messenger.getValue().ifPresent(arguments::add);
+        }
+
+        while (tokens.peek().isPresent() &&
+                (tokens.peek().get().type == TokenType.LOGICAL_OR || tokens.peek().get().type == TokenType.LOGICAL_AND)) {
+            Token logic = tokens.next();  // consume the logic token
+            if (expressionType == null) {
+                expressionType = logic;
+            } else {
+                // Check whether the given logic token is compatible with the expression type.
+                if (expressionType.type != logic.type) {
+                    messages.add(new Message(
+                            logic.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Incompatible logic operator; expected " + expressionType.type
+                    ).addInfo(new Message.MessageRelatedInformation(
+                            new Location(filePath, expressionType.getRange()),
+                            "Incompatible with " + expressionType.type
+                    )));
+                }
+            }
+
+            Messenger<Expression> messenger = parseRelation(tokens);
+            messages.addAll(messenger.getMessages());
+            messenger.getValue().ifPresent(arguments::add);
+        }
+
+        if (arguments.isEmpty()) {
+            return Messenger.fail(messages);
+        } else if (arguments.size() == 1) {
+            return Messenger.success(arguments.get(0), messages);
+        } else {
+            return Messenger.success(new LogicExpression(arguments), messages);
+        }
+    }
+
+    /**
+     * Logic := Add (("or"|"and") Logic)?
+     * Mixing use of greater/less/equal is forbidden, and will be validated against.
+     * TODO make this slightly more lenient? E.g. 0 < x <= 10
+     */
+    private Messenger<Expression> parseRelation(TokenStream tokens) {
+        ArrayList<Message> messages;
+        ArrayList<Expression> arguments = new ArrayList<>();
+        Token expressionType = null;
+
+        {
+            Messenger<Expression> messenger = parseAdd(tokens);
+            messages = new ArrayList<>(messenger.getMessages());
+            messenger.getValue().ifPresent(arguments::add);
+        }
+
+        while (tokens.peek().isPresent() &&
+                (tokens.peek().get().type == TokenType.EQUAL ||
+                        tokens.peek().get().type == TokenType.NOT_EQUAL ||
+                        tokens.peek().get().type == TokenType.LESS ||
+                        tokens.peek().get().type == TokenType.LESS_EQUAL ||
+                        tokens.peek().get().type == TokenType.GREATER ||
+                        tokens.peek().get().type == TokenType.GREATER_EQUAL)) {
+            Token relation = tokens.next();  // consume the relation token
+            if (expressionType == null) {
+                expressionType = relation;
+            } else {
+                // Check whether the given logic token is compatible with the expression type.
+                if (expressionType.type != relation.type) {
+                    messages.add(new Message(
+                            relation.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Incompatible relation operator; expected " + expressionType.type
+                    ).addInfo(new Message.MessageRelatedInformation(
+                            new Location(filePath, expressionType.getRange()),
+                            "Incompatible with " + expressionType.type
+                    )));
+                }
+            }
+
+            Messenger<Expression> messenger = parseAdd(tokens);
+            messages.addAll(messenger.getMessages());
+            messenger.getValue().ifPresent(arguments::add);
+        }
+
+        if (arguments.isEmpty()) {
+            return Messenger.fail(messages);
+        } else if (arguments.size() == 1) {
+            return Messenger.success(arguments.get(0), messages);
+        } else {
+            return Messenger.success(new LogicExpression(arguments), messages);
+        }
+    }
+
+    /**
+     * Add := Multiply (('+'|'-') Add)?
+     */
+    private Messenger<Expression> parseAdd(TokenStream tokens) {
+        return parseMultiply(tokens).map(left ->
+                ifConsumeToken(tokens, TokenType.PLUS, () ->
+                        parseAdd(tokens).map(right -> Messenger.success((Expression) new AddExpression(left, right)))
+                ).or(() -> ifConsumeToken(tokens, TokenType.MINUS, () ->
+                        parseAdd(tokens).map(right -> Messenger.success(new SubtractExpression(left, right)))
+                )).orElse(Messenger.success(left))
+        );
+    }
+
+    /**
+     * Multiply := Prefix (('*'|'/') Multiply)?
+     */
+    private Messenger<Expression> parseMultiply(TokenStream tokens) {
+        return parsePrefix(tokens).map(left ->
+                ifConsumeToken(tokens, TokenType.STAR, () ->
+                        parseMultiply(tokens).map(right -> Messenger.success((Expression) new MultiplyExpression(left, right)))
+                ).or(() -> ifConsumeToken(tokens, TokenType.SLASH, () ->
+                        parseMultiply(tokens).map(right -> Messenger.success(new DivideExpression(left, right)))
+                )).orElse(Messenger.success(left))
+        );
+    }
+
+    /**
+     * Prefix := ('!'|'-')* Postfix
+     */
+    private Messenger<Expression> parsePrefix(TokenStream tokens) {
+        return ifConsumeToken(tokens, TokenType.NOT, () ->
+                parsePrefix(tokens).map(arg -> Messenger.success((Expression) new LogicalNotExpression(arg)))
+        ).or(() -> ifConsumeToken(tokens, TokenType.MINUS, () ->
+                parsePrefix(tokens).map(arg -> Messenger.success(new UnaryMinusExpression(arg)))
+        )).orElseGet(() -> parsePostfix(tokens));
+    }
+
+    /**
+     * Postfix := Term ( '[' Expr ']' | '(' ArgList ')' | '.' Name )*
+     */
+    private Messenger<Expression> parsePostfix(TokenStream tokens) {
+        return parseTerm(tokens).map(term -> parsePostfixOnExpression(term, tokens));
+    }
+
+    private Messenger<Expression> parsePostfixOnExpression(Expression term, TokenStream tokens) {
+        return ifConsumeToken(tokens, TokenType.LSQUARE, () ->
+                parseExpr(tokens).map(arg -> consumeToken(tokens, TokenType.RSQUARE).then(() -> parsePostfixOnExpression(new IndexExpression(term, arg), tokens)))
+        ).or(() -> ifConsumeToken(tokens, TokenType.LPARENTH, () ->
+                parseArgList(tokens).map(args -> consumeToken(tokens, TokenType.RPARENTH).then(() -> parsePostfixOnExpression(new FunctionInvocationExpression(term, args), tokens)))
+        )).or(() -> ifConsumeToken(tokens, TokenType.DOT, () ->
+                parseName(tokens).map(field -> parsePostfixOnExpression(new FieldExpression(term, field), tokens))
+        )).orElse(Messenger.success(term));
+    }
+
+    /**
+     * An optional comma may be used after the last argument.
+     */
+    private ListMessenger<Expression> parseArgList(TokenStream tokens) {
+        ListMessenger<Expression> result = new ListMessenger<>();
+        AtomicBoolean expectingMoreArgs = new AtomicBoolean(true);
+        while (expectingMoreArgs.get() && tokens.peek().isPresent() && tokens.peek().get().type != TokenType.RPARENTH) {
+            Messenger<Expression> arg = parseExpr(tokens).map(expr -> {
+                if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.COMMA) {
+                    consumeToken(tokens, TokenType.COMMA);
+                } else {
+                    expectingMoreArgs.set(false);
+                }
+                return Messenger.success(expr);
+            });
+            result.add(arg);
+        }
+        return result;
     }
 
     private Messenger<Expression> parseTerm(TokenStream tokens) {
@@ -396,67 +647,11 @@ public class Parser {
         ))));
     }
 
-    /**
-     * <code>Struct := "struct" Identifier "{" Field* "}"</code>
-     * @return Null if the token stream did not represent a struct.
-     */
-    @SuppressWarnings("unchecked")
-    public Optional<Messenger<Struct>> parseStruct(TokenStream tokens) {
-        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_STRUCT)
-            return Optional.empty();
+    //#endregion
 
-        Position start = tokens.currentPosition();
+    //#region Utilities
 
-        return Optional.of(parseMulti(List.of(
-                () -> consumeToken(tokens, TokenType.KW_STRUCT),    // 0
-                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
-                () -> consumeToken(tokens, TokenType.LBRACE),       // 2
-                () -> parseFields(tokens),                          // 3
-                () -> consumeToken(tokens, TokenType.RBRACE)        // 4
-        )).map(list -> {
-            Token identifier = (Token) list.get(1);
-            ArrayList<Documentable<Field>> fields = (ArrayList<Documentable<Field>>) list.get(3);
-
-            Struct struct = new Struct(
-                    new Range(start, tokens.currentEndPosition()),
-                    identifier, fields
-            );
-
-            return Messenger.success(struct);
-        }));
-    }
-
-    public ListMessenger<Documentable<Field>> parseFields(TokenStream tokens) {
-        return parseGreedy(() -> parseField(tokens));
-    }
-
-    /**
-     * <code>Field := Documentation? Identifier ":" Type</code>
-     */
-    public Optional<Messenger<Documentable<Field>>> parseField(TokenStream tokens) {
-        Token docs;
-        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
-            docs = tokens.next();
-        } else {
-            docs = null;
-        }
-
-        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.IDENTIFIER) {
-            if (docs != null)
-                tokens.rewind();
-            return Optional.empty();
-        }
-
-        return Optional.of(
-        consumeToken(tokens, TokenType.IDENTIFIER).map(identifier ->
-        consumeToken(tokens, TokenType.TYPE).then(() ->
-        parseType(tokens).map(type -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, new Field(
-                Range.combine(identifier.getRange(), type.getRange()),
-                identifier, type
-        ))))))));
-    }
-
-    public Messenger<Type> parseType(TokenStream tokens) {
+    private Messenger<Type> parseType(TokenStream tokens) {
         if (tokens.peek().isPresent()) {
             switch (tokens.peek().get().type) {
                 case KW_INT:
@@ -478,7 +673,7 @@ public class Parser {
     /**
      * Must start with an IDENTIFIER token.
      */
-    public Messenger<NameLiteral> parseName(TokenStream tokens) {
+    private Messenger<NameLiteral> parseName(TokenStream tokens) {
         Position start = tokens.currentPosition();
         ListMessenger<Token> segments = new ListMessenger<>();
         segments.add(consumeToken(tokens, TokenType.IDENTIFIER));
@@ -500,7 +695,7 @@ public class Parser {
      *
      * @param parser The parser to repeatedly execute.
      */
-    public <T> ListMessenger<T> parseGreedy(Supplier<Optional<Messenger<T>>> parser) {
+    private <T> ListMessenger<T> parseGreedy(Supplier<Optional<Messenger<T>>> parser) {
         ListMessenger<T> values = new ListMessenger<>();
         while (true) {
             Optional<Messenger<T>> value = parser.get();
@@ -516,7 +711,7 @@ public class Parser {
     /**
      * Executes the given parsers consecutively until one fails.
      */
-    public ListMessenger<Object> parseMulti(List<Supplier<Messenger<?>>> values) {
+    private ListMessenger<Object> parseMulti(List<Supplier<Messenger<?>>> values) {
         ListMessenger<Object> result = new ListMessenger<>(values.size());
         for (Supplier<Messenger<?>> value : values) {
             result.add(value.get());
@@ -524,7 +719,7 @@ public class Parser {
         return result;
     }
 
-    public Messenger<Token> consumeToken(TokenStream tokens, TokenType type) {
+    private Messenger<Token> consumeToken(TokenStream tokens, TokenType type) {
         Optional<Token> peek = tokens.peek();
         if (peek.isEmpty())
             return Messenger.fail(new ArrayList<>(List.of(new Message(
@@ -543,4 +738,23 @@ public class Parser {
             ))));
         return Messenger.success(tokens.next());
     }
+
+    /**
+     * Returns an empty Optional if the specified token did not exist.
+     */
+    private Optional<Messenger<Token>> peekConsumeToken(TokenStream tokens, TokenType type) {
+        if (tokens.peek().isPresent() && tokens.peek().get().type == type) {
+            return Optional.of(consumeToken(tokens, type));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * If the given token type is next, consume it and run the func, returning the result. Else, return Optional.empty.
+     */
+    private <T> Optional<Messenger<T>> ifConsumeToken(TokenStream tokens, TokenType type, Supplier<Messenger<T>> func) {
+        return peekConsumeToken(tokens, type).map(token -> token.then(func));
+    }
+
+    //#endregion
 }

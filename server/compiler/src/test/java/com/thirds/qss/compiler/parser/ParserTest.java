@@ -17,7 +17,7 @@ class ParserTest {
     void parseStruct() {
         Optional<TokenStream> tokens = new Lexer().process("struct struct struct A { }").getValue();
         assertTrue(tokens.isPresent());
-        Optional<Script> script = new Parser().parse(new ScriptPath(Paths.get("unit_test.qss")), tokens.get()).getValue();
+        Optional<Script> script = new Parser(new ScriptPath(Paths.get("unit_test.qss"))).parse(tokens.get()).getValue();
         assertTrue(script.isPresent());
     }
 }

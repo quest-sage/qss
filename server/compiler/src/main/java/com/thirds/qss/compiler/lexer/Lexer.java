@@ -54,9 +54,60 @@ public class Lexer {
                 case ',':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.COMMA, position);
                     break;
-                case '=':
-                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.ASSIGN, position);
+                case '=': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '=') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.EQUAL, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.ASSIGN, position);
+                    }
                     break;
+                }
+                case '!': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '=') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.NOT_EQUAL, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.NOT, position);
+                    }
+                    break;
+                }
+                case '>': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '=') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.GREATER_EQUAL, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.GREATER, position);
+                    }
+                    break;
+                }
+                case '<': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '=') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.LESS_EQUAL, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.LESS, position);
+                    }
+                    break;
+                }
+                case '&': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '&') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.LOGICAL_AND, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.TYPE_AND, position);
+                    }
+                    break;
+                }
+                case '|': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '|') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.LOGICAL_OR, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.TYPE_OR, position);
+                    }
+                    break;
+                }
                 case ':': {
                     int firstCodePoint = codePoints.next();
                     if (codePoints.peek() == ':') {
