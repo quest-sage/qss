@@ -21,6 +21,9 @@ func a(a: A, b: B) {
 
     let z = "aaa";
     let y = z;
+
+    p = y;
+    q = p;
 }
 
 before func a() {

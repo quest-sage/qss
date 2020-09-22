@@ -19,10 +19,16 @@ import java.util.Optional;
 public class ExpressionTypeDeducer {
     private final ScriptPath filePath;
     private final ArrayList<Message> messages;
+    private final CastChecker castChecker;
 
     public ExpressionTypeDeducer(ScriptPath filePath, ArrayList<Message> messages) {
         this.filePath = filePath;
         this.messages = messages;
+        castChecker = new CastChecker();
+    }
+
+    public CastChecker getCastChecker() {
+        return castChecker;
     }
 
     /**

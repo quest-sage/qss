@@ -146,8 +146,14 @@ public class VariableTracker {
             deduceVariableUsageRvalue(evaluateStatement.getExpr(), scopeTree);
         } else if (statement instanceof AssignStatement) {
             AssignStatement assignStatement = (AssignStatement) statement;
-            deduceVariableUsageRvalue(assignStatement.getRvalue(), scopeTree);
-            deduceVariableUsageLvalue(assignStatement.getLvalue(), scopeTree);
+            Optional<VariableType> optionalRvalue = deduceVariableUsageRvalue(assignStatement.getRvalue(), scopeTree);
+            Optional<VariableType> optionalLvalue = deduceVariableUsageLvalue(assignStatement.getLvalue(), scopeTree);
+            optionalLvalue.ifPresent(lvalue -> optionalRvalue.ifPresent(rvalue -> {
+                messages.addAll(expressionTypeDeducer.getCastChecker().attemptDowncast(
+                        ((AssignStatement) statement).getRvalue().getRange(),
+                        rvalue, lvalue
+                ).getMessages());
+            }));
         } else if (statement instanceof CompoundStatement) {
             CompoundStatement compoundStatement = (CompoundStatement) statement;
             scopeTree = deduceVariableUsage(compoundStatement, scopeTree);
