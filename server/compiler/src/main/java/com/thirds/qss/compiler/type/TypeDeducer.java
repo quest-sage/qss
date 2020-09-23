@@ -5,6 +5,8 @@ import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.FuncHook;
+import com.thirds.qss.compiler.tree.script.FuncOrHook;
 
 import java.util.ArrayList;
 
@@ -22,7 +24,7 @@ public class TypeDeducer {
         this.filePath = filePath;
     }
 
-    public void computeTypesIn(Func func, ArrayList<Message> messages) {
+    public void computeTypesIn(FuncOrHook func, ArrayList<Message> messages) {
         if (func.getFuncBlock().isNative())
             return;
 

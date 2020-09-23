@@ -3,13 +3,15 @@ package com.thirds.qss.compiler.type;
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.*;
+import com.thirds.qss.compiler.Message;
+import com.thirds.qss.compiler.Ranged;
+import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
-import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.FuncOrHook;
 import com.thirds.qss.compiler.tree.statement.*;
 
 import java.util.*;
@@ -44,7 +46,7 @@ public class VariableTracker {
      *
      * @return The types of each variable used in the block, or empty if no type could be deduced.
      */
-    public Map<String, Optional<VariableType>> track(Func func) {
+    public Map<String, Optional<VariableType>> track(FuncOrHook func) {
         Map<String, Optional<VariableType>> variableTypeMap = new HashMap<>();
         ScopeTree scopeTree = new ScopeTree(variableTypeMap);
         boolean trackResult = false;
@@ -119,12 +121,14 @@ public class VariableTracker {
                 ));
             } else {
                 namesDeclaredInThisScope.add(letAssignStatement.getName().contents);
-                VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
-                state = state.assign(letAssignStatement);
-                scopeTree.put(letAssignStatement.getName().contents, state);
+
                 ScopeTree finalScopeTree = scopeTree;
                 deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree)
                         .ifPresent(type -> finalScopeTree.setVariableType(letAssignStatement.getName().contents, type));
+
+                VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
+                state = state.assign(letAssignStatement);
+                scopeTree.put(letAssignStatement.getName().contents, state);
             }
         } else if (statement instanceof LetWithTypeStatement) {
             LetWithTypeStatement letWithTypeStatement = (LetWithTypeStatement) statement;

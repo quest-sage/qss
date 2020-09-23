@@ -225,6 +225,7 @@ public class Parser {
         }));
     }
 
+    @SuppressWarnings("unchecked")
     private Optional<Messenger<FuncHook>> parseHook(TokenStream tokens) {
         if (tokens.peek().isEmpty() || (tokens.peek().get().type != TokenType.KW_BEFORE && tokens.peek().get().type != TokenType.KW_AFTER))
             return Optional.empty();
@@ -245,18 +246,29 @@ public class Parser {
             return Optional.of(parseMulti(List.of(
                     () -> parseName(tokens),                            // 0
                     () -> parseParamList(tokens),                       // 1
-                    () -> parseFuncBlock(tokens)                        // 2
+                    () -> parseReturnType(tokens),                      // 2
+                    () -> parseFuncBlock(tokens)                        // 3
             )).map(list -> {
                 NameLiteral name = (NameLiteral) list.get(0);
                 ParamList paramList = (ParamList) list.get(1);
-                FuncBlock funcBlock = (FuncBlock) list.get(2);
+                Optional<Type> returnType = (Optional<Type>) list.get(2);
+                FuncBlock funcBlock = (FuncBlock) list.get(3);
+
+                ArrayList<Message> messages = new ArrayList<>(0);
+                if (funcBlock.isNative()) {
+                    messages.add(new Message(
+                            funcBlock.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Native blocks are not allowed in hooks"
+                    ));
+                }
 
                 FuncHook hook = new FuncHook(
                         new Range(start, tokens.currentEndPosition()),
-                        time, name, paramList, funcBlock
+                        time, name, paramList, returnType.orElse(null), funcBlock
                 );
 
-                return Messenger.success(hook);
+                return Messenger.success(hook, messages);
             }));
         } else {
             return Optional.of(Messenger.fail(new ArrayList<>(List.of(new Message(

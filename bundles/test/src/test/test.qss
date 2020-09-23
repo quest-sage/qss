@@ -26,7 +26,8 @@ func a(a: A, b: B) {
 }
 
 before func a() {
-
+    let a = a
+    let b = a
 }
 
 ** Abcdef **

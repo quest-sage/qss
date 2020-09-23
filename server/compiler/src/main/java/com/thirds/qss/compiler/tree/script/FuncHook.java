@@ -4,27 +4,24 @@ import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
+import com.thirds.qss.compiler.tree.Type;
 
 import java.util.function.Consumer;
 
 /**
  * Represents a <code>before func</code> or <code>after func</code> hook.
  */
-public class FuncHook extends Node {
+public class FuncHook extends FuncOrHook {
     /**
      * When should the hook execute? Either KW_BEFORE or KW_AFTER.
      */
     private final Token time;
     private final NameLiteral name;
-    private final ParamList paramList;
-    private final FuncBlock funcBlock;
 
-    public FuncHook(Range range, Token time, NameLiteral name, ParamList paramList, FuncBlock funcBlock) {
-        super(range);
+    public FuncHook(Range range, Token time, NameLiteral name, ParamList paramList, Type returnType, FuncBlock funcBlock) {
+        super(range, paramList, returnType, funcBlock);
         this.time = time;
         this.name = name;
-        this.paramList = paramList;
-        this.funcBlock = funcBlock;
     }
 
     public Token getTime() {
@@ -35,18 +32,9 @@ public class FuncHook extends Node {
         return name;
     }
 
-    public ParamList getParamList() {
-        return paramList;
-    }
-
-    public FuncBlock getFuncBlock() {
-        return funcBlock;
-    }
-
     @Override
     public void forChildren(Consumer<Node> consumer) {
+        super.forChildren(consumer);
         consumer.accept(name);
-        consumer.accept(paramList);
-        consumer.accept(funcBlock);
     }
 }

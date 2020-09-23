@@ -20,6 +20,7 @@ import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.SymbolMap;
 import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.FuncHook;
 import com.thirds.qss.compiler.type.TypeDeducer;
 
 import java.io.File;
@@ -371,6 +372,9 @@ public class Compiler {
             TypeDeducer typeDeducer = new TypeDeducer(this, scriptParsed, filePath);
             for (Documentable<Func> func : scriptParsed.getFuncs()) {
                 typeDeducer.computeTypesIn(func.getContent(), allMessages);
+            }
+            for (Documentable<FuncHook> funcHook : scriptParsed.getFuncHooks()) {
+                typeDeducer.computeTypesIn(funcHook.getContent(), allMessages);
             }
 
             // Return the parsed script.

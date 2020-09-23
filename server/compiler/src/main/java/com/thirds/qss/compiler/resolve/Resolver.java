@@ -287,7 +287,7 @@ public class Resolver {
         });
 
         if (funcResolved.alternatives.isEmpty()) {
-            StringBuilder message = new StringBuilder("Could not resolve " + whatSearchingFor + " ").append(funcName);
+            StringBuilder message = new StringBuilder("Could not resolve " + whatSearchingFor + " ").append(funcName.getName().toQualifiedName());
             if (!funcResolved.nonImportedAlternatives.isEmpty()) {
                 message.append("; try one of the following:");
                 for (ResolveAlternative<FuncAlternative> alt : funcResolved.nonImportedAlternatives) {
@@ -308,7 +308,7 @@ public class Resolver {
             messages.add(new Message(
                     funcName.getRange(),
                     Message.MessageSeverity.ERROR,
-                    "Reference to " + whatSearchingFor + " " + funcName + " was ambiguous, possibilities were: " +
+                    "Reference to " + whatSearchingFor + " " + funcName.getName().toQualifiedName() + " was ambiguous, possibilities were: " +
                             funcResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
             ));
         }
