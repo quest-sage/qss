@@ -28,7 +28,6 @@ func a(a: A, b: B) {
 }
 
 before func a(a: A, b: B) {
-    // TODO why are these variables <unknown>?
     let q = a
     let r = q
 }

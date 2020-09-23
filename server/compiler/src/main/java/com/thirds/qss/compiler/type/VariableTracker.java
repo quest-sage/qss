@@ -51,9 +51,10 @@ public class VariableTracker {
         for (Param param : func.getParamList().getParams()) {
             VariableUsageState duplicateState = scopeTree.getState(param.getName().contents);
             if (duplicateState == null) {
-                scopeTree.put(param.getName().contents,
-                        new VariableUsageState(param, param.getName().contents, func.getFuncBlock().getBlock()).assign(func.getFuncBlock().getBlock())
-                );
+                VariableUsageState state = new VariableUsageState(param, param.getName().contents, func.getFuncBlock().getBlock())
+                        .assign(func.getFuncBlock().getBlock());
+                state.variableType = param.getType().getResolvedType();
+                scopeTree.put(param.getName().contents, state);
             } else {
                 messages.add(new Message(
                         param.getName().getRange(),

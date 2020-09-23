@@ -275,7 +275,7 @@ public class Index {
 
                     def.params.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
-                            paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).value : null));
+                            param.getType().getResolvedType()));
                 }
             }
 
