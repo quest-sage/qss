@@ -5,6 +5,7 @@ import com.thirds.qss.protos.TypeProtos;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class VariableType {
@@ -253,7 +254,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "Maybe " + contentsType;
+            return "Maybe " + VariableType.render(contentsType);
         }
 
         @Override
@@ -293,7 +294,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "List " + elementType;
+            return "List " + VariableType.render(elementType);
         }
 
         @Override
@@ -338,7 +339,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "Map " + keyType + " To " + valueType;
+            return "Map " + VariableType.render(keyType) + " To " + VariableType.render(valueType);
         }
 
         @Override
@@ -437,13 +438,13 @@ public abstract class VariableType {
                 sb.append("(");
                 for (int i = 0; i < params.size(); i++) {
                     if (i != 0) sb.append(", ");
-                    sb.append(params.get(i));
+                    sb.append(VariableType.render(params.get(i)));
                 }
                 sb.append(")");
             }
 
             if (returnType != null) {
-                sb.append(" -> ").append(returnType);
+                sb.append(" -> ").append(VariableType.render(returnType));
             }
 
             return sb.toString();
@@ -525,5 +526,15 @@ public abstract class VariableType {
         public int hashCode() {
             return Objects.hash("Func", params, returnType, purity);
         }
+    }
+
+    public static String render(Optional<VariableType> variableType) {
+        return variableType.map(Object::toString).orElse("<unknown>");
+    }
+
+    public static String render(VariableType variableType) {
+        if (variableType == null)
+            return "<unknown>";
+        return variableType.toString();
     }
 }

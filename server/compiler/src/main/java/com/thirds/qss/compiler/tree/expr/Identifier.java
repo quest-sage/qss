@@ -52,7 +52,7 @@ public class Identifier extends Expression implements Symbol {
 
     @Override
     public Optional<String> getTargetDocumentation() {
-        String header = "`" + name.toQualifiedName() + ": " + renderVariableType() + "`";
+        String header = "`" + name.toQualifiedName() + ": " + VariableType.render(getVariableType()) + "`";
         return name.getTargetDocumentation().map(s -> header + "\n\n---\n\n" + s).or(() -> Optional.of(header));
     }
 

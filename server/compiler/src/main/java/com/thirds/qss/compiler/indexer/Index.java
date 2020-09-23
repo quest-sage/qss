@@ -80,7 +80,7 @@ public class Index {
             return "FieldDefinition{" +
                     "documentation='" + documentation + '\'' +
                     ", location=" + location +
-                    ", variableType=" + variableType +
+                    ", variableType=" + VariableType.render(variableType) +
                     '}';
         }
     }
@@ -117,7 +117,7 @@ public class Index {
             return "ParamDefinition{" +
                     "location=" + location +
                     ", name='" + name + '\'' +
-                    ", variableType=" + variableType +
+                    ", variableType=" + VariableType.render(variableType) +
                     '}';
         }
     }
@@ -284,9 +284,36 @@ public class Index {
             funcDefinitions.put(func.getContent().getName().contents, def);
         }
 
+        // We don't index function hooks here, but we do resolve things like their parameter and return types.
         for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
-            // Resolve the name of the function we're hooking into.
-            ResolveResult<Resolver.FuncNameAlternative> superFunc = Resolver.resolveFuncName(compiler, script, messages, funcHook.getContent().getName());
+            ArrayList<ParamDefinition> paramDefinitions = new ArrayList<>();
+            for (Param param : funcHook.getContent().getParamList().getParams()) {
+                Location paramDuplicateLocation = null;
+                for (ParamDefinition definition : paramDefinitions) {
+                    if (definition.name.equals(param.getName().contents)) {
+                        paramDuplicateLocation = definition.location;
+                        break;
+                    }
+                }
+
+                if (paramDuplicateLocation != null) {
+                    messages.add(new Message(
+                            param.getName().getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Parameter " + param.getName().contents + " was already defined"
+                    ).addInfo(new Message.MessageRelatedInformation(
+                            paramDuplicateLocation,
+                            "Previously defined here"
+                    )));
+                } else {
+                    // Resolve the parameter's type.
+                    ResolveResult<VariableType> paramTypeAlternatives = resolveType(script, messages, param.getName().contents, param.getType());
+
+                    paramDefinitions.add(new ParamDefinition(
+                            new Location(script.getFilePath(), param.getRange()), param.getName().contents,
+                            paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).value : null));
+                }
+            }
         }
 
         return Messenger.success(this, messages);

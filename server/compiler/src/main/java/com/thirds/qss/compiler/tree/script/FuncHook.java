@@ -5,6 +5,7 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Type;
+import com.thirds.qss.compiler.tree.expr.Identifier;
 
 import java.util.function.Consumer;
 
@@ -16,19 +17,19 @@ public class FuncHook extends FuncOrHook {
      * When should the hook execute? Either KW_BEFORE or KW_AFTER.
      */
     private final Token time;
-    private final NameLiteral name;
+    private final Identifier name;
 
     public FuncHook(Range range, Token time, NameLiteral name, ParamList paramList, Type returnType, FuncBlock funcBlock) {
         super(range, paramList, returnType, funcBlock);
         this.time = time;
-        this.name = name;
+        this.name = new Identifier(name);
     }
 
     public Token getTime() {
         return time;
     }
 
-    public NameLiteral getName() {
+    public Identifier getName() {
         return name;
     }
 

@@ -545,7 +545,7 @@ public class VariableTracker {
                     ", variableName='" + variableName + '\'' +
                     ", block=" + block +
                     ", usedAnywhere=" + usedAnywhere +
-                    ", variableType=" + variableType +
+                    ", variableType=" + VariableType.render(variableType) +
                     '}';
         }
     }

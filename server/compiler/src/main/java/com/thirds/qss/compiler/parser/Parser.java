@@ -753,6 +753,9 @@ public class Parser {
     }
 
     private Messenger<Token> consumeToken(TokenStream tokens, TokenType type) {
+        // Match SEMICOLON and IMPLICIT_SEMICOLON.
+        if (type == TokenType.SEMICOLON)
+            type = TokenType.IMPLICIT_SEMICOLON;
         Optional<Token> peek = tokens.peek();
         if (peek.isEmpty())
             return Messenger.fail(new ArrayList<>(List.of(new Message(
@@ -760,9 +763,6 @@ public class Parser {
                     Message.MessageSeverity.ERROR,
                     "Expected " + type + ", got end of file"
             ))));
-        // Match SEMICOLON and IMPLICIT_SEMICOLON.
-        if (type == TokenType.SEMICOLON)
-            type = TokenType.IMPLICIT_SEMICOLON;
         if ((peek.get().type != type) && !(type == TokenType.IMPLICIT_SEMICOLON && peek.get().type == TokenType.SEMICOLON))
             return Messenger.fail(new ArrayList<>(List.of(new Message(
                     new Range(tokens.currentPosition()),

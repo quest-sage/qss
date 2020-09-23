@@ -142,63 +142,6 @@ public class Resolver {
     }
 
     /**
-     * Represents a possible resolve alternative when searching for a function's name.
-     */
-    public static class FuncNameAlternative {
-        public final QualifiedName name;
-        public final NameIndex.FuncDefinition func;
-
-        public FuncNameAlternative(QualifiedName name, NameIndex.FuncDefinition func) {
-            this.name = name;
-            this.func = func;
-        }
-    }
-
-    /**
-     * @param compiler The name index must be built.
-     */
-    public static ResolveResult<FuncNameAlternative> resolveFuncName(Compiler compiler, Script script, ArrayList<Message> messages, NameLiteral funcName) {
-        ResolveResult<FuncNameAlternative> funcResolved = resolveGlobalScopeName(compiler, script, nameIndex -> {
-            ArrayList<FuncNameAlternative> alternatives = new ArrayList<>(0);
-            nameIndex.getFuncDefinitions().forEach((name, func) -> {
-                QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(name);
-                if (funcName.matches(qualifiedName)) {
-                    alternatives.add(new FuncNameAlternative(qualifiedName, func));
-                }
-            });
-            return alternatives;
-        });
-
-        if (funcResolved.alternatives.isEmpty()) {
-            StringBuilder message = new StringBuilder("Could not resolve func ").append(funcName);
-            if (!funcResolved.nonImportedAlternatives.isEmpty()) {
-                message.append("; try one of the following:");
-                for (ResolveAlternative<FuncNameAlternative> alt : funcResolved.nonImportedAlternatives) {
-                    // \u2022 is the bullet character
-                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
-                }
-            }
-            messages.add(new Message(
-                    funcName.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    message.toString()
-            ));
-        } else if (funcResolved.alternatives.size() == 1) {
-            ResolveAlternative<FuncNameAlternative> resolved = funcResolved.alternatives.get(0);
-            funcName.setTarget(resolved.value.func.getLocation(), resolved.value.func.getDocumentation());
-        } else {
-            messages.add(new Message(
-                    funcName.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    "Reference to func " + funcName + " was ambiguous, possibilities were: " +
-                            funcResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
-            ));
-        }
-
-        return funcResolved;
-    }
-
-    /**
      * Represents a possible resolve alternative when searching for a struct's name.
      */
     public static class StructNameAlternative {

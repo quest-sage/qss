@@ -39,10 +39,4 @@ public abstract class Expression extends Node {
      * type will be set to the return value.
      */
     protected abstract VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree);
-
-    public String renderVariableType() {
-        if (variableType == null)
-            return "<unknown>";
-        return variableType.toString();
-    }
 }

@@ -22,6 +22,7 @@ import com.thirds.qss.compiler.tree.SymbolMap;
 import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.FuncHook;
 import com.thirds.qss.compiler.type.TypeDeducer;
+import com.thirds.qss.compiler.validator.Validator;
 
 import java.io.File;
 import java.io.IOException;
@@ -376,6 +377,11 @@ public class Compiler {
             for (Documentable<FuncHook> funcHook : scriptParsed.getFuncHooks()) {
                 typeDeducer.computeTypesIn(funcHook.getContent(), allMessages);
             }
+
+            // Now for the last step, we're going to execute some extra validation checks to ensure that the script
+            // is valid QSS.
+            Validator validator = new Validator(this, scriptParsed, filePath);
+            allMessages.addAll(validator.validate());
 
             // Return the parsed script.
             return Messenger.success(scriptParsed, allMessages);

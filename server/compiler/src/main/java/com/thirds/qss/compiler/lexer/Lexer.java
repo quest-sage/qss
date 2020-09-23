@@ -13,6 +13,10 @@ public class Lexer {
     }
 
     public Messenger<TokenStream> process(String input) {
+        // Implicitly make a newline at the end of the file so that we can make implicit semicolons work right at
+        // the end of the file.
+        input = input + "\n";
+
         ArrayList<Token> tokens = new ArrayList<>();
         ArrayList<Message> messages = new ArrayList<>();
 

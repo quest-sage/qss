@@ -27,9 +27,10 @@ func a(a: A, b: B) {
     let bool = true
 }
 
-before func a() {
-    let a = a
-    let b = a
+before func a(a: A, b: B) {
+    // TODO why are these variables <unknown>?
+    let q = a
+    let r = q
 }
 
 ** Abcdef **
