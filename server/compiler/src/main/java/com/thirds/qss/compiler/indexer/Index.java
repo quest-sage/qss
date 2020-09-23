@@ -89,10 +89,6 @@ public class Index {
         private final String name;
         private final VariableType variableType;
 
-        /**
-         * @param name
-         * @param variableType May be null; if so, the type in the index will show as <code>&lt;unknown&gt;</code>.
-         */
         private ParamDefinition(Location location, String name, VariableType variableType) {
             this.location = location;
             this.name = name;
@@ -116,6 +112,32 @@ public class Index {
             return "ParamDefinition{" +
                     "location=" + location +
                     ", name='" + name + '\'' +
+                    ", variableType=" + variableType +
+                    '}';
+        }
+    }
+
+    private static class ReturnTypeDefinition {
+        private final Location location;
+        private final VariableType variableType;
+
+        private ReturnTypeDefinition(Location location, VariableType variableType) {
+            this.location = location;
+            this.variableType = variableType;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        public VariableType getVariableType() {
+            return variableType;
+        }
+
+        @Override
+        public String toString() {
+            return "ReturnTypeDefinition{" +
+                    "location=" + location +
                     ", variableType=" + variableType +
                     '}';
         }
@@ -157,7 +179,7 @@ public class Index {
         private final String documentation;
         private final Location location;
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
-        private Type returnType;
+        private ReturnTypeDefinition returnType;
         private VariableType type;
 
         private FuncDefinition(String documentation, Location location) {
@@ -175,10 +197,6 @@ public class Index {
 
         public ArrayList<ParamDefinition> getParams() {
             return params;
-        }
-
-        public Type getReturnType() {
-            return returnType;
         }
 
         @Override
@@ -205,7 +223,7 @@ public class Index {
             type = new VariableType.Function(
                     false,  // TODO receiver style functions
                     new ArrayList<>(paramTypes),
-                    returnType == null ? null : returnType.getResolvedType()
+                    returnType == null ? null : returnType.variableType
             );
         }
     }
@@ -275,12 +293,20 @@ public class Index {
                     )));
                 } else {
                     // Resolve the parameter's type.
-                    ResolveResult<VariableType> paramTypeAlternatives = Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
+                    Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
 
                     def.params.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
                             param.getType().getResolvedType()));
                 }
+            }
+
+            if (func.getContent().getReturnType() != null) {
+                Resolver.resolveType(compiler, script, messages, "result", func.getContent().getReturnType());
+                def.returnType = new ReturnTypeDefinition(
+                        new Location(script.getFilePath(), func.getContent().getReturnType().getRange()),
+                        func.getContent().getReturnType().getResolvedType()
+                );
             }
 
             def.computeType();
@@ -311,13 +337,16 @@ public class Index {
                     )));
                 } else {
                     // Resolve the parameter's type.
-                    ResolveResult<VariableType> paramTypeAlternatives = Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
+                    Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
 
                     paramDefinitions.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
-                            paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).value : null));
+                            param.getType().getResolvedType()));
                 }
             }
+
+            if (funcHook.getContent().getReturnType() != null)
+                Resolver.resolveType(compiler, script, messages, "result", funcHook.getContent().getReturnType());
         }
 
         return Messenger.success(this, messages);

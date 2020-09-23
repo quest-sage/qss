@@ -11,10 +11,12 @@ struct A {
 }
 
 func add(a: Int, b: Int) -> Int {
-    
+    {
+        result = "a"
+    }
 }
 
-after func add(a: Int, b: Int) {
+after func add(a: Int, b: Int) -> Int {
 
 }
 

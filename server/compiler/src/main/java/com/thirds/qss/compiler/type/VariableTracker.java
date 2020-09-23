@@ -10,6 +10,7 @@ import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
+import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.FuncOrHook;
 import com.thirds.qss.compiler.tree.script.Param;
 import com.thirds.qss.compiler.tree.statement.*;
@@ -73,8 +74,11 @@ public class VariableTracker {
         if (returnType != null) {
             VariableType returnType2 = returnType.getResolvedType();
             if (returnType2 != null) {
-                scopeTree.put("result", new VariableUsageState(returnType, "result", func.getFuncBlock().getBlock()));
-                trackResult = true;
+                VariableUsageState state = new VariableUsageState(returnType, "result", func.getFuncBlock().getBlock());
+                state.variableType = returnType2;
+                scopeTree.put("result", state);
+                if (func instanceof Func)
+                    trackResult = true;
             }
         }
 
