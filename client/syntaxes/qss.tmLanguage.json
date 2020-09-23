@@ -36,14 +36,18 @@
 			]
 		},
 		"literals": {
-			"comment": "String literal",
-			"name": "string.quoted.double.qss",
-			"begin": "\"",
-			"end": "[\\n\"]",
 			"patterns": [
 				{
-					"name": "constant.character.escape.qss",
-					"match": "\\\\."
+					"comment": "String literal",
+					"name": "string.quoted.double.qss",
+					"begin": "\"",
+					"end": "[\\n\"]",
+					"patterns": [
+						{
+							"name": "constant.character.escape.qss",
+							"match": "\\\\."
+						}
+					]
 				},
 				{
 					"comment": "Boolean constant",

@@ -2,16 +2,15 @@ package com.thirds.qss.compiler.type;
 
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
+import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.Message;
-import com.thirds.qss.compiler.Ranged;
-import com.thirds.qss.compiler.ScriptPath;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
 import com.thirds.qss.compiler.tree.script.FuncOrHook;
+import com.thirds.qss.compiler.tree.script.Param;
 import com.thirds.qss.compiler.tree.statement.*;
 
 import java.util.*;
@@ -44,13 +43,30 @@ public class VariableTracker {
      * Traverses each statement in the function looking for where and how variables are used, throwing error and warning
      * messages on invalid code.
      *
-     * @return The types of each variable used in the block, or empty if no type could be deduced.
      */
-    public Map<String, Optional<VariableType>> track(FuncOrHook func) {
-        Map<String, Optional<VariableType>> variableTypeMap = new HashMap<>();
-        ScopeTree scopeTree = new ScopeTree(variableTypeMap);
-        boolean trackResult = false;
+    public void track(FuncOrHook func) {
+        ScopeTree scopeTree = new ScopeTree();
 
+        // Add the function parameters to the scope tree.
+        for (Param param : func.getParamList().getParams()) {
+            VariableUsageState duplicateState = scopeTree.getState(param.getName().contents);
+            if (duplicateState == null) {
+                scopeTree.put(param.getName().contents,
+                        new VariableUsageState(param, param.getName().contents, func.getFuncBlock().getBlock()).assign(func.getFuncBlock().getBlock())
+                );
+            } else {
+                messages.add(new Message(
+                        param.getName().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Parameter " + param.getName().contents + " was already defined"
+                ).addInfo(new Message.MessageRelatedInformation(
+                        new Location(filePath, duplicateState.variable.getRange()),
+                        "Previously defined here"
+                )));
+            }
+        }
+
+        boolean trackResult = false;
         Type returnType = func.getReturnType();
         if (returnType != null) {
             VariableType returnType2 = returnType.getResolvedType();
@@ -61,7 +77,7 @@ public class VariableTracker {
         }
 
         if (func.getFuncBlock().isNative())
-            return variableTypeMap;
+            return;
 
         scopeTree = deduceVariableUsage(func.getFuncBlock().getBlock(), scopeTree);
         if (trackResult) {
@@ -83,7 +99,6 @@ public class VariableTracker {
             }
         }
 
-        return variableTypeMap;
     }
 
     /**
@@ -117,18 +132,22 @@ public class VariableTracker {
                 messages.add(new Message(
                         letAssignStatement.getName().getRange(),
                         Message.MessageSeverity.ERROR,
-                        "Name " + letAssignStatement.getName().contents + " was defined twice in the same block"
-                ));
+                        "Name " + letAssignStatement.getName().contents + " was declared twice in the same block"
+                ).addInfo(new Message.MessageRelatedInformation(
+                        new Location(filePath, scopeTree.getState(letAssignStatement.getName().contents).variable.getRange()),
+                        "Previously declared here"
+                )));
             } else {
                 namesDeclaredInThisScope.add(letAssignStatement.getName().contents);
 
                 ScopeTree finalScopeTree = scopeTree;
-                deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree)
-                        .ifPresent(type -> finalScopeTree.setVariableType(letAssignStatement.getName().contents, type));
+                Optional<VariableType> rvalueType = deduceVariableUsageRvalue(letAssignStatement.getRvalue(), scopeTree);
 
                 VariableUsageState state = new VariableUsageState(letAssignStatement.getName(), letAssignStatement.getName().contents, block);
                 state = state.assign(letAssignStatement);
                 scopeTree.put(letAssignStatement.getName().contents, state);
+
+                rvalueType.ifPresent(type -> finalScopeTree.setVariableType(letAssignStatement.getName().contents, type));
             }
         } else if (statement instanceof LetWithTypeStatement) {
             LetWithTypeStatement letWithTypeStatement = (LetWithTypeStatement) statement;
@@ -136,8 +155,11 @@ public class VariableTracker {
                 messages.add(new Message(
                         letWithTypeStatement.getName().getRange(),
                         Message.MessageSeverity.ERROR,
-                        "Name " + letWithTypeStatement.getName().contents + " was defined twice in the same block"
-                ));
+                        "Name " + letWithTypeStatement.getName().contents + " was declared twice in the same block"
+                ).addInfo(new Message.MessageRelatedInformation(
+                        new Location(filePath, scopeTree.getState(letWithTypeStatement.getName().contents).variable.getRange()),
+                        "Previously declared here"
+                )));
             } else {
                 namesDeclaredInThisScope.add(letWithTypeStatement.getName().contents);
                 VariableUsageState state = new VariableUsageState(letWithTypeStatement.getName(), letWithTypeStatement.getName().contents, block);
@@ -258,27 +280,25 @@ public class VariableTracker {
      */
     public static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
-        private final Map<String, Optional<VariableType>> variableTypeMap;
 
-        public ScopeTree(Map<String, Optional<VariableType>> variableTypeMap) {
-            this.variableTypeMap = variableTypeMap;
+        public ScopeTree() {
         }
 
         public ScopeTree(ScopeTree outerScopes) {
-            variableTypeMap = outerScopes.variableTypeMap;
             for (Map.Entry<String, VariableUsageState> entry : outerScopes.stateMap.entrySet()) {
                 stateMap.put(entry.getKey(), entry.getValue().duplicate());
             }
         }
 
         public void setVariableType(String variable, VariableType type) {
-            variableTypeMap.put(variable, Optional.ofNullable(type));
+            QssLogger.logger.atInfo().log("Set VT for %s: %s", variable, type);
+            if (getState(variable) == null)
+                QssLogger.logger.atSevere().log("No state for %s: %s", variable, stateMap);
+            getState(variable).variableType = type;
         }
 
         public void put(String name, VariableUsageState state) {
             stateMap.put(name, state);
-            if (!variableTypeMap.containsKey(name))
-                variableTypeMap.put(name, Optional.empty());
         }
 
         public VariableUsageState getState(String variableName) {
@@ -320,7 +340,7 @@ public class VariableTracker {
         }
 
         public Optional<VariableType> getVariableType(String variableName) {
-            return variableTypeMap.get(variableName);
+            return Optional.ofNullable(getState(variableName).variableType);
         }
     }
 
@@ -370,6 +390,10 @@ public class VariableTracker {
          * and assigned but not used.
          */
         public boolean usedAnywhere = false;
+        /**
+         * Null if no type has been deduced yet.
+         */
+        public VariableType variableType;
 
         public VariableUsageState(Ranged variable, String variableName, Statement block) {
             this.variable = variable;
@@ -508,6 +532,7 @@ public class VariableTracker {
             result.usedAnywhere = usedAnywhere;
             result.assignedBlocks.addAll(assignedBlocks);
             result.nonAssignedBlocks.addAll(nonAssignedBlocks);
+            result.variableType = variableType;
             return result;
         }
 
@@ -517,8 +542,10 @@ public class VariableTracker {
                     "assignedBlocks=" + assignedBlocks +
                     ", nonAssignedBlocks=" + nonAssignedBlocks +
                     ", variable=" + variable +
+                    ", variableName='" + variableName + '\'' +
                     ", block=" + block +
                     ", usedAnywhere=" + usedAnywhere +
+                    ", variableType=" + variableType +
                     '}';
         }
     }

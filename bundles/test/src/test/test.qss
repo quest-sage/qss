@@ -13,9 +13,11 @@ struct A {
 ** Function `a` does a thing **
 func a(a: A, b: B) {
     let r: Int
+
     {
         r = 1
     }
+
     let q = r
     let p = q
 
