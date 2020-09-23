@@ -52,7 +52,7 @@ public class Validator {
                 VariableType.Function actualType = new VariableType.Function(
                         false,
                         params,
-                        null
+                        funcHook.getContent().getReturnType() == null ? null : funcHook.getContent().getReturnType().getResolvedType()
                 );
 
                 VariableType expectedType = result.alternatives.get(0).value.func.getType();

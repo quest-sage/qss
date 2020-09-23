@@ -9,6 +9,7 @@ import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
 import com.thirds.qss.compiler.type.VariableTracker;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -52,7 +53,7 @@ public class Identifier extends Expression implements Symbol {
 
     @Override
     public Optional<String> getTargetDocumentation() {
-        String header = "`" + name.toQualifiedName() + ": " + VariableType.render(getVariableType()) + "`";
+        String header = "`" + name.toQualifiedName() + ": " + getVariableType().map(Objects::toString).orElse("<not evaluated>") + "`";
         return name.getTargetDocumentation().map(s -> header + "\n\n---\n\n" + s).or(() -> Optional.of(header));
     }
 

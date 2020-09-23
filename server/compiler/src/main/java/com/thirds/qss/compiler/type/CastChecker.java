@@ -25,6 +25,9 @@ public class CastChecker {
      * This returns a failed messenger if the downcast was invalid.
      */
     public Messenger<Object> attemptDowncast(Range where, VariableType expression, VariableType target) {
+        if (expression == VariableType.Primitive.TYPE_UNKNOWN || target == VariableType.Primitive.TYPE_UNKNOWN)
+            return Messenger.fail(new ArrayList<>(0));
+
         if (expression instanceof VariableType.Primitive) {
             if (target instanceof VariableType.Primitive) {
                 if (expression == target) {

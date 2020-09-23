@@ -10,6 +10,14 @@ struct A {
     b1: Bundle1
 }
 
+func add(a: Int, b: Int) -> Int {
+    
+}
+
+after func add(a: Int, b: Int) {
+
+}
+
 ** Function `a` does a thing **
 func a(a: A, b: B) {
     let r: Int

@@ -25,7 +25,10 @@ public abstract class Type extends Node {
     }
 
     /**
-     * Computes the qualified variable type by looking up type names in the given name index.
+     * DO NOT CALL MANUALLY: Use Resolver.deduceType - this produces a list of messages for you to output to the
+     * user!
+     *
+     * <p>Computes the qualified variable type by looking up type names in the given name index.
      * @return A list of possible alternatives for the resolution of the name;
      * an empty list if the type could not be found in the given name index. If the size of the alternatives list is
      * exactly 1, the variable type is resolved.
@@ -35,6 +38,8 @@ public abstract class Type extends Node {
         resolved = true;
         if (result.alternatives.size() == 1)
             resolvedType = result.alternatives.get(0).value;
+        else
+            resolvedType = VariableType.Primitive.TYPE_UNKNOWN;
         return result;
     }
 
@@ -58,7 +63,8 @@ public abstract class Type extends Node {
     }
 
     /**
-     * If {@link #resolve} was called, and the resolve was successful, this will return a non-null value.
+     * If {@link #resolve} was called, this will return a non-null value.
+     * If the resolve was unsuccessful, this will return VariableType.Primitive.TYPE_UNKNOWN.
      */
     public VariableType getResolvedType() {
         return resolvedType;

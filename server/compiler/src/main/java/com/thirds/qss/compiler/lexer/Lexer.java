@@ -49,9 +49,15 @@ public class Lexer {
                 case '+':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.PLUS, position);
                     break;
-                case '-':
-                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.MINUS, position);
+                case '-': {
+                    int firstCodePoint = codePoints.next();
+                    if (codePoints.peek() == '>') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.RETURNS, position);
+                    } else {
+                        oneCharacter(tokens, codePoints, firstCodePoint, TokenType.MINUS, position);
+                    }
                     break;
+                }
                 case '.':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.DOT, position);
                     break;

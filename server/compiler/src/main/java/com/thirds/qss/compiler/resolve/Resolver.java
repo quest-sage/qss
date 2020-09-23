@@ -2,6 +2,7 @@ package com.thirds.qss.compiler.resolve;
 
 import com.thirds.qss.BundleQualifiedName;
 import com.thirds.qss.QualifiedName;
+import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.indexer.Index;
@@ -10,6 +11,7 @@ import com.thirds.qss.compiler.indexer.NameIndex;
 import com.thirds.qss.compiler.indexer.NameIndices;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Identifier;
 
 import java.util.ArrayList;
@@ -139,6 +141,38 @@ public class Resolver {
         }
 
         return ResolveResult.nonImported(alternatives);
+    }
+
+    /**
+     * @param variableName The name of the variable we're deducing the type of (will be used in error messages).
+     * @param messages An output array that will contain the messages if there were any.
+     */
+    public static ResolveResult<VariableType> resolveType(Compiler compiler, Script script, ArrayList<Message> messages, String variableName, Type type) {
+        ResolveResult<VariableType> fieldTypeAlternatives = type.resolve(compiler, script);
+
+        if (fieldTypeAlternatives.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve type of ").append(variableName);
+            if (!fieldTypeAlternatives.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<VariableType> alt : fieldTypeAlternatives.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    type.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (fieldTypeAlternatives.alternatives.size() > 1) {
+            messages.add(new Message(
+                    type.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Type of " + variableName + " was ambiguous, possibilities were: " +
+                            fieldTypeAlternatives.alternatives.stream().map(alt -> alt.value.toString()).collect(Collectors.joining(", "))
+            ));
+        }
+        return fieldTypeAlternatives;
     }
 
     /**

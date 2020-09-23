@@ -2,8 +2,9 @@ package com.thirds.qss.compiler.type;
 
 import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
-import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.Compiler;
+import com.thirds.qss.compiler.*;
+import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
@@ -165,7 +166,7 @@ public class VariableTracker {
                 namesDeclaredInThisScope.add(letWithTypeStatement.getName().contents);
                 VariableUsageState state = new VariableUsageState(letWithTypeStatement.getName(), letWithTypeStatement.getName().contents, block);
                 scopeTree.put(letWithTypeStatement.getName().contents, state);
-                letWithTypeStatement.getType().resolve(compiler, script);
+                Resolver.resolveType(compiler, script, messages, letWithTypeStatement.getName().contents, letWithTypeStatement.getType());
                 scopeTree.setVariableType(letWithTypeStatement.getName().contents, letWithTypeStatement.getType().getResolvedType());
             }
         } else if (statement instanceof EvaluateStatement) {
@@ -175,12 +176,12 @@ public class VariableTracker {
             AssignStatement assignStatement = (AssignStatement) statement;
             Optional<VariableType> optionalRvalue = deduceVariableUsageRvalue(assignStatement.getRvalue(), scopeTree);
             Optional<VariableType> optionalLvalue = deduceVariableUsageLvalue(assignStatement.getLvalue(), scopeTree);
-            optionalLvalue.ifPresent(lvalue -> optionalRvalue.ifPresent(rvalue -> {
+            optionalLvalue.ifPresent(lvalue -> optionalRvalue.ifPresent(rvalue ->
                 messages.addAll(expressionTypeDeducer.getCastChecker().attemptDowncast(
                         ((AssignStatement) statement).getRvalue().getRange(),
                         rvalue, lvalue
-                ).getMessages());
-            }));
+                ).getMessages())
+            ));
         } else if (statement instanceof CompoundStatement) {
             CompoundStatement compoundStatement = (CompoundStatement) statement;
             scopeTree = deduceVariableUsage(compoundStatement, scopeTree);
@@ -546,7 +547,7 @@ public class VariableTracker {
                     ", variableName='" + variableName + '\'' +
                     ", block=" + block +
                     ", usedAnywhere=" + usedAnywhere +
-                    ", variableType=" + VariableType.render(variableType) +
+                    ", variableType=" + variableType +
                     '}';
         }
     }

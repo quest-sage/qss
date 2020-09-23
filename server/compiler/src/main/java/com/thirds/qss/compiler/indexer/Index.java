@@ -6,7 +6,6 @@ import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
-import com.thirds.qss.compiler.resolve.ResolveAlternative;
 import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Documentable;
@@ -80,7 +79,7 @@ public class Index {
             return "FieldDefinition{" +
                     "documentation='" + documentation + '\'' +
                     ", location=" + location +
-                    ", variableType=" + VariableType.render(variableType) +
+                    ", variableType=" + variableType +
                     '}';
         }
     }
@@ -117,7 +116,7 @@ public class Index {
             return "ParamDefinition{" +
                     "location=" + location +
                     ", name='" + name + '\'' +
-                    ", variableType=" + VariableType.render(variableType) +
+                    ", variableType=" + variableType +
                     '}';
         }
     }
@@ -158,6 +157,7 @@ public class Index {
         private final String documentation;
         private final Location location;
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
+        private Type returnType;
         private VariableType type;
 
         private FuncDefinition(String documentation, Location location) {
@@ -175,6 +175,10 @@ public class Index {
 
         public ArrayList<ParamDefinition> getParams() {
             return params;
+        }
+
+        public Type getReturnType() {
+            return returnType;
         }
 
         @Override
@@ -201,7 +205,7 @@ public class Index {
             type = new VariableType.Function(
                     false,  // TODO receiver style functions
                     new ArrayList<>(paramTypes),
-                    null
+                    returnType == null ? null : returnType.getResolvedType()
             );
         }
     }
@@ -232,7 +236,7 @@ public class Index {
                     )));
                 } else {
                     // Resolve the field's type using the name indices in the compiler.
-                    ResolveResult<VariableType> fieldTypeAlternatives = resolveType(script, messages, field.getContent().getName().contents, field.getContent().getType());
+                    ResolveResult<VariableType> fieldTypeAlternatives = Resolver.resolveType(compiler, script, messages, field.getContent().getName().contents, field.getContent().getType());
 
                     def.fields.put(field.getContent().getName().contents, new FieldDefinition(
                             field.getDocumentation().map(tk -> tk.contents).orElse(null),
@@ -271,7 +275,7 @@ public class Index {
                     )));
                 } else {
                     // Resolve the parameter's type.
-                    ResolveResult<VariableType> paramTypeAlternatives = resolveType(script, messages, param.getName().contents, param.getType());
+                    ResolveResult<VariableType> paramTypeAlternatives = Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
 
                     def.params.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
@@ -307,7 +311,7 @@ public class Index {
                     )));
                 } else {
                     // Resolve the parameter's type.
-                    ResolveResult<VariableType> paramTypeAlternatives = resolveType(script, messages, param.getName().contents, param.getType());
+                    ResolveResult<VariableType> paramTypeAlternatives = Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
 
                     paramDefinitions.add(new ParamDefinition(
                             new Location(script.getFilePath(), param.getRange()), param.getName().contents,
@@ -317,34 +321,6 @@ public class Index {
         }
 
         return Messenger.success(this, messages);
-    }
-
-    private ResolveResult<VariableType> resolveType(Script script, ArrayList<Message> messages, String name, Type type) {
-        ResolveResult<VariableType> fieldTypeAlternatives = type.resolve(compiler, script);
-
-        if (fieldTypeAlternatives.alternatives.isEmpty()) {
-            StringBuilder message = new StringBuilder("Could not resolve type of ").append(name);
-            if (!fieldTypeAlternatives.nonImportedAlternatives.isEmpty()) {
-                message.append("; try one of the following:");
-                for (ResolveAlternative<VariableType> alt : fieldTypeAlternatives.nonImportedAlternatives) {
-                    // \u2022 is the bullet character
-                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
-                }
-            }
-            messages.add(new Message(
-                    type.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    message.toString()
-            ));
-        } else if (fieldTypeAlternatives.alternatives.size() > 1) {
-            messages.add(new Message(
-                    type.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    "Type of " + name + " was ambiguous, possibilities were: " +
-                            fieldTypeAlternatives.alternatives.stream().map(alt -> alt.value.toString()).collect(Collectors.joining(", "))
-            ));
-        }
-        return fieldTypeAlternatives;
     }
 
     @Override
