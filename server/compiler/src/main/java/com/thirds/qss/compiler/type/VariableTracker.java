@@ -35,7 +35,7 @@ public class VariableTracker {
         this.script = script;
         this.filePath = filePath;
         this.messages = messages;
-        expressionTypeDeducer = new ExpressionTypeDeducer(filePath, messages);
+        expressionTypeDeducer = new ExpressionTypeDeducer(compiler, script, filePath, messages);
     }
 
     /**

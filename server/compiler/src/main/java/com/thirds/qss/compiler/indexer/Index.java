@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.indexer;
 
+import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
@@ -15,6 +16,7 @@ import com.thirds.qss.compiler.tree.script.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,12 +27,26 @@ public class Index {
     private final Map<String, StructDefinition> structDefinitions = new HashMap<>();
     private final Map<String, FuncDefinition> funcDefinitions = new HashMap<>();
     private final Compiler compiler;
+    private final QualifiedName thePackage;
+
+    public QualifiedName getPackage() {
+        return thePackage;
+    }
+
+    public Map<String, StructDefinition> getStructDefinitions() {
+        return structDefinitions;
+    }
+
+    public Map<String, FuncDefinition> getFuncDefinitions() {
+        return funcDefinitions;
+    }
 
     /**
      * The index is used for determining whether a name is defined, and the details of the name.
      */
-    public Index(Compiler compiler) {
+    public Index(Compiler compiler, QualifiedName thePackage) {
         this.compiler = compiler;
+        this.thePackage = thePackage;
     }
 
     private static class FieldDefinition {
@@ -138,10 +154,11 @@ public class Index {
         }
     }
 
-    private static class FuncDefinition {
+    public static class FuncDefinition {
         private final String documentation;
         private final Location location;
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
+        private VariableType type;
 
         private FuncDefinition(String documentation, Location location) {
             this.documentation = documentation;
@@ -167,6 +184,25 @@ public class Index {
                     ", location=" + location +
                     ", params=" + params +
                     '}';
+        }
+
+        /**
+         * @return The type of the function.
+         */
+        public VariableType getType() {
+            return type;
+        }
+
+        /**
+         * Computes the variable type of this function given that the list of parameters and return type is full.
+         */
+        public void computeType() {
+            List<VariableType> paramTypes = params.stream().map(param -> param.variableType).collect(Collectors.toList());
+            type = new VariableType.Function(
+                    false,  // TODO receiver style functions
+                    new ArrayList<>(paramTypes),
+                    null
+            );
         }
     }
 
@@ -242,6 +278,8 @@ public class Index {
                             paramTypeAlternatives.alternatives.size() == 1 ? paramTypeAlternatives.alternatives.get(0).value : null));
                 }
             }
+
+            def.computeType();
 
             funcDefinitions.put(func.getContent().getName().contents, def);
         }

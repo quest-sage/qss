@@ -16,6 +16,8 @@ import java.util.Map;
 /**
  * The name index is an intermediate index used to cache the names of each item in a given package.
  * This does not cache, for example, the fields of structs or the functions of traits.
+ *
+ * TODO maybe unify this with Index and just have certain fields be nullable? This would remove duplicate code
  */
 public class NameIndex {
     private final String bundleName;

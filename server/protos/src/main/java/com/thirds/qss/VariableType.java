@@ -397,6 +397,9 @@ public abstract class VariableType {
             return isNative;
         }
 
+        /**
+         * @param returnType Null if the function does not return a value.
+         */
         public Function(boolean receiverStyle, ArrayList<VariableType> params, VariableType returnType) {
             this.receiverStyle = receiverStyle;
             this.params = params;

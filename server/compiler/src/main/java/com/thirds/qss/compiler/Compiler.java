@@ -332,7 +332,7 @@ public class Compiler {
             // The addFrom method uses the typeNameIndices we just generated.
             // We'll do the same thing where we generate this script last.
             Messenger<Index> index = forNeighbours(filePath, scriptParsed,
-                    typeNameIndex.map(idx -> Messenger.success(new Index(this))),
+                    typeNameIndex.map(idx -> Messenger.success(new Index(this, scriptParsed.getPackageName()))),
                     (script2, index2) -> index2.addFrom(script2));
             index.getValue().ifPresent(idx -> indices
                     .computeIfAbsent("bundle", new ScriptPath())
@@ -343,7 +343,7 @@ public class Compiler {
                 indices
                         .computeIfAbsent("bundle", new ScriptPath())
                         .computeIfAbsent(packageName, k -> {
-                            Index index2 = new Index(this);
+                            Index index2 = new Index(this, k);
                             forScriptsIn(new ScriptPath(Paths.get("src").resolve(k.toPath())), index2::addFrom);
                             return index2;
                         });
@@ -355,7 +355,7 @@ public class Compiler {
                     indices
                             .computeIfAbsent(dependencyBundle, dependencyBundlePath)
                             .computeIfAbsent(packageName, k -> {
-                                Index index2 = new Index(this);
+                                Index index2 = new Index(this, k);
                                 forScriptsIn(new ScriptPath(dependencyBundlePath.toPath().resolve("src").resolve(k.toPath())), index2::addFrom);
                                 return index2;
                             });
