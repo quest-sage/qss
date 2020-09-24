@@ -379,6 +379,26 @@ public class Parser {
             case KW_LET:
                 result = parseLetStmt(tokens);
                 break;
+            case KW_RETURN:
+                result = parseReturnStmt(tokens);
+                break;
+            default: {
+                if (!peekExpr(tokens))
+                    return Optional.empty();
+                result = parseExprStmt(tokens);
+            }
+        }
+        // All statements end in a semicolon.
+        return Optional.of(consumeToken(tokens, TokenType.SEMICOLON).then(() -> result));
+    }
+
+    /**
+     * Does the token stream look like a list of tokens that could represent an expression?
+     */
+    private boolean peekExpr(TokenStream tokens) {
+        if (tokens.peek().isEmpty())
+            return false;
+        switch (tokens.peek().get().type) {
             case IDENTIFIER:
             case INTEGER_LITERAL:
             case STRING_LITERAL:
@@ -387,13 +407,9 @@ public class Parser {
             case KW_TRUE:
             case KW_FALSE:
             case LPARENTH:
-                result = parseExprStmt(tokens);
-                break;
-            default:
-                return Optional.empty();
+                return true;
         }
-        // All statements end in a semicolon.
-        return Optional.of(consumeToken(tokens, TokenType.SEMICOLON).then(() -> result));
+        return false;
     }
 
     /**
@@ -446,6 +462,24 @@ public class Parser {
                     Message.MessageSeverity.ERROR,
                     "Expected " + TokenType.TYPE + " or " + TokenType.ASSIGN + ", got " + tokens.peek().get().type
             ))));
+        }
+    }
+
+    private Messenger<Statement> parseReturnStmt(TokenStream tokens) {
+        Messenger<Token> ret = consumeToken(tokens, TokenType.KW_RETURN);
+        if (peekExpr(tokens)) {
+            Messenger<Expression> expr = parseExpr(tokens);
+            return ret.map(r -> expr.map(e -> {
+                ArrayList<Statement> statements = new ArrayList<>();
+                statements.add(AssignStatement.returnExpr(r, e));
+                statements.add(new ReturnStatement(r.getRange(), true));
+                return Messenger.success(new CompoundStatement(
+                        Range.combine(statements.get(0).getRange(), statements.get(1).getRange()),
+                        statements
+                ));
+            }));
+        } else {
+            return ret.map(r -> Messenger.success(new ReturnStatement(r.getRange(), false)));
         }
     }
 

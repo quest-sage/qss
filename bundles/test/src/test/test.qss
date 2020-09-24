@@ -11,9 +11,8 @@ struct A {
 }
 
 func add(a: Int, b: Int) -> Int {
-    {
-        result = "a"
-    }
+    return
+    return 2
 }
 
 after func add(a: Int, b: Int) -> Int {

@@ -16,7 +16,7 @@ public enum TokenType {
 
     KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
     KW_TRUE, KW_FALSE,
-    KW_LET,
+    KW_LET, KW_RETURN, KW_RESULT,
 
     STRING_LITERAL, INTEGER_LITERAL,
 
@@ -91,8 +91,16 @@ public enum TokenType {
                 return "keyword 'Texture'";
             case KW_PLAYER:
                 return "keyword 'Player'";
+            case KW_TRUE:
+                return "boolean 'true'";
+            case KW_FALSE:
+                return "boolean 'false'";
             case KW_LET:
                 return "keyword 'let'";
+            case KW_RETURN:
+                return "keyword 'return'";
+            case KW_RESULT:
+                return "keyword 'result'";
             case STRING_LITERAL:
                 return "string literal";
             case INTEGER_LITERAL:

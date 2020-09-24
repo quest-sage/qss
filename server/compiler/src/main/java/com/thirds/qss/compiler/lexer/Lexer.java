@@ -357,6 +357,12 @@ public class Lexer {
                             case "let":
                                 type = TokenType.KW_LET;
                                 break;
+                            case "return":
+                                type = TokenType.KW_RETURN;
+                                break;
+                            case "result":
+                                type = TokenType.KW_RESULT;
+                                break;
                             case "Int":
                                 type = TokenType.KW_INT;
                                 break;
@@ -446,6 +452,8 @@ public class Lexer {
             case KW_PLAYER:
             case KW_TRUE:
             case KW_FALSE:
+            case KW_RETURN:
+            case KW_RESULT:
                 return true;
             default:
                 return false;

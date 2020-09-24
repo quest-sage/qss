@@ -24,6 +24,16 @@
 					"match": "\\b(import|before|after|native|func|let)\\b"
 				},
 				{
+					"comment": "Control flow",
+					"name": "keyword.control.qss",
+					"match": "\\b(return)\\b"
+				},
+				{
+					"comment": "Variables",
+					"name": "variable.language.qss",
+					"match": "\\b(result)\\b"
+				},
+				{
 					"comment": "Type declaration",
 					"name": "storage.type.qss",
 					"match": "\\b(struct)\\b"

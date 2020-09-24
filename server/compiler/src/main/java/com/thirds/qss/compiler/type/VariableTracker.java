@@ -10,6 +10,7 @@ import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
+import com.thirds.qss.compiler.tree.expr.ResultExpression;
 import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.FuncOrHook;
 import com.thirds.qss.compiler.tree.script.Param;
@@ -210,6 +211,12 @@ public class VariableTracker {
                     scopeTree.setState(variableName, state.use(expr));
                 }
             }
+        } else if (expr instanceof ResultExpression) {
+            messages.add(new Message(
+                    expr.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Can't use 'result' variable in functions"
+            ));
         }
         return type;
     }
@@ -230,6 +237,8 @@ public class VariableTracker {
                     scopeTree.setState(variableName, state.assign(expr));
                 }
             }
+        } else if (expr instanceof ResultExpression) {
+            scopeTree.setState("result", scopeTree.getState("result").assign(expr));
         }
         return type;
     }

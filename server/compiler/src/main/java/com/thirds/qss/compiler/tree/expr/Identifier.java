@@ -2,7 +2,6 @@ package com.thirds.qss.compiler.tree.expr;
 
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Location;
-import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.Symbol;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
