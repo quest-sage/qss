@@ -3,19 +3,26 @@
 	"name": "QSS",
 	"patterns": [
 		{
-			"include": "#keywords"
-		},
-		{
-			"include": "#literals"
-		},
-		{
-			"include": "#comments"
-		},
-		{
-			"include": "#operators"
+			"include": "#qss"
 		}
 	],
 	"repository": {
+		"qss": {
+			"patterns": [
+				{
+					"include": "#keywords"
+				},
+				{
+					"include": "#literals"
+				},
+				{
+					"include": "#comments"
+				},
+				{
+					"include": "#operators"
+				}
+			]
+		},
 		"keywords": {
 			"patterns": [
 				{
@@ -77,7 +84,43 @@
 					"comment": "Documentation comment",
 					"name": "comment.block.documentation.qss",
 					"begin": "\\*\\*",
-					"end": "\\*\\*"
+					"end": "\\*\\*",
+					"patterns": [
+						{
+							"comment": "Bold",
+							"name": "markup.bold.qss",
+							"begin": "__",
+							"end": "__"
+						},
+						{
+							"comment": "Italic",
+							"name": "markup.italic.qss",
+							"begin": "_",
+							"end": "_"
+						},
+						{
+							"comment": "QSS code block",
+							"name": "markup.raw.fenced_code.qss",
+							"begin": "```",
+							"end": "```",
+							"patterns": [
+								{
+									"include": "#qss"
+								}
+							]
+						},
+						{
+							"comment": "Inline code",
+							"name": "markup.inline.raw.string.qss",
+							"begin": "`",
+							"end": "`",
+							"patterns": [
+								{
+									"include": "#qss"
+								}
+							]
+						}
+					]
 				},
 				{
 					"comment": "Line comment",
@@ -98,7 +141,7 @@
 				{
 					"comment": "Basic operators",
 					"name": "keyword.operator.qss",
-					"match": "([\\+\\-\\*\\/\\.,:;])"
+					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|])"
 				}
 			]
 		}

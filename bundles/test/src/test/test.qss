@@ -1,6 +1,15 @@
 import test::internal
 import bundle1
 
+**
+Sample code `something`:
+
+```
+func add(a: Int, b: Int) -> Int {
+    return a + b
+}
+```
+**
 struct A {
     q: Int
     b: B
@@ -18,7 +27,7 @@ after func add(a: Int, b: Int) -> Int {
     return result + 1
 }
 
-** Function `a` does a thing **
+** Function `a` does a __thing__ _thjing_ thing **
 func a(a: A, b: B) {
     let r: Int
 
