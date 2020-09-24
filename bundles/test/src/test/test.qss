@@ -23,8 +23,14 @@ after func add(a: Int, b: Int) -> Int {
 func a(a: A, b: B) {
     let r: Int
 
+    let added = add(
+        456 + 123,
+        2 * 2,
+    )
+
     {
         r = 1
+        r = added
     }
 
     let q = r

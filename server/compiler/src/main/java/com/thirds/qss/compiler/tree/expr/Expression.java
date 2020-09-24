@@ -21,6 +21,8 @@ public abstract class Expression extends Node {
 
     public void setVariableType(VariableType variableType) {
         this.variableType = variableType;
+        if (variableType == null)
+            throw new UnsupportedOperationException("Should be UNKNOWN, not null: " + getClass().getName());
     }
 
     /**
@@ -35,8 +37,8 @@ public abstract class Expression extends Node {
      * Deduces the type of this variable using the given expression type deducer utility.
      * This calculation may depend on the types of other variables, so the current scope is included here so
      * we can look at other variables' types.
-     * @return A nullable variable type. If the computation succeeded, this expression's cached variable
-     * type will be set to the return value.
+     * @return A non-null variable type. If the computation succeeded, this expression's cached variable
+     * type will be set to the return value. Else, return VariableType.Primitive.TYPE_UNKNOWN.
      */
     protected abstract VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree);
 }

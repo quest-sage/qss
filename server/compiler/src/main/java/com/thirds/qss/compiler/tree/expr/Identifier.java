@@ -59,6 +59,6 @@ public class Identifier extends Expression implements Symbol {
     @Override
     protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
         expressionTypeDeducer.resolveIdentifier(scopeTree, this);
-        return getVariableType().orElse(null);
+        return getVariableType().orElse(VariableType.Primitive.TYPE_UNKNOWN);
     }
 }
