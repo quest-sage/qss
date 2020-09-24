@@ -722,6 +722,7 @@ public class Parser {
     //#region Utilities
 
     private Messenger<Type> parseType(TokenStream tokens) {
+        Messenger<Type> result = null;
         if (tokens.peek().isPresent()) {
             switch (tokens.peek().get().type) {
                 case KW_INT:
@@ -734,10 +735,58 @@ public class Parser {
                 case KW_POS:
                 case KW_TEXTURE:
                 case KW_PLAYER:
-                    return consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.PrimitiveType(tk)));
+                    result = consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.PrimitiveType(tk)));
+                    break;
+                case IDENTIFIER:
+                    result = parseName(tokens).map(name -> Messenger.success(new Type.StructType(name.getRange(), name)));
+                    break;
+                case LSQUARE:
+                    result = parseListType(tokens);
+                    break;
+                case LBRACE:
+                    result = parseMapType(tokens);
+                    break;
             }
         }
-        return parseName(tokens).map(name -> Messenger.success(new Type.StructType(name.getRange(), name)));
+
+        if (result == null) {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected type"
+            ))));
+        }
+
+        while (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.TYPE_MAYBE) {
+            Messenger<Type> finalResult = result;
+            result = consumeToken(tokens, TokenType.TYPE_MAYBE).map(maybe -> finalResult.map(type -> Messenger.success(new Type.MaybeType(type, maybe))));
+        }
+
+        return result;
+    }
+
+    private Messenger<Type> parseListType(TokenStream tokens) {
+        return consumeToken(tokens, TokenType.LSQUARE).map(startToken ->
+                parseType(tokens).map(type ->
+                        consumeToken(tokens, TokenType.RSQUARE).map(endToken ->
+                                Messenger.success(new Type.ListType(type, startToken, endToken)))));
+    }
+
+    private Messenger<Type> parseMapType(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 0
+                () -> parseType(tokens),                            // 1
+                () -> consumeToken(tokens, TokenType.TYPE_MAPS_TO), // 2
+                () -> parseType(tokens),                            // 3
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 4
+        )).map(list -> {
+            Token startToken = (Token) list.get(0);
+            Type keyType = (Type) list.get(1);
+            Type valueType = (Type) list.get(3);
+            Token endToken = (Token) list.get(4);
+
+            return Messenger.success(new Type.MapType(keyType, valueType, startToken, endToken));
+        });
     }
 
     /**

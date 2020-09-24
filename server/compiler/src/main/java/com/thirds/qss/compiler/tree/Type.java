@@ -147,4 +147,146 @@ public abstract class Type extends Node {
             consumer.accept(structName);
         }
     }
+
+    public static class MaybeType extends Type {
+        private final Type contentsType;
+
+        public MaybeType(Type contentsType, Token maybeToken) {
+            super(Range.combine(contentsType.getRange(), maybeToken.getRange()));
+            this.contentsType = contentsType;
+        }
+
+        @Override
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
+            ResolveResult<VariableType> contentsTypeResolved = contentsType.resolve(compiler, script);
+            ArrayList<ResolveAlternative<VariableType>> alternatives = new ArrayList<>(1);
+            ArrayList<ResolveAlternative<VariableType>> nonImportedAlternatives = new ArrayList<>(0);
+
+            for (ResolveAlternative<VariableType> alternative : contentsTypeResolved.alternatives) {
+                alternatives.add(new ResolveAlternative<>(
+                        new VariableType.Maybe(alternative.value),
+                        alternative.imports
+                ));
+            }
+            for (ResolveAlternative<VariableType> alternative : contentsTypeResolved.nonImportedAlternatives) {
+                nonImportedAlternatives.add(new ResolveAlternative<>(
+                        new VariableType.Maybe(alternative.value),
+                        alternative.imports
+                ));
+            }
+
+            return new ResolveResult<>(alternatives, nonImportedAlternatives);
+        }
+
+        @Override
+        public void forChildren(Consumer<Node> consumer) {
+            consumer.accept(contentsType);
+        }
+    }
+
+    public static class ListType extends Type {
+        private final Type elementType;
+
+        public ListType(Type elementType, Token startToken, Token endToken) {
+            super(Range.combine(startToken.getRange(), endToken.getRange()));
+            this.elementType = elementType;
+        }
+
+        @Override
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
+            ResolveResult<VariableType> elementTypeResolved = elementType.resolve(compiler, script);
+            ArrayList<ResolveAlternative<VariableType>> alternatives = new ArrayList<>(1);
+            ArrayList<ResolveAlternative<VariableType>> nonImportedAlternatives = new ArrayList<>(0);
+
+            for (ResolveAlternative<VariableType> alternative : elementTypeResolved.alternatives) {
+                alternatives.add(new ResolveAlternative<>(
+                        new VariableType.List(alternative.value),
+                        alternative.imports
+                ));
+            }
+            for (ResolveAlternative<VariableType> alternative : elementTypeResolved.nonImportedAlternatives) {
+                nonImportedAlternatives.add(new ResolveAlternative<>(
+                        new VariableType.List(alternative.value),
+                        alternative.imports
+                ));
+            }
+
+            return new ResolveResult<>(alternatives, nonImportedAlternatives);
+        }
+
+        @Override
+        public void forChildren(Consumer<Node> consumer) {
+            consumer.accept(elementType);
+        }
+    }
+
+    public static class MapType extends Type {
+        private final Type keyType;
+        private final Type valueType;
+
+        public MapType(Type keyType, Type valueType, Token startToken, Token endToken) {
+            super(Range.combine(startToken.getRange(), endToken.getRange()));
+            this.keyType = keyType;
+            this.valueType = valueType;
+        }
+
+        @Override
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
+            ResolveResult<VariableType> keyTypeResolved = keyType.resolve(compiler, script);
+            ResolveResult<VariableType> valueTypeResolved = valueType.resolve(compiler, script);
+
+            ArrayList<ResolveAlternative<VariableType>> alternatives = new ArrayList<>(1);
+            ArrayList<ResolveAlternative<VariableType>> nonImportedAlternatives = new ArrayList<>(0);
+
+            // Zip all possible alternatives and non-imported alternatives for key/value types together.
+            for (ResolveAlternative<VariableType> alternative : keyTypeResolved.alternatives) {
+                for (ResolveAlternative<VariableType> alternative2 : valueTypeResolved.alternatives) {
+                    alternatives.add(new ResolveAlternative<>(
+                            new VariableType.Map(alternative.value, alternative2.value),
+                            new ArrayList<>() {{
+                                addAll(alternative.imports);
+                                addAll(alternative2.imports);
+                            }}
+                    ));
+                }
+                for (ResolveAlternative<VariableType> alternative2 : valueTypeResolved.nonImportedAlternatives) {
+                    nonImportedAlternatives.add(new ResolveAlternative<>(
+                            new VariableType.Map(alternative.value, alternative2.value),
+                            new ArrayList<>() {{
+                                addAll(alternative.imports);
+                                addAll(alternative2.imports);
+                            }}
+                    ));
+                }
+            }
+            for (ResolveAlternative<VariableType> alternative : keyTypeResolved.nonImportedAlternatives) {
+                for (ResolveAlternative<VariableType> alternative2 : valueTypeResolved.alternatives) {
+                    nonImportedAlternatives.add(new ResolveAlternative<>(
+                            new VariableType.Map(alternative.value, alternative2.value),
+                            new ArrayList<>() {{
+                                addAll(alternative.imports);
+                                addAll(alternative2.imports);
+                            }}
+                    ));
+                }
+                for (ResolveAlternative<VariableType> alternative2 : valueTypeResolved.nonImportedAlternatives) {
+                    nonImportedAlternatives.add(new ResolveAlternative<>(
+                            new VariableType.Map(alternative.value, alternative2.value),
+                            new ArrayList<>() {{
+                                addAll(alternative.imports);
+                                addAll(alternative2.imports);
+                            }}
+                    ));
+                }
+            }
+
+            return new ResolveResult<>(alternatives, nonImportedAlternatives);
+        }
+
+        @Override
+        public void forChildren(Consumer<Node> consumer) {
+            consumer.accept(keyType);
+            consumer.accept(valueType);
+        }
+    }
 }

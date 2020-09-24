@@ -29,7 +29,8 @@ public enum TokenType {
     LESS, GREATER,  // < >
     LESS_EQUAL, GREATER_EQUAL,  // <= >=
 
-    TYPE_AND, TYPE_OR,  // & |
+    TYPE_AND, TYPE_OR, TYPE_MAYBE,  // & | ?
+    TYPE_MAPS_TO,  // =>
 
     DOCUMENTATION_COMMENT,  // ** ... **
     ;
@@ -140,9 +141,13 @@ public enum TokenType {
             case GREATER_EQUAL:
                 return "greater-than-or-equal symbol '>='";
             case TYPE_AND:
-                return "typewise AND operator '&'";
+                return "typewise 'and' operator '&'";
             case TYPE_OR:
-                return "typewise OR operator '|'";
+                return "typewise 'or' operator '|'";
+            case TYPE_MAYBE:
+                return "typewise 'maybe' operator '?'";
+            case TYPE_MAPS_TO:
+                return "maps-to operator '=>'";
             case DOCUMENTATION_COMMENT:
                 return "documentation comment";
         }

@@ -64,10 +64,15 @@ public class Lexer {
                 case ',':
                     oneCharacter(tokens, codePoints, codePoints.next(), TokenType.COMMA, position);
                     break;
+                case '?':
+                    oneCharacter(tokens, codePoints, codePoints.next(), TokenType.TYPE_MAYBE, position);
+                    break;
                 case '=': {
                     int firstCodePoint = codePoints.next();
                     if (codePoints.peek() == '=') {
                         twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.EQUAL, position);
+                    } else if (codePoints.peek() == '>') {
+                        twoCharacters(tokens, codePoints, firstCodePoint, codePoints.next(), TokenType.TYPE_MAPS_TO, position);
                     } else {
                         oneCharacter(tokens, codePoints, firstCodePoint, TokenType.ASSIGN, position);
                     }
@@ -459,6 +464,7 @@ public class Lexer {
             case KW_FALSE:
             case KW_RETURN:
             case KW_RESULT:
+            case TYPE_MAYBE:
                 return true;
             default:
                 return false;
@@ -470,7 +476,7 @@ public class Lexer {
     }
 
     private boolean isIdentifierPart(int codePoint) {
-        return Character.isLetter(codePoint) || Character.isDigit(codePoint);
+        return Character.isLetter(codePoint) || Character.isDigit(codePoint) || codePoint == '_';
     }
 
     private void oneCharacter(ArrayList<Token> tokens, CodePointIterator codePoints, int codePoint, TokenType type, Position position) {

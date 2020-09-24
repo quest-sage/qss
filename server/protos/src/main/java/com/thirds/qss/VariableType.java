@@ -253,7 +253,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "Maybe " + contentsType;
+            return contentsType + "?";
         }
 
         @Override
@@ -293,7 +293,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "List " + elementType;
+            return "[" + elementType + "]";
         }
 
         @Override
@@ -338,7 +338,7 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            return "Map " + keyType + " To " + valueType;
+            return "{" + keyType + " => " + valueType + "}";
         }
 
         @Override

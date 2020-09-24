@@ -134,7 +134,7 @@
 				{
 					"comment": "Basic operators",
 					"name": "keyword.operator.qss",
-					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|])"
+					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|\\?])"
 				}
 			]
 		}
