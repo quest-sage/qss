@@ -1,6 +1,7 @@
 package com.thirds.qss.compiler.tree.expr;
 
 import com.thirds.qss.VariableType;
+import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
 import com.thirds.qss.compiler.type.VariableTracker;
 
@@ -11,6 +12,16 @@ public class LogicalNotExpression extends UnaryExpression {
 
     @Override
     protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
-        throw new UnsupportedOperationException();
+        getArgument().deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
+        getArgument().getVariableType().ifPresent(vt -> {
+            if (vt != VariableType.Primitive.TYPE_BOOL) {
+                expressionTypeDeducer.getMessages().add(new Message(
+                        getArgument().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Expected an expression of type " + VariableType.Primitive.TYPE_BOOL + ", got " + vt
+                ));
+            }
+        });
+        return VariableType.Primitive.TYPE_BOOL;
     }
 }
