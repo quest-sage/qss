@@ -201,29 +201,38 @@ public class VariableTracker {
             scopeTree = deduceVariableUsage(compoundStatement, scopeTree);
         } else if (statement instanceof ReturnStatement) {
             ReturnStatement returnStatement = (ReturnStatement) statement;
-            if (func.getReturnType() == null) {
-                // The function is not supposed to return a value.
-                if (returnStatement.didReturnValue()) {
-                    messages.add(new Message(
-                            returnStatement.getRange(),
-                            Message.MessageSeverity.ERROR,
-                            "This function is not supposed to return any value"
-                    ));
-                }
+            if (func instanceof FuncHook && ((FuncHook) func).getTime().type == TokenType.KW_BEFORE) {
+                // We're not allowed to use "return" statements in "before" hooks.
+                messages.add(new Message(
+                        returnStatement.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "'return' statements are forbidden in 'before' hooks"
+                ));
             } else {
-                // The function is supposed to return a value.
-                if (!returnStatement.didReturnValue()) {
-                    if (func instanceof FuncHook && ((FuncHook) func).getTime().type == TokenType.KW_AFTER) {
-                        // But if we're in an "after" hook, we don't actually have to return anything - the return value
-                        // has already been computed.
-                    } else {
+                if (func.getReturnType() == null) {
+                    // The function is not supposed to return a value.
+                    if (returnStatement.didReturnValue()) {
                         messages.add(new Message(
                                 returnStatement.getRange(),
                                 Message.MessageSeverity.ERROR,
-                                "This function is supposed to return an expression of type " +
-                                        scopeTree.getVariableType("result").map(Object::toString).orElse("<not evaluated>") +
-                                        ", but no return value was supplied"
+                                "This function is not supposed to return any value"
                         ));
+                    }
+                } else {
+                    // The function is supposed to return a value.
+                    if (!returnStatement.didReturnValue()) {
+                        if (func instanceof FuncHook && ((FuncHook) func).getTime().type == TokenType.KW_AFTER) {
+                            // But if we're in an "after" hook, we don't actually have to return anything - the return value
+                            // has already been computed.
+                        } else {
+                            messages.add(new Message(
+                                    returnStatement.getRange(),
+                                    Message.MessageSeverity.ERROR,
+                                    "This function is supposed to return an expression of type " +
+                                            scopeTree.getVariableType("result").map(Object::toString).orElse("<not evaluated>") +
+                                            ", but no return value was supplied"
+                            ));
+                        }
                     }
                 }
             }
