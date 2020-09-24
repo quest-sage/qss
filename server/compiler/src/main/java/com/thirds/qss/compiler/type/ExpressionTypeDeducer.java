@@ -4,8 +4,6 @@ import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.ScriptPath;
-import com.thirds.qss.compiler.resolve.ResolveAlternative;
-import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.expr.Identifier;
@@ -28,6 +26,14 @@ public class ExpressionTypeDeducer {
         this.filePath = filePath;
         this.messages = messages;
         castChecker = new CastChecker();
+    }
+
+    public Compiler getCompiler() {
+        return compiler;
+    }
+
+    public Script getScript() {
+        return script;
     }
 
     public ScriptPath getFilePath() {

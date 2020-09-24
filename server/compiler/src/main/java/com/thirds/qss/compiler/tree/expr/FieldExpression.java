@@ -1,7 +1,10 @@
 package com.thirds.qss.compiler.tree.expr;
 
 import com.thirds.qss.VariableType;
+import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.resolve.ResolveResult;
+import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
@@ -35,6 +38,29 @@ public class FieldExpression extends Expression {
 
     @Override
     protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
-        throw new UnsupportedOperationException();
+        value.deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
+        if (value.getVariableType().isEmpty())
+            return VariableType.Primitive.TYPE_UNKNOWN;
+        VariableType type = value.getVariableType().get();
+        if (!(type instanceof VariableType.Struct)) {
+            expressionTypeDeducer.getMessages().add(new Message(
+                    value.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Expected a struct, got expression of type " + type
+            ));
+            return VariableType.Primitive.TYPE_UNKNOWN;
+        }
+        VariableType.Struct struct = (VariableType.Struct) type;
+        ResolveResult<Resolver.StructFieldAlternative> alternatives = Resolver.resolveStructField(
+                expressionTypeDeducer.getCompiler(),
+                expressionTypeDeducer.getScript(),
+                expressionTypeDeducer.getMessages(),
+                struct.getName(),
+                field
+        );
+        if (alternatives.alternatives.size() == 1) {
+            return alternatives.alternatives.get(0).value.type;
+        }
+        return VariableType.Primitive.TYPE_UNKNOWN;
     }
 }

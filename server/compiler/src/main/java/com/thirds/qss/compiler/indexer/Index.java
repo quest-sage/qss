@@ -48,7 +48,7 @@ public class Index {
         this.thePackage = thePackage;
     }
 
-    private static class FieldDefinition {
+    public static class FieldDefinition {
         private final String documentation;
         private final Location location;
         private final VariableType variableType;
@@ -143,7 +143,7 @@ public class Index {
         }
     }
 
-    private static class StructDefinition {
+    public static class StructDefinition {
         private final String documentation;
         private final Location location;
         private final Map<String, FieldDefinition> fields = new HashMap<>();

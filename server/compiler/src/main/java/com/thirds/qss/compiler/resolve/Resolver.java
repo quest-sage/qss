@@ -4,6 +4,7 @@ import com.thirds.qss.BundleQualifiedName;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
+import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.indexer.Index;
 import com.thirds.qss.compiler.indexer.Indices;
@@ -291,5 +292,81 @@ public class Resolver {
         }
 
         return funcResolved;
+    }
+
+    /**
+     * Represents a possible resolve alternative when searching for a struct's field.
+     */
+    public static class StructFieldAlternative {
+        public final Location location;
+        public final String documentation;
+        public final QualifiedName name;
+        public final VariableType type;
+
+        public StructFieldAlternative(Location location, String documentation, QualifiedName name, VariableType type) {
+            this.location = location;
+            this.documentation = documentation;
+            this.name = name;
+            this.type = type;
+        }
+    }
+
+    /**
+     * @param compiler The index must be built.
+     */
+    public static ResolveResult<StructFieldAlternative> resolveStructField(Compiler compiler, Script script, ArrayList<Message> messages, QualifiedName structName, NameLiteral fieldName) {
+        ResolveResult<StructFieldAlternative> fieldResolved = resolveGlobalScope(compiler, script, index -> {
+            ArrayList<StructFieldAlternative> alternatives = new ArrayList<>(0);
+
+            // Check if we're even in the right package for the struct.
+            if (!index.getPackage().equals(structName.trimLastSegment()))
+                return alternatives;
+
+            Index.StructDefinition structDefinition = index.getStructDefinitions().get(structName.lastSegment());
+            if (structDefinition != null) {
+                for (Map.Entry<String, Index.FieldDefinition> field : structDefinition.getFields().entrySet()) {
+                    QualifiedName qualifiedName = index.getPackage().appendSegment(field.getKey());
+                    if (fieldName.matches(qualifiedName)) {
+                        Index.FieldDefinition fieldDefinition = field.getValue();
+                        StructFieldAlternative alt = new StructFieldAlternative(
+                                fieldDefinition.getLocation(),
+                                fieldDefinition.getDocumentation(),
+                                qualifiedName, fieldDefinition.getVariableType()
+                        );
+                        alternatives.add(alt);
+                    }
+                }
+            }
+
+            return alternatives;
+        });
+
+        if (fieldResolved.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve field ").append(fieldName.toQualifiedName());
+            if (!fieldResolved.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<StructFieldAlternative> alt : fieldResolved.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    fieldName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (fieldResolved.alternatives.size() == 1) {
+            ResolveAlternative<StructFieldAlternative> resolved = fieldResolved.alternatives.get(0);
+            fieldName.setTarget(resolved.value.location, resolved.value.documentation);
+        } else {
+            messages.add(new Message(
+                    fieldName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Reference to field " + fieldName.toQualifiedName() + " was ambiguous, possibilities were: " +
+                            fieldResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
+            ));
+        }
+
+        return fieldResolved;
     }
 }
