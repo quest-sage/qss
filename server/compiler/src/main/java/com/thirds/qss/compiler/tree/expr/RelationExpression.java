@@ -11,10 +11,10 @@ import com.thirds.qss.compiler.type.VariableTracker;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-public class LogicExpression extends Expression {
+public class RelationExpression extends Expression {
     private final ArrayList<Expression> arguments;
 
-    public LogicExpression(Token expressionType, ArrayList<Expression> arguments) {
+    public RelationExpression(Token expressionType, ArrayList<Expression> arguments) {
         super(Range.combine(
                 arguments.get(0).getRange(),
                 arguments.get(arguments.size() - 1).getRange()
@@ -36,11 +36,17 @@ public class LogicExpression extends Expression {
         }
 
         for (Expression argument : arguments) {
-            if (argument.getVariableType().isEmpty() || argument.getVariableType().get() != VariableType.Primitive.TYPE_BOOL) {
+            if (argument.getVariableType().isEmpty() || (
+                    argument.getVariableType().get() != VariableType.Primitive.TYPE_INT &&
+                            argument.getVariableType().get() != VariableType.Primitive.TYPE_RATIO
+            )) {
                 expressionTypeDeducer.getMessages().add(new Message(
                         argument.getRange(),
                         Message.MessageSeverity.ERROR,
-                        "Expected an expression of type " + VariableType.Primitive.TYPE_BOOL + ", got " + argument.getVariableType().orElse(VariableType.Primitive.TYPE_UNKNOWN)
+                        "Expected an expression of type " +
+                                VariableType.Primitive.TYPE_INT + " or " +
+                                VariableType.Primitive.TYPE_RATIO + ", got " +
+                                argument.getVariableType().orElse(VariableType.Primitive.TYPE_UNKNOWN)
                 ));
             }
         }

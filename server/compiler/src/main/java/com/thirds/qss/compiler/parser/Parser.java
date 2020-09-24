@@ -540,7 +540,7 @@ public class Parser {
         } else if (arguments.size() == 1) {
             return Messenger.success(arguments.get(0), messages);
         } else {
-            return Messenger.success(new LogicExpression(arguments), messages);
+            return Messenger.success(new LogicExpression(expressionType, arguments), messages);
         }
     }
 
@@ -594,7 +594,7 @@ public class Parser {
         } else if (arguments.size() == 1) {
             return Messenger.success(arguments.get(0), messages);
         } else {
-            return Messenger.success(new LogicExpression(arguments), messages);
+            return Messenger.success(new RelationExpression(expressionType, arguments), messages);
         }
     }
 
