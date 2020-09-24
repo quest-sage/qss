@@ -3,26 +3,19 @@
 	"name": "QSS",
 	"patterns": [
 		{
-			"include": "#qss"
+			"include": "#keywords"
+		},
+		{
+			"include": "#literals"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#operators"
 		}
 	],
 	"repository": {
-		"qss": {
-			"patterns": [
-				{
-					"include": "#keywords"
-				},
-				{
-					"include": "#literals"
-				},
-				{
-					"include": "#comments"
-				},
-				{
-					"include": "#operators"
-				}
-			]
-		},
 		"keywords": {
 			"patterns": [
 				{
@@ -105,7 +98,7 @@
 							"end": "```",
 							"patterns": [
 								{
-									"include": "#qss"
+									"include": "source.qss"
 								}
 							]
 						},
