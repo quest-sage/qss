@@ -407,6 +407,7 @@ public class Parser {
             case KW_TRUE:
             case KW_FALSE:
             case LPARENTH:
+            case KW_RESULT:
                 return true;
         }
         return false;
@@ -705,6 +706,8 @@ public class Parser {
                 tokens.next();  // consume opening parenthesis
                 return parseExpr(tokens).map(expr -> consumeToken(tokens, TokenType.RPARENTH).then(() -> Messenger.success(expr)));
             }
+            case KW_RESULT:
+                return Messenger.success(new ResultExpression(tokens.next().getRange()));
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(

@@ -15,7 +15,7 @@ func add(a: Int, b: Int) -> Int {
 }
 
 after func add(a: Int, b: Int) -> Int {
-
+    return result + 1
 }
 
 ** Function `a` does a thing **

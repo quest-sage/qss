@@ -258,12 +258,37 @@ public class VariableTracker {
                 }
             }
         } else if (expr instanceof ResultExpression) {
-            messages.add(new Message(
-                    expr.getRange(),
-                    Message.MessageSeverity.ERROR,
-                    "Can't use 'result' variable in functions"
-            ));
+            if (func instanceof Func) {
+                messages.add(new Message(
+                        expr.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "The 'result' variable is not available in functions"
+                ));
+            } else if (func instanceof FuncHook) {
+                if (((FuncHook) func).getTime().type == TokenType.KW_BEFORE) {
+                    messages.add(new Message(
+                            expr.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "The 'result' variable is not available in 'before' hooks"
+                    ));
+                } else {
+                    // Time is 'after'.
+                    if (func.getReturnType() == null || func.getReturnType().getResolvedType() == VariableType.Primitive.TYPE_VOID) {
+                        messages.add(new Message(
+                                expr.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "This function doesn't return a value, so the 'result' variable is not available"
+                        ));
+                    }
+                }
+            }
+        } else {
+            expr.forAllChildren(n -> {
+                if (n instanceof Expression)
+                    deduceVariableUsageRvalue((Expression) n, scopeTree);
+            });
         }
+
         return type;
     }
 
@@ -289,7 +314,13 @@ public class VariableTracker {
                 // The function returns something.
                 scopeTree.setState("result", resultState.assign(expr));
             }
+        } else {
+            expr.forAllChildren(n -> {
+                if (n instanceof Expression)
+                    deduceVariableUsageRvalue((Expression) n, scopeTree);
+            });
         }
+
         return type;
     }
 

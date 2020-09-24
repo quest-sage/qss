@@ -31,8 +31,8 @@ public abstract class TypeDeducerBinaryExpression extends BinaryExpression {
         Optional<Messenger<VariableType>> messenger = getLeft().getVariableType().flatMap(left -> getRight().getVariableType().map(right -> forTypePair(expressionTypeDeducer, left, right)));
         if (messenger.isPresent()) {
             expressionTypeDeducer.getMessages().addAll(messenger.get().getMessages());
-            return messenger.get().getValue().orElse(null);
+            return messenger.get().getValue().orElse(VariableType.Primitive.TYPE_UNKNOWN);
         }
-        return null;
+        return VariableType.Primitive.TYPE_UNKNOWN;
     }
 }
