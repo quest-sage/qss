@@ -28,7 +28,6 @@ public class TypeDeducer {
         if (func.getFuncBlock().isNative())
             return;
 
-        VariableTracker variableTracker = new VariableTracker(compiler, script, filePath, messages);
-        variableTracker.track(func);
+        new VariableTracker(compiler, script, filePath, messages, func);
     }
 }

@@ -398,11 +398,13 @@ public abstract class VariableType {
         }
 
         /**
-         * @param returnType Null if the function does not return a value.
+         * @param returnType Null or Primitive.TYPE_VOID (both are converted into VOID) if the function does not return a value.
          */
         public Function(boolean receiverStyle, ArrayList<VariableType> params, VariableType returnType) {
             this.receiverStyle = receiverStyle;
             this.params = params;
+            if (returnType == null)
+                returnType = Primitive.TYPE_VOID;
             this.returnType = returnType;
         }
 
@@ -442,7 +444,7 @@ public abstract class VariableType {
                 sb.append(")");
             }
 
-            if (returnType != null) {
+            if (returnType != Primitive.TYPE_VOID) {
                 sb.append(" -> ").append(returnType);
             }
 

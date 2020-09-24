@@ -4,6 +4,7 @@ import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
+import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
@@ -12,6 +13,7 @@ import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
 import com.thirds.qss.compiler.tree.expr.ResultExpression;
 import com.thirds.qss.compiler.tree.script.Func;
+import com.thirds.qss.compiler.tree.script.FuncHook;
 import com.thirds.qss.compiler.tree.script.FuncOrHook;
 import com.thirds.qss.compiler.tree.script.Param;
 import com.thirds.qss.compiler.tree.statement.*;
@@ -31,15 +33,22 @@ public class VariableTracker {
     private final Compiler compiler;
     private final Script script;
     private final ScriptPath filePath;
-    private final ExpressionTypeDeducer expressionTypeDeducer;
     private final ArrayList<Message> messages;
+    private final FuncOrHook func;
+    private final ExpressionTypeDeducer expressionTypeDeducer;
 
-    public VariableTracker(Compiler compiler, Script script, ScriptPath filePath, ArrayList<Message> messages) {
+    public VariableTracker(Compiler compiler,
+                           Script script,
+                           ScriptPath filePath,
+                           ArrayList<Message> messages,
+                           FuncOrHook func) {
         this.compiler = compiler;
         this.script = script;
         this.filePath = filePath;
         this.messages = messages;
+        this.func = func;
         expressionTypeDeducer = new ExpressionTypeDeducer(compiler, script, filePath, messages);
+        track();
     }
 
     /**
@@ -47,7 +56,7 @@ public class VariableTracker {
      * messages on invalid code.
      *
      */
-    public void track(FuncOrHook func) {
+    private void track() {
         ScopeTree scopeTree = new ScopeTree();
 
         // Add the function parameters to the scope tree.
@@ -73,14 +82,14 @@ public class VariableTracker {
         boolean trackResult = false;
         Type returnType = func.getReturnType();
         if (returnType != null) {
+            VariableUsageState state = new VariableUsageState(returnType, "result", func.getFuncBlock().getBlock());
             VariableType returnType2 = returnType.getResolvedType();
             if (returnType2 != null) {
-                VariableUsageState state = new VariableUsageState(returnType, "result", func.getFuncBlock().getBlock());
                 state.variableType = returnType2;
-                scopeTree.put("result", state);
                 if (func instanceof Func)
                     trackResult = true;
             }
+            scopeTree.put("result", state);
         }
 
         if (func.getFuncBlock().isNative())
@@ -190,6 +199,34 @@ public class VariableTracker {
         } else if (statement instanceof CompoundStatement) {
             CompoundStatement compoundStatement = (CompoundStatement) statement;
             scopeTree = deduceVariableUsage(compoundStatement, scopeTree);
+        } else if (statement instanceof ReturnStatement) {
+            ReturnStatement returnStatement = (ReturnStatement) statement;
+            if (func.getReturnType() == null) {
+                // The function is not supposed to return a value.
+                if (returnStatement.didReturnValue()) {
+                    messages.add(new Message(
+                            returnStatement.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "This function is not supposed to return any value"
+                    ));
+                }
+            } else {
+                // The function is supposed to return a value.
+                if (!returnStatement.didReturnValue()) {
+                    if (func instanceof FuncHook && ((FuncHook) func).getTime().type == TokenType.KW_AFTER) {
+                        // But if we're in an "after" hook, we don't actually have to return anything - the return value
+                        // has already been computed.
+                    } else {
+                        messages.add(new Message(
+                                returnStatement.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "This function is supposed to return an expression of type " +
+                                        scopeTree.getVariableType("result").map(Object::toString).orElse("<not evaluated>") +
+                                        ", but no return value was supplied"
+                        ));
+                    }
+                }
+            }
         }
 
         return scopeTree;
@@ -238,7 +275,11 @@ public class VariableTracker {
                 }
             }
         } else if (expr instanceof ResultExpression) {
-            scopeTree.setState("result", scopeTree.getState("result").assign(expr));
+            VariableUsageState resultState = scopeTree.getState("result");
+            if (func.getReturnType() != null) {
+                // The function returns something.
+                scopeTree.setState("result", resultState.assign(expr));
+            }
         }
         return type;
     }
@@ -355,7 +396,10 @@ public class VariableTracker {
         }
 
         public Optional<VariableType> getVariableType(String variableName) {
-            return Optional.ofNullable(getState(variableName).variableType);
+            VariableUsageState state = getState(variableName);
+            if (state == null)
+                return Optional.of(VariableType.Primitive.TYPE_UNKNOWN);
+            return Optional.ofNullable(state.variableType);
         }
     }
 
