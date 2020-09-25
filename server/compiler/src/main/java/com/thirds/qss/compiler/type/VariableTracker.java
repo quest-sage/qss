@@ -238,7 +238,12 @@ public class VariableTracker {
             }
         } else if (statement instanceof IfStatement) {
             IfStatement ifStatement = (IfStatement) statement;
-            deduceVariableUsageRvalue(ifStatement.getCondition(), scopeTree);
+            Optional<VariableType> conditionType = deduceVariableUsageRvalue(ifStatement.getCondition(), scopeTree);
+            conditionType.ifPresent(variableType -> messages.addAll(expressionTypeDeducer.getCastChecker().attemptDowncast(
+                    ifStatement.getCondition().getRange(),
+                    variableType,
+                    VariableType.Primitive.TYPE_BOOL
+            ).getMessages()));
             Statement trueBlock = ifStatement.getTrueBlock();
             Statement falseBlock = ifStatement.getFalseBlock();
             if (falseBlock == null) {
@@ -251,7 +256,12 @@ public class VariableTracker {
             }
         } else if (statement instanceof WhileStatement) {
             WhileStatement whileStatement = (WhileStatement) statement;
-            deduceVariableUsageRvalue(whileStatement.getCondition(), scopeTree);
+            Optional<VariableType> conditionType = deduceVariableUsageRvalue(whileStatement.getCondition(), scopeTree);
+            conditionType.ifPresent(variableType -> messages.addAll(expressionTypeDeducer.getCastChecker().attemptDowncast(
+                    whileStatement.getCondition().getRange(),
+                    variableType,
+                    VariableType.Primitive.TYPE_BOOL
+            ).getMessages()));
             // We don't know if any code will execute, so the scope tree must stay the same as it was before the block.
         }
 

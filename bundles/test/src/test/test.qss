@@ -50,10 +50,12 @@ func a(a: A, b: B) {
     let bool = true
 
     let if_var: Int
-    if bool {
+    if true {
         if_var = 1
-    } else {
+    } else if false && true {
         if_var = 5
+    } else {
+        if_var = 3
     }
     //if_var = 2
 
