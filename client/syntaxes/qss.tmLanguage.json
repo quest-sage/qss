@@ -21,7 +21,7 @@
 				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
-					"match": "\\b(import|before|after|native|func|let)\\b"
+					"match": "\\b(import|before|after|native|func|let|just|null)\\b"
 				},
 				{
 					"comment": "Control flow",
