@@ -7,8 +7,11 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
 import com.thirds.qss.compiler.type.VariableTracker;
 
-public class UnaryMinusExpression extends UnaryExpression {
-    public UnaryMinusExpression(Token token, Expression argument) {
+/**
+ * Evaluates the inside of the maybe expression, panicking if it was null.
+ */
+public class MaybeGetExpression extends UnaryExpression {
+    public MaybeGetExpression(Token token, Expression argument) {
         super(Range.combine(token.getRange(), argument.getRange()), argument);
     }
 
@@ -16,16 +19,16 @@ public class UnaryMinusExpression extends UnaryExpression {
     protected VariableType deduceVariableType(ExpressionTypeDeducer expressionTypeDeducer, VariableTracker.ScopeTree scopeTree) {
         getArgument().deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
         return getArgument().getVariableType().map(vt -> {
-            if (vt != VariableType.Primitive.TYPE_INT && vt != VariableType.Primitive.TYPE_RATIO) {
+            if (!(vt instanceof VariableType.Maybe)) {
                 expressionTypeDeducer.getMessages().add(new Message(
                         getArgument().getRange(),
                         Message.MessageSeverity.ERROR,
-                        "Expected an expression of type " +
-                                VariableType.Primitive.TYPE_INT + " or " +
-                                VariableType.Primitive.TYPE_RATIO + ", got " + vt
+                        "Expected a 'maybe' expression, got " + vt
                 ));
+                return VariableType.Primitive.TYPE_UNKNOWN;
+            } else {
+                return ((VariableType.Maybe) vt).getContentsType();
             }
-            return vt;
         }).orElse(VariableType.Primitive.TYPE_UNKNOWN);
     }
 }

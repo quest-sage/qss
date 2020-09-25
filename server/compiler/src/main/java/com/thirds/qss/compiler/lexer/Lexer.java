@@ -409,6 +409,12 @@ public class Lexer {
                             case "false":
                                 type = TokenType.KW_FALSE;
                                 break;
+                            case "just":
+                                type = TokenType.KW_JUST;
+                                break;
+                            case "null":
+                                type = TokenType.KW_NULL;
+                                break;
                             case "if":
                                 type = TokenType.KW_IF;
                                 break;
@@ -480,6 +486,7 @@ public class Lexer {
             case KW_RETURN:
             case KW_RESULT:
             case TYPE_MAYBE:
+            case NOT:
                 return true;
             default:
                 return false;

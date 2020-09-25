@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.tree.expr;
 
+import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.tree.Node;
 
 import java.util.function.Consumer;
@@ -7,8 +8,8 @@ import java.util.function.Consumer;
 public abstract class UnaryExpression extends Expression {
     private final Expression argument;
 
-    public UnaryExpression(Expression argument) {
-        super(argument.getRange());
+    public UnaryExpression(Range range, Expression argument) {
+        super(range);
         this.argument = argument;
     }
 

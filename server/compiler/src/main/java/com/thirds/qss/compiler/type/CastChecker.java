@@ -34,6 +34,42 @@ public class CastChecker {
                     return Messenger.success(new Object());
                 }
             }
+        } else if (expression instanceof VariableType.Maybe) {
+            if (target instanceof VariableType.Maybe) {
+                if (attemptDowncast(
+                        where,
+                        ((VariableType.Maybe) expression).getContentsType(),
+                        ((VariableType.Maybe) target).getContentsType()
+                ).getMessages().isEmpty()) {
+                    return Messenger.success(new Object());
+                }
+            }
+        } else if (expression instanceof VariableType.List) {
+            if (target instanceof VariableType.List) {
+                if (attemptDowncast(
+                        where,
+                        ((VariableType.List) expression).getElementType(),
+                        ((VariableType.List) target).getElementType()
+                ).getMessages().isEmpty()) {
+                    return Messenger.success(new Object());
+                }
+            }
+        } else if (expression instanceof VariableType.Map) {
+            if (target instanceof VariableType.Map) {
+                if (attemptDowncast(
+                        where,
+                        ((VariableType.Map) expression).getKeyType(),
+                        ((VariableType.Map) target).getKeyType()
+                ).getMessages().isEmpty()) {
+                    if (attemptDowncast(
+                            where,
+                            ((VariableType.Map) expression).getValueType(),
+                            ((VariableType.Map) target).getValueType()
+                    ).getMessages().isEmpty()) {
+                        return Messenger.success(new Object());
+                    }
+                }
+            }
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(

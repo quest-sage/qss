@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -417,6 +418,8 @@ public class Parser {
             case KW_FALSE:
             case LPARENTH:
             case KW_RESULT:
+            case KW_JUST:
+            case KW_NULL:
                 return true;
         }
         return false;
@@ -733,18 +736,20 @@ public class Parser {
     }
 
     /**
-     * Prefix := ('!'|'-')* Postfix
+     * Prefix := ( '!' | '-' | 'just' )* Postfix
      */
     private Messenger<Expression> parsePrefix(TokenStream tokens) {
-        return ifConsumeToken(tokens, TokenType.NOT, () ->
-                parsePrefix(tokens).map(arg -> Messenger.success((Expression) new LogicalNotExpression(arg)))
-        ).or(() -> ifConsumeToken(tokens, TokenType.MINUS, () ->
-                parsePrefix(tokens).map(arg -> Messenger.success(new UnaryMinusExpression(arg)))
+        return ifConsumeToken(tokens, TokenType.NOT, token ->
+                parsePrefix(tokens).map(arg -> Messenger.success((Expression) new LogicalNotExpression(token, arg)))
+        ).or(() -> ifConsumeToken(tokens, TokenType.MINUS, token ->
+                parsePrefix(tokens).map(arg -> Messenger.success(new UnaryMinusExpression(token, arg)))
+        )).or(() -> ifConsumeToken(tokens, TokenType.KW_JUST, token ->
+                parsePrefix(tokens).map(arg -> Messenger.success(new MaybeJustExpression(token, arg)))
         )).orElseGet(() -> parsePostfix(tokens));
     }
 
     /**
-     * Postfix := Term ( '[' Expr ']' | '(' ArgList ')' | '.' Name )*
+     * Postfix := Term ( '[' Expr ']' | '(' ArgList ')' | '.' Name | '?' | '!' )*
      */
     private Messenger<Expression> parsePostfix(TokenStream tokens) {
         return parseTerm(tokens).map(term -> parsePostfixOnExpression(term, tokens));
@@ -757,6 +762,10 @@ public class Parser {
                 parseArgList(tokens).map(args -> consumeToken(tokens, TokenType.RPARENTH).then(() -> parsePostfixOnExpression(new FunctionInvocationExpression(term, args), tokens)))
         )).or(() -> ifConsumeToken(tokens, TokenType.DOT, () ->
                 parseName(tokens).map(field -> parsePostfixOnExpression(new FieldExpression(term, field), tokens))
+        )).or(() -> ifConsumeToken(tokens, TokenType.TYPE_MAYBE, token ->
+                parsePostfixOnExpression(new MaybeExistsExpression(token, term), tokens)
+        )).or(() -> ifConsumeToken(tokens, TokenType.NOT, token ->
+                parsePostfixOnExpression(new MaybeGetExpression(token, term), tokens)
         )).orElse(Messenger.success(term));
     }
 
@@ -805,6 +814,8 @@ public class Parser {
             }
             case KW_RESULT:
                 return Messenger.success(new ResultExpression(tokens.next().getRange()));
+            case KW_NULL:
+                return consumeToken(tokens, TokenType.KW_NULL).map(nullToken -> parseType(tokens).map(type -> Messenger.success(new MaybeNullExpression(nullToken, type))));
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(
@@ -970,6 +981,13 @@ public class Parser {
      */
     private <T> Optional<Messenger<T>> ifConsumeToken(TokenStream tokens, TokenType type, Supplier<Messenger<T>> func) {
         return peekConsumeToken(tokens, type).map(token -> token.then(func));
+    }
+
+    /**
+     * If the given token type is next, consume it and run the func, returning the result. Else, return Optional.empty.
+     */
+    private <T> Optional<Messenger<T>> ifConsumeToken(TokenStream tokens, TokenType type, Function<Token, Messenger<T>> func) {
+        return peekConsumeToken(tokens, type).map(token -> token.map(func));
     }
 
     //#endregion

@@ -15,7 +15,7 @@ public enum TokenType {
     IDENTIFIER,
 
     KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
-    KW_TRUE, KW_FALSE,
+    KW_TRUE, KW_FALSE, KW_JUST, KW_NULL,
     KW_LET, KW_RETURN,
     KW_IF, KW_ELSE, KW_FOR, KW_IN, KW_WHILE,
     KW_RESULT,
@@ -98,6 +98,10 @@ public enum TokenType {
                 return "boolean 'true'";
             case KW_FALSE:
                 return "boolean 'false'";
+            case KW_JUST:
+                return "keyword 'just'";
+            case KW_NULL:
+                return "keyword 'null'";
             case KW_LET:
                 return "keyword 'let'";
             case KW_RETURN:
