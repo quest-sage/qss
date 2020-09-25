@@ -370,6 +370,9 @@ public class Lexer {
                             case "return":
                                 type = TokenType.KW_RETURN;
                                 break;
+                            case "new":
+                                type = TokenType.KW_NEW;
+                                break;
                             case "result":
                                 type = TokenType.KW_RESULT;
                                 break;

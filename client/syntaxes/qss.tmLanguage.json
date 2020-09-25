@@ -26,7 +26,7 @@
 				{
 					"comment": "Control flow",
 					"name": "keyword.control.qss",
-					"match": "\\b(return|if|else|for|in|while)\\b"
+					"match": "\\b(return|if|else|for|in|while|new)\\b"
 				},
 				{
 					"comment": "Variables",
@@ -134,7 +134,7 @@
 				{
 					"comment": "Basic operators",
 					"name": "keyword.operator.qss",
-					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|\\?])"
+					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|\\?!])"
 				}
 			]
 		}

@@ -816,6 +816,8 @@ public class Parser {
                 return Messenger.success(new ResultExpression(tokens.next().getRange()));
             case KW_NULL:
                 return consumeToken(tokens, TokenType.KW_NULL).map(nullToken -> parseType(tokens).map(type -> Messenger.success(new MaybeNullExpression(nullToken, type))));
+            case KW_NEW:
+                return parseNew(tokens);
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(
@@ -823,6 +825,83 @@ public class Parser {
                 Message.MessageSeverity.ERROR,
                 "Expected term, got " + tokens.next().type
         ))));
+    }
+
+    private Messenger<Expression> parseNew(TokenStream tokens) {
+        Token newToken = tokens.next();  // consume the "new" token
+
+        // Peek the token stream to see what kind of type we want to instantiate.
+        if (tokens.peek().isEmpty()) {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected list, map or struct, got end of file"
+            ))));
+        } else if (tokens.peek().get().type == TokenType.LSQUARE) {
+            // We're making a new list.
+            return parseNewList(newToken, tokens);
+        } else if (tokens.peek().get().type == TokenType.LBRACE) {
+            // We're making a new map.
+            return parseNewMap(newToken, tokens);
+        } else {
+            return Messenger.fail(new ArrayList<>(List.of(new Message(
+                    new Range(tokens.currentPosition()),
+                    Message.MessageSeverity.ERROR,
+                    "Expected list, map or struct, got " + tokens.peek().get().type
+            ))));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Messenger<Expression> parseNewList(Token newToken, TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> parseType(tokens),                            // 0
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 1
+                () -> parseGreedy(() -> parseListValue(tokens)),    // 2
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 3
+        )).map(list -> {
+            Type type = (Type) list.get(0);
+            ArrayList<Expression> expressions = (ArrayList<Expression>) list.get(2);
+            Token endToken = (Token) list.get(3);
+
+            Range totalRange = Range.combine(newToken.getRange(), endToken.getRange());
+
+            return Messenger.success(new NewListExpression(totalRange, type, expressions));
+        });
+    }
+
+    private Optional<Messenger<Expression>> parseListValue(TokenStream tokens) {
+        if (peekExpr(tokens)) {
+            return Optional.of(parseExpr(tokens).map(expr -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(expr))));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Messenger<Expression> parseNewMap(Token newToken, TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> parseType(tokens),                            // 0
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 1
+                () -> parseGreedy(() -> parseMapValue(tokens)),     // 2
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 3
+        )).map(list -> {
+            Type type = (Type) list.get(0);
+            ArrayList<MapField> expressions = (ArrayList<MapField>) list.get(2);
+            Token endToken = (Token) list.get(3);
+
+            Range totalRange = Range.combine(newToken.getRange(), endToken.getRange());
+
+            return Messenger.success(new NewMapExpression(totalRange, type, expressions));
+        });
+    }
+
+    private Optional<Messenger<MapField>> parseMapValue(TokenStream tokens) {
+        if (peekExpr(tokens)) {
+            return Optional.of(parseExpr(tokens).map(key -> consumeToken(tokens, TokenType.TYPE_MAPS_TO).then(() -> parseExpr(tokens).map(value -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new MapField(key, value)))))));
+        } else {
+            return Optional.empty();
+        }
     }
 
     //#endregion
