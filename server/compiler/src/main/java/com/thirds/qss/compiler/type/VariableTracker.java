@@ -106,7 +106,7 @@ public class VariableTracker {
                 ));
             } else if (resultState.isConditionallyAssigned()) {
                 StringBuilder sb = new StringBuilder("A value was not returned at the end of this function on all paths");
-                assignVariableInBlocks(sb, resultState.nonAssignedBlocks);
+                //assignVariableInBlocks(sb, resultState.nonAssignedBlocks);
                 messages.add(new Message(
                         returnType.getRange(),
                         Message.MessageSeverity.ERROR,
@@ -236,6 +236,23 @@ public class VariableTracker {
                     }
                 }
             }
+        } else if (statement instanceof IfStatement) {
+            IfStatement ifStatement = (IfStatement) statement;
+            deduceVariableUsageRvalue(ifStatement.getCondition(), scopeTree);
+            Statement trueBlock = ifStatement.getTrueBlock();
+            Statement falseBlock = ifStatement.getFalseBlock();
+            if (falseBlock == null) {
+                // We don't know if any code will execute, so the scope tree must stay the same as it was before the block.
+            } else {
+                scopeTree = parallel(List.of(
+                        deduceVariableUsageStatement(trueBlock, block, scopeTree, namesDeclaredInThisScope),
+                        deduceVariableUsageStatement(falseBlock, block, scopeTree, namesDeclaredInThisScope)
+                ));
+            }
+        } else if (statement instanceof WhileStatement) {
+            WhileStatement whileStatement = (WhileStatement) statement;
+            deduceVariableUsageRvalue(whileStatement.getCondition(), scopeTree);
+            // We don't know if any code will execute, so the scope tree must stay the same as it was before the block.
         }
 
         return scopeTree;
@@ -551,6 +568,7 @@ public class VariableTracker {
             }
 
             result.usedAnywhere = usedAnywhere || other.usedAnywhere;
+            result.variableType = variableType;
 
             return result;
         }
@@ -585,7 +603,7 @@ public class VariableTracker {
                     sb.append(" was not assigned on all paths before use");
                 } else {
                     sb.append(" was not assigned before use");
-                    assignVariableInBlocks(sb, nonAssignedBlocks);
+                    //assignVariableInBlocks(sb, nonAssignedBlocks);
                 }
                 messages.add(new Message(
                         where.getRange(),
@@ -595,7 +613,7 @@ public class VariableTracker {
             } else if (isNeverAssigned()) {
                 StringBuilder sb = new StringBuilder().append("Variable ").append(variableName).append(" was not assigned before use");
                 if (!nonAssignedBlocks.isEmpty()) {
-                    assignVariableInBlocks(sb, nonAssignedBlocks);
+                    //assignVariableInBlocks(sb, nonAssignedBlocks);
                 }
                 messages.add(new Message(
                         where.getRange(),

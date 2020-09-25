@@ -382,6 +382,15 @@ public class Parser {
             case KW_RETURN:
                 result = parseReturnStmt(tokens);
                 break;
+            case KW_IF:
+                result = parseIfStmt(tokens);
+                break;
+            case KW_FOR:
+                result = parseForStmt(tokens);
+                break;
+            case KW_WHILE:
+                result = parseWhileStmt(tokens);
+                break;
             default: {
                 if (!peekExpr(tokens))
                     return Optional.empty();
@@ -482,6 +491,94 @@ public class Parser {
         } else {
             return ret.map(r -> Messenger.success(new ReturnStatement(r.getRange(), false)));
         }
+    }
+
+    private Messenger<Statement> parseIfStmt(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_IF),    // 0
+                () -> parseExpr(tokens),                        // 1
+                () -> parseCompoundStatement(tokens)            // 2
+        )).map(list -> {
+            Expression condition = (Expression) list.get(1);
+            Statement trueBlock = (Statement) list.get(2);
+
+            if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.KW_ELSE) {
+                // There is an else statement. Is it an else-if block or an else block?
+                return parseElseStmt(tokens, condition, trueBlock);
+            } else {
+                return Messenger.success(new IfStatement(condition, trueBlock, null));
+            }
+        });
+    }
+
+    private Messenger<Statement> parseElseStmt(TokenStream tokens, Expression condition, Statement trueBlock) {
+        return consumeToken(tokens, TokenType.KW_ELSE).map(elseToken -> {
+            Messenger<Statement> elseBlock;
+            if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.KW_IF) {
+                elseBlock = parseIfStmt(tokens);
+            } else {
+                elseBlock = parseCompoundStatement(tokens).map(Messenger::success);
+            }
+            return elseBlock.map(falseBlock -> Messenger.success(new IfStatement(condition, trueBlock, falseBlock)));
+        });
+    }
+
+    /**
+     * For-in loops are desugared into while loops.
+     *
+     * <code><pre>
+     *     for a in b {
+     *         // foo
+     *     }
+     * </pre></code>
+     *
+     * is converted into
+     *
+     * <code><pre>
+     *     let some_unique_identifier = 0
+     *     while true {
+     *         with a in b[some_unique_identifier] {
+     *             some_unique_identifier = some_unique_identifier + 1
+     *         } else {
+     *             break
+     *         }
+     *     }
+     * </pre></code>
+     */
+    private Messenger<Statement> parseForStmt(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_FOR),       // 0
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
+                () -> consumeToken(tokens, TokenType.KW_IN),        // 2
+                () -> parseExpr(tokens),                            // 3
+                () -> parseCompoundStatement(tokens)                // 4
+        )).map(list -> {
+            Token forToken = (Token) list.get(0);
+            Token name = (Token) list.get(1);
+            Expression container = (Expression) list.get(3);
+            CompoundStatement block = (CompoundStatement) list.get(4);
+
+            Range totalRange = Range.combine(forToken.getRange(), block.getRange());
+
+            // TODO not implemented
+            throw new UnsupportedOperationException();
+        });
+    }
+
+    private Messenger<Statement> parseWhileStmt(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_WHILE), // 0
+                () -> parseExpr(tokens),                        // 1
+                () -> parseCompoundStatement(tokens)            // 2
+        )).map(list -> {
+            Token whileToken = (Token) list.get(0);
+            Expression condition = (Expression) list.get(1);
+            CompoundStatement block = (CompoundStatement) list.get(2);
+
+            Range totalRange = Range.combine(whileToken.getRange(), block.getRange());
+
+            return Messenger.success(new WhileStatement(totalRange, condition, block));
+        });
     }
 
     //#endregion

@@ -409,6 +409,21 @@ public class Lexer {
                             case "false":
                                 type = TokenType.KW_FALSE;
                                 break;
+                            case "if":
+                                type = TokenType.KW_IF;
+                                break;
+                            case "else":
+                                type = TokenType.KW_ELSE;
+                                break;
+                            case "for":
+                                type = TokenType.KW_FOR;
+                                break;
+                            case "in":
+                                type = TokenType.KW_IN;
+                                break;
+                            case "while":
+                                type = TokenType.KW_WHILE;
+                                break;
                             default:
                                 type = TokenType.IDENTIFIER;
                         }
