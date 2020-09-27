@@ -851,21 +851,37 @@ public class Parser {
      * Postfix := Term ( '[' Expr ']' | '(' ArgList ')' | '.' Name | '?' | '!' )*
      */
     private Messenger<Expression> parsePostfix(TokenStream tokens) {
-        return parseTerm(tokens).map(term -> parsePostfixOnExpression(term, tokens));
+        return parseTerm(tokens).map(term -> parsePostfixOnExpression(term, tokens, false));
     }
 
-    private Messenger<Expression> parsePostfixOnExpression(Expression term, TokenStream tokens) {
+    /**
+     * After a DOT postfix has been parsed, we need to check if the next postfix is a function call.
+     * If this is true, we need to desugar this into a receiver-style function call without the DOT.
+     * To enable this behaviour, checkForReceiverSyntax is set to true if and only if we've just parsed a DOT.
+     */
+    private Messenger<Expression> parsePostfixOnExpression(Expression term, TokenStream tokens, boolean checkForReceiverSyntax) {
         return ifConsumeToken(tokens, TokenType.LSQUARE, () ->
-                parseExpr(tokens).map(arg -> consumeToken(tokens, TokenType.RSQUARE).then(() -> parsePostfixOnExpression(new IndexExpression(term, arg), tokens)))
+                parseExpr(tokens).map(arg -> consumeToken(tokens, TokenType.RSQUARE).then(() -> parsePostfixOnExpression(new IndexExpression(term, arg), tokens, false)))
         ).or(() -> ifConsumeToken(tokens, TokenType.LPARENTH, () ->
-                parseArgList(tokens).map(args -> consumeToken(tokens, TokenType.RPARENTH).then(() -> parsePostfixOnExpression(new FunctionInvocationExpression(term, args), tokens)))
+                parseArgList(tokens).map(args -> consumeToken(tokens, TokenType.RPARENTH).then(() -> parsePostfixOnExpression(desugarFunctionInvocation(term, args, checkForReceiverSyntax), tokens, false)))
         )).or(() -> ifConsumeToken(tokens, TokenType.DOT, () ->
-                parseName(tokens).map(field -> parsePostfixOnExpression(new FieldExpression(term, field), tokens))
+                parseName(tokens).map(field -> parsePostfixOnExpression(new FieldExpression(term, field), tokens, true))
         )).or(() -> ifConsumeToken(tokens, TokenType.TYPE_MAYBE, token ->
-                parsePostfixOnExpression(new MaybeExistsExpression(token, term), tokens)
+                parsePostfixOnExpression(new MaybeExistsExpression(token, term), tokens, false)
         )).or(() -> ifConsumeToken(tokens, TokenType.NOT, token ->
-                parsePostfixOnExpression(new MaybeGetExpression(token, term), tokens)
+                parsePostfixOnExpression(new MaybeGetExpression(token, term), tokens, false)
         )).orElse(Messenger.success(term));
+    }
+
+    private Expression desugarFunctionInvocation(Expression term, ArrayList<Expression> args, boolean wasReceiverSyntax) {
+        if (!wasReceiverSyntax)
+            return new FunctionInvocationExpression(term, args);
+        // This was receiver syntax.
+        // We need to convert the "term" (a FieldExpression containing the first argument and the function name) into
+        // the real function call.
+        FieldExpression fieldExpression = (FieldExpression) term;
+        args.add(0, fieldExpression.getValue());
+        return new FunctionInvocationExpression(new Identifier(fieldExpression.getField()), args, true);
     }
 
     /**

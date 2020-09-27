@@ -12,11 +12,17 @@ import java.util.ArrayList;
 public class FunctionInvocationExpression extends Expression {
     private final Expression function;
     private final ArrayList<Expression> args;
+    private final boolean isReceiverStyle;
 
     public FunctionInvocationExpression(Expression function, ArrayList<Expression> args) {
+        this(function, args, false);
+    }
+
+    public FunctionInvocationExpression(Expression function, ArrayList<Expression> args, boolean isReceiverStyle) {
         super(args.isEmpty() ? function.getRange() : Range.combine(function.getRange(), args.get(args.size() - 1).getRange()));
         this.function = function;
         this.args = args;
+        this.isReceiverStyle = isReceiverStyle;
     }
 
     @Override
@@ -50,11 +56,49 @@ public class FunctionInvocationExpression extends Expression {
 
         ArrayList<VariableType> paramTypes = funcType.getParams();
 
-        if (argTypes.size() != paramTypes.size()) {
+        int parameterCount = funcType.isReceiverStyle() ? paramTypes.size() - 1 : paramTypes.size();
+        int argumentCount = isReceiverStyle ? argTypes.size() - 1 : argTypes.size();
+        boolean parameterMismatch = parameterCount != argumentCount;
+        boolean styleMismatch = isReceiverStyle != funcType.isReceiverStyle();
+        if (parameterMismatch || styleMismatch) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Function expected ");
+
+            if (parameterMismatch && styleMismatch) {
+                if (funcType.isReceiverStyle()) {
+                    sb.append("a receiver and ");
+                } else {
+                    sb.append("no receiver and ");
+                }
+                sb.append(parameterCount).append(" parameters, but ");
+                if (isReceiverStyle) {
+                    sb.append("a receiver and ");
+                } else {
+                    sb.append("no receiver and ");
+                }
+                sb.append(argumentCount).append(" arguments were supplied");
+            } else if (parameterMismatch) {
+                sb.append(parameterCount).append(" parameters, but ").append(argumentCount).append(" arguments were supplied");
+            } else {
+                // style mismatch
+                if (funcType.isReceiverStyle()) {
+                    sb.append("a receiver");
+                } else {
+                    sb.append("no receiver");
+                }
+                sb.append(", but ");
+                if (isReceiverStyle) {
+                    sb.append("a receiver");
+                } else {
+                    sb.append("no receiver");
+                }
+                sb.append(" was supplied");
+            }
+
             expressionTypeDeducer.getMessages().add(new Message(
                     function.getRange(),
                     Message.MessageSeverity.ERROR,
-                    "Function expected " + paramTypes.size() + " parameters, but " + argTypes.size() + " arguments were supplied"
+                    sb.toString()
             ));
             return funcType.getReturnType();
         }
@@ -71,5 +115,9 @@ public class FunctionInvocationExpression extends Expression {
         }
 
         return funcType.getReturnType();
+    }
+
+    public boolean isReceiverStyle() {
+        return isReceiverStyle;
     }
 }

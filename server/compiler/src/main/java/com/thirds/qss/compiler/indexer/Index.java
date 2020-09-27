@@ -220,8 +220,15 @@ public class Index {
          */
         public void computeType() {
             List<VariableType> paramTypes = params.stream().map(param -> param.variableType).collect(Collectors.toList());
+
+            boolean receiverStyle = false;
+            if (!params.isEmpty()) {
+                if (params.get(0).name.equals("this"))
+                    receiverStyle = true;
+            }
+
             type = new VariableType.Function(
-                    false,  // TODO receiver style functions
+                    receiverStyle,
                     new ArrayList<>(paramTypes),
                     returnType == null ? null : returnType.variableType
             );

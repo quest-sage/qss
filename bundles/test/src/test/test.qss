@@ -74,7 +74,7 @@ func a(a: A, b: B) {
         3 => "world"; 4 => "something"
     }
 
-    sum(list)
+    list.sum()
 }
 
 before func a(a: A, b: B) {
