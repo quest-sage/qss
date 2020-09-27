@@ -10,7 +10,6 @@ import com.thirds.qss.compiler.tree.expr.*;
 import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
 
-import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -293,11 +292,12 @@ public class Parser {
     private ListMessenger<Param> parseParamListInternal(TokenStream tokens) {
         ListMessenger<Param> result = new ListMessenger<>();
         AtomicBoolean expectingMoreParams = new AtomicBoolean(true);
-        while (expectingMoreParams.get() && tokens.peek().isPresent() && tokens.peek().get().type == TokenType.IDENTIFIER) {
+        while (expectingMoreParams.get() && tokens.peek().isPresent() &&
+                (tokens.peek().get().type == TokenType.IDENTIFIER || tokens.peek().get().type == TokenType.KW_THIS)) {
             Messenger<Param> param = parseMulti(List.of(
-                    () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 0
-                    () -> consumeToken(tokens, TokenType.TYPE),         // 1
-                    () -> parseType(tokens)                             // 2
+                    () -> Messenger.success(tokens.next()),     // 0
+                    () -> consumeToken(tokens, TokenType.TYPE), // 1
+                    () -> parseType(tokens)                     // 2
             )).map(list -> {
                 Token name = (Token) list.get(0);
                 Type type = (Type) list.get(2);
@@ -433,6 +433,7 @@ public class Parser {
             case KW_RESULT:
             case KW_JUST:
             case KW_NULL:
+            case KW_THIS:
                 return true;
         }
         return false;
@@ -912,6 +913,8 @@ public class Parser {
             }
             case KW_RESULT:
                 return Messenger.success(new ResultExpression(tokens.next().getRange()));
+            case KW_THIS:
+                return Messenger.success(new ThisExpression(tokens.next().getRange()));
             case KW_NULL:
                 return consumeToken(tokens, TokenType.KW_NULL).map(nullToken -> parseType(tokens).map(type -> Messenger.success(new MaybeNullExpression(nullToken, type))));
             case KW_NEW:

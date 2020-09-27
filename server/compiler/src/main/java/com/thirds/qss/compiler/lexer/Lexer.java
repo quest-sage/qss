@@ -382,6 +382,9 @@ public class Lexer {
                             case "result":
                                 type = TokenType.KW_RESULT;
                                 break;
+                            case "this":
+                                type = TokenType.KW_THIS;
+                                break;
                             case "Int":
                                 type = TokenType.KW_INT;
                                 break;

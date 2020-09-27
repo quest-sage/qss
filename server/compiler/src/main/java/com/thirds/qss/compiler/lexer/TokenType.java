@@ -18,7 +18,7 @@ public enum TokenType {
     KW_TRUE, KW_FALSE, KW_JUST, KW_NULL,
     KW_LET, KW_RETURN, KW_NEW, KW_BREAK, KW_CONTINUE,
     KW_IF, KW_ELSE, KW_FOR, KW_IN, KW_WHILE,
-    KW_RESULT,
+    KW_RESULT, KW_THIS,
 
     STRING_LITERAL, INTEGER_LITERAL,
 
@@ -124,6 +124,8 @@ public enum TokenType {
                 return "keyword 'while'";
             case KW_RESULT:
                 return "keyword 'result'";
+            case KW_THIS:
+                return "keyword 'this'";
             case STRING_LITERAL:
                 return "string literal";
             case INTEGER_LITERAL:

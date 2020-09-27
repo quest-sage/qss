@@ -4,11 +4,14 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.ScriptPath;
+import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.FuncHook;
+import com.thirds.qss.compiler.tree.script.Param;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -33,6 +36,7 @@ public class Validator {
         messages.clear();
 
         checkFuncHookType();
+        checkFuncThis();
 
         return messages;
     }
@@ -65,6 +69,24 @@ public class Validator {
                             result.alternatives.get(0).value.func.getLocation(),
                             "Original function was defined here"
                     )));
+                }
+            }
+        }
+    }
+
+    /**
+     * Check that the keyword 'this' is only used in argument 0 position.
+     */
+    private void checkFuncThis() {
+        for (Documentable<Func> func : script.getFuncs()) {
+            ArrayList<Param> params = func.getContent().getParamList().getParams();
+            for (int i = 1; i < params.size(); i++) {
+                if (params.get(i).getName().type == TokenType.KW_THIS) {
+                    messages.add(new Message(
+                            params.get(i).getName().getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Only the first function parameter may be named 'this'"
+                    ));
                 }
             }
         }

@@ -73,6 +73,8 @@ func a(a: A, b: B) {
         2 => "goodbye"
         3 => "world"; 4 => "something"
     }
+
+    sum(list)
 }
 
 before func a(a: A, b: B) {
@@ -80,22 +82,12 @@ before func a(a: A, b: B) {
     let r = q
 }
 
-func for_test() {
-    let list = new [Int] {
-        1
-        2
-        3
-        4; 5; 6
+func sum(this: [Int]) -> Int {
+    let something = 0
+    for i in this {
+        something = something + i
     }
-
-    let something: Int
-    for i in list {
-        something = i + 2
-        for j in list {
-        }
-    }
-    something = 1
-    something
+    return something
 }
 
 ** Abcdef **

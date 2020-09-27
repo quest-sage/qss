@@ -14,6 +14,9 @@ public class Param extends Node {
     private final Token name;
     private final Type type;
 
+    /**
+     * @param name May be IDENTIFIER or KW_THIS.
+     */
     public Param(Range range, Token name, Type type) {
         super(range);
         this.name = name;
