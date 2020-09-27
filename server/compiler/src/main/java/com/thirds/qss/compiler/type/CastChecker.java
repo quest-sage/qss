@@ -70,6 +70,34 @@ public class CastChecker {
                     }
                 }
             }
+        } else if (expression instanceof VariableType.Function) {
+            if (target instanceof VariableType.Function) {
+                VariableType.Function expression1 = (VariableType.Function) expression;
+                VariableType.Function target1 = (VariableType.Function) target;
+
+                if (expression1.getParams().size() == target1.getParams().size()) {
+                    if (attemptDowncast(
+                            where,
+                            expression1.getReturnType(),
+                            target1.getReturnType()
+                    ).getMessages().isEmpty()) {
+                        boolean fail = false;
+                        for (int i = 0; i < expression1.getParams().size(); i++) {
+                            if (!attemptDowncast(
+                                    where,
+                                    expression1.getParams().get(i),
+                                    target1.getParams().get(i)
+                            ).getMessages().isEmpty()) {
+                                fail = true;
+                                break;
+                            }
+                        }
+                        if (!fail) {
+                            return Messenger.success(new Object());
+                        }
+                    }
+                }
+            }
         }
 
         return Messenger.fail(new ArrayList<>(List.of(new Message(

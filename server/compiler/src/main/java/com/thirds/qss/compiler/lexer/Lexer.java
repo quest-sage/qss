@@ -386,34 +386,37 @@ public class Lexer {
                                 type = TokenType.KW_THIS;
                                 break;
                             case "Int":
-                                type = TokenType.KW_INT;
+                                type = TokenType.T_INT;
                                 break;
                             case "Bool":
-                                type = TokenType.KW_BOOL;
+                                type = TokenType.T_BOOL;
                                 break;
                             case "String":
-                                type = TokenType.KW_STRING;
+                                type = TokenType.T_STRING;
                                 break;
                             case "Text":
-                                type = TokenType.KW_TEXT;
+                                type = TokenType.T_TEXT;
                                 break;
                             case "Entity":
-                                type = TokenType.KW_ENTITY;
+                                type = TokenType.T_ENTITY;
                                 break;
                             case "Ratio":
-                                type = TokenType.KW_RATIO;
+                                type = TokenType.T_RATIO;
                                 break;
                             case "Col":
-                                type = TokenType.KW_COL;
+                                type = TokenType.T_COL;
                                 break;
                             case "Pos":
-                                type = TokenType.KW_POS;
+                                type = TokenType.T_POS;
                                 break;
                             case "Texture":
-                                type = TokenType.KW_TEXTURE;
+                                type = TokenType.T_TEXTURE;
                                 break;
                             case "Player":
-                                type = TokenType.KW_PLAYER;
+                                type = TokenType.T_PLAYER;
+                                break;
+                            case "Func":
+                                type = TokenType.T_FUNC;
                                 break;
                             case "true":
                                 type = TokenType.KW_TRUE;
@@ -483,16 +486,16 @@ public class Lexer {
             case RPARENTH:
             case RBRACE:
             case RSQUARE:
-            case KW_INT:
-            case KW_BOOL:
-            case KW_STRING:
-            case KW_TEXT:
-            case KW_ENTITY:
-            case KW_RATIO:
-            case KW_COL:
-            case KW_POS:
-            case KW_TEXTURE:
-            case KW_PLAYER:
+            case T_INT:
+            case T_BOOL:
+            case T_STRING:
+            case T_TEXT:
+            case T_ENTITY:
+            case T_RATIO:
+            case T_COL:
+            case T_POS:
+            case T_TEXTURE:
+            case T_PLAYER:
             case KW_TRUE:
             case KW_FALSE:
             case KW_RETURN:

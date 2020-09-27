@@ -74,7 +74,11 @@ func a(a: A, b: B) {
         3 => "world"; 4 => "something"
     }
 
+    let sum2: Func([Int]) -> Int
+    sum2 = sum
+
     list.sum()
+    sum2(list)
 }
 
 before func a(a: A, b: B) {

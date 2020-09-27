@@ -81,25 +81,25 @@ public abstract class Type extends Node {
         @Override
         public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
             switch (token.type) {
-                case KW_INT:
+                case T_INT:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_INT, List.of())));
-                case KW_BOOL:
+                case T_BOOL:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_BOOL, List.of())));
-                case KW_STRING:
+                case T_STRING:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_STRING, List.of())));
-                case KW_TEXT:
+                case T_TEXT:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_TEXT, List.of())));
-                case KW_ENTITY:
+                case T_ENTITY:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_ENTITY, List.of())));
-                case KW_RATIO:
+                case T_RATIO:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_RATIO, List.of())));
-                case KW_COL:
+                case T_COL:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_COL, List.of())));
-                case KW_POS:
+                case T_POS:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_POS, List.of())));
-                case KW_TEXTURE:
+                case T_TEXTURE:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_TEXTURE, List.of())));
-                case KW_PLAYER:
+                case T_PLAYER:
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_PLAYER, List.of())));
             }
             throw new UnsupportedOperationException(token.toString());

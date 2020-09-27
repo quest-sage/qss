@@ -14,7 +14,8 @@ public enum TokenType {
     KW_IMPORT,
     IDENTIFIER,
 
-    KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
+    // T prefix = type name (distinguishes e.g. T_FUNC 'Func' from lowercase keywords like KW_FUNC 'func')
+    T_INT, T_BOOL, T_STRING, T_TEXT, T_ENTITY, T_RATIO, T_COL, T_POS, T_TEXTURE, T_PLAYER, T_FUNC,
     KW_TRUE, KW_FALSE, KW_JUST, KW_NULL,
     KW_LET, KW_RETURN, KW_NEW, KW_BREAK, KW_CONTINUE,
     KW_IF, KW_ELSE, KW_FOR, KW_IN, KW_WHILE,
@@ -74,26 +75,28 @@ public enum TokenType {
                 return "keyword 'import'";
             case IDENTIFIER:
                 return "identifier";
-            case KW_INT:
-                return "keyword 'Int'";
-            case KW_BOOL:
-                return "keyword 'Bool'";
-            case KW_STRING:
-                return "keyword 'String'";
-            case KW_TEXT:
-                return "keyword 'Text'";
-            case KW_ENTITY:
-                return "keyword 'Entity'";
-            case KW_RATIO:
-                return "keyword 'Ratio'";
-            case KW_COL:
-                return "keyword 'Col'";
-            case KW_POS:
-                return "keyword 'Pos'";
-            case KW_TEXTURE:
-                return "keyword 'Texture'";
-            case KW_PLAYER:
-                return "keyword 'Player'";
+            case T_INT:
+                return "type 'Int'";
+            case T_BOOL:
+                return "type 'Bool'";
+            case T_STRING:
+                return "type 'String'";
+            case T_TEXT:
+                return "type 'Text'";
+            case T_ENTITY:
+                return "type 'Entity'";
+            case T_RATIO:
+                return "type 'Ratio'";
+            case T_COL:
+                return "type 'Col'";
+            case T_POS:
+                return "type 'Pos'";
+            case T_TEXTURE:
+                return "type 'Texture'";
+            case T_PLAYER:
+                return "type 'Player'";
+            case T_FUNC:
+                return "type 'Func'";
             case KW_TRUE:
                 return "boolean 'true'";
             case KW_FALSE:

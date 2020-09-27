@@ -1,16 +1,6 @@
 package com.thirds.qss.compiler.resolve;
 
-import com.thirds.qss.BundleQualifiedName;
-import com.thirds.qss.QualifiedName;
-import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.indexer.NameIndex;
-import com.thirds.qss.compiler.indexer.NameIndices;
-import com.thirds.qss.compiler.tree.Script;
-
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Represents the possible qualified names that are represented by a given NameLiteral. Used to convert literals like

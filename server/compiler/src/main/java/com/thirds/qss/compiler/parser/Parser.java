@@ -9,6 +9,7 @@ import com.thirds.qss.compiler.tree.*;
 import com.thirds.qss.compiler.tree.expr.*;
 import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
+import com.thirds.qss.compiler.type.FuncType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -311,6 +312,8 @@ public class Parser {
                 return Messenger.success(new Param(Range.combine(name.getRange(), type.getRange()), name, type));
             });
             result.add(param);
+            if (param.getValue().isEmpty())
+                break;
         }
         return result;
     }
@@ -900,6 +903,8 @@ public class Parser {
                 return Messenger.success(expr);
             });
             result.add(arg);
+            if (arg.getValue().isEmpty())
+                break;
         }
         return result;
     }
@@ -1029,16 +1034,16 @@ public class Parser {
         Messenger<Type> result = null;
         if (tokens.peek().isPresent()) {
             switch (tokens.peek().get().type) {
-                case KW_INT:
-                case KW_BOOL:
-                case KW_STRING:
-                case KW_TEXT:
-                case KW_ENTITY:
-                case KW_RATIO:
-                case KW_COL:
-                case KW_POS:
-                case KW_TEXTURE:
-                case KW_PLAYER:
+                case T_INT:
+                case T_BOOL:
+                case T_STRING:
+                case T_TEXT:
+                case T_ENTITY:
+                case T_RATIO:
+                case T_COL:
+                case T_POS:
+                case T_TEXTURE:
+                case T_PLAYER:
                     result = consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.PrimitiveType(tk)));
                     break;
                 case IDENTIFIER:
@@ -1049,6 +1054,9 @@ public class Parser {
                     break;
                 case LBRACE:
                     result = parseMapType(tokens);
+                    break;
+                case T_FUNC:
+                    result = parseFuncType(tokens);
                     break;
             }
         }
@@ -1091,6 +1099,67 @@ public class Parser {
 
             return Messenger.success(new Type.MapType(keyType, valueType, startToken, endToken));
         });
+    }
+
+    private Messenger<Type> parseFuncType(TokenStream tokens) {
+        Messenger<Token> funcToken = consumeToken(tokens, TokenType.T_FUNC);
+
+        // Parse the parameters, ignoring receiver style.
+        Messenger<ArrayList<Type>> params = parseFuncTypeParams(tokens);
+
+        // Parse the optional return type.
+        Optional<Messenger<Type>> returnType = peekConsumeToken(tokens, TokenType.RETURNS).map(m -> m.map(tk -> parseType(tokens)));
+
+        return funcToken.map(funcToken2 -> params.map(params2 -> {
+            Range totalRange;
+            if (params2.isEmpty()) {
+                totalRange = funcToken2.getRange();
+            } else {
+                totalRange = Range.combine(funcToken2.getRange(), params2.get(params2.size() - 1).getRange());
+            }
+            if (returnType.isEmpty()) {
+                return Messenger.success(new FuncType(totalRange, params2, null));
+            } else {
+                Range finalTotalRange = totalRange;
+                totalRange = returnType.get().getValue().map(type -> Range.combine(finalTotalRange, type.getRange())).orElse(totalRange);
+                Range finalTotalRange1 = totalRange;
+                return returnType.get().map(returnType2 -> Messenger.success(new FuncType(finalTotalRange1, params2, returnType2)));
+            }
+        }));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Messenger<ArrayList<Type>> parseFuncTypeParams(TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.LPARENTH),     // 0
+                () -> parseFuncTypeParamsInternal(tokens),          // 1
+                () -> consumeToken(tokens, TokenType.RPARENTH)      // 2
+        )).map(list -> {
+            ArrayList<Type> params = (ArrayList<Type>) list.get(1);
+            return Messenger.success(params);
+        });
+    }
+
+    /**
+     * An optional comma may be used after the last argument.
+     */
+    private ListMessenger<Type> parseFuncTypeParamsInternal(TokenStream tokens) {
+        ListMessenger<Type> result = new ListMessenger<>();
+        AtomicBoolean expectingMoreParams = new AtomicBoolean(true);
+        while (expectingMoreParams.get() && tokens.peek().isPresent() && tokens.peek().get().type != TokenType.RPARENTH) {
+            Messenger<Type> arg = parseType(tokens).map(expr -> {
+                if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.COMMA) {
+                    consumeToken(tokens, TokenType.COMMA);
+                } else {
+                    expectingMoreParams.set(false);
+                }
+                return Messenger.success(expr);
+            });
+            result.add(arg);
+            if (arg.getValue().isEmpty())
+                break;
+        }
+        return result;
     }
 
     /**
