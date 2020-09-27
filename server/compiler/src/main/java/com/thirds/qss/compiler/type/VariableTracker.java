@@ -247,7 +247,11 @@ public class VariableTracker {
             Statement trueBlock = ifStatement.getTrueBlock();
             Statement falseBlock = ifStatement.getFalseBlock();
             if (falseBlock == null) {
-                // We don't know if any code will execute, so the scope tree must stay the same as it was before the block.
+                // We don't know if any code will execute, so the scope tree may stay the same as it was before the block.
+                scopeTree = parallel(List.of(
+                        deduceVariableUsageStatement(trueBlock, block, scopeTree, namesDeclaredInThisScope),
+                        scopeTree
+                ));
             } else {
                 scopeTree = parallel(List.of(
                         deduceVariableUsageStatement(trueBlock, block, scopeTree, namesDeclaredInThisScope),
@@ -262,7 +266,11 @@ public class VariableTracker {
                     variableType,
                     VariableType.Primitive.TYPE_BOOL
             ).getMessages()));
-            // We don't know if any code will execute, so the scope tree must stay the same as it was before the block.
+            // We don't know if any code will execute, so the scope tree may stay the same as it was before the block.
+            scopeTree = parallel(List.of(
+                    deduceVariableUsageStatement(whileStatement.getBlock(), block, scopeTree, namesDeclaredInThisScope),
+                    scopeTree
+            ));
         }
 
         return scopeTree;
@@ -597,6 +605,8 @@ public class VariableTracker {
          */
         public VariableUsageState assign(Node where) {
             VariableUsageState state = duplicate();
+            state.assignedBlocks.clear();
+            state.nonAssignedBlocks.clear();
             state.assignedBlocks.add(where);
             return state;
         }

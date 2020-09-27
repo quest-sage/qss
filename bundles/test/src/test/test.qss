@@ -60,11 +60,40 @@ func a(a: A, b: B) {
     //if_var = 2
 
     let if_var_2 = if_var
+
+    let list = new [Int] {
+        1
+        2
+        3
+        4; 5; 6
+    }
+
+    let map = new {Int => String} {
+        1 => "hello"
+        2 => "goodbye"
+        3 => "world"; 4 => "something"
+    }
 }
 
 before func a(a: A, b: B) {
     let q = a
     let r = q
+}
+
+func for_test() {
+    let list = new [Int] {
+        1
+        2
+        3
+        4; 5; 6
+    }
+
+    let something: Int
+    for i in list {
+        something = i + 2
+    }
+    something = 1
+    something
 }
 
 ** Abcdef **

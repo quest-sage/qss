@@ -24,6 +24,7 @@ import java.util.function.Supplier;
  * pre-documentation of items and fields etc.
  */
 public class Parser {
+    private int nextUniqueVariableID;
     private final ScriptPath filePath;
 
     public Parser(ScriptPath filePath) {
@@ -40,6 +41,11 @@ public class Parser {
         )));
 
         return script;
+    }
+
+    private String generateUniqueVariableName() {
+        nextUniqueVariableID++;
+        return "__unique" + nextUniqueVariableID + "__";
     }
 
     //#region Script-wide items
@@ -539,9 +545,13 @@ public class Parser {
      *
      * <code><pre>
      *     let some_unique_identifier = 0
+     *     let some_unique_identifier_3 = b  // evaluate b only once
      *     while true {
-     *         with a in b[some_unique_identifier] {
+     *         let some_unique_identifier_2 = some_unique_identifier_3[some_unique_identifier]
+     *         if some_unique_identifier_2? {
+     *             let a = some_unique_identifier_2!
      *             some_unique_identifier = some_unique_identifier + 1
+     *             // foo
      *         } else {
      *             break
      *         }
@@ -563,8 +573,81 @@ public class Parser {
 
             Range totalRange = Range.combine(forToken.getRange(), block.getRange());
 
-            // TODO not implemented
-            throw new UnsupportedOperationException();
+            // Create the desugared block.
+            ArrayList<Statement> statements = new ArrayList<>();
+            String iteratorVariable = generateUniqueVariableName();
+            String valueVariable = generateUniqueVariableName();
+            String containerVariable = generateUniqueVariableName();
+
+            // let iteratorVariable = 0
+            statements.add(new LetAssignStatement(
+                    forToken.getRange(),
+                    new Token(TokenType.IDENTIFIER, iteratorVariable, forToken.getRange()),
+                    new IntegerLiteral(new Token(TokenType.INTEGER_LITERAL, "0", forToken.getRange()))
+            ));
+
+            // let containerVariable = <container>
+            statements.add(new LetAssignStatement(
+                    container.getRange(),
+                    new Token(TokenType.IDENTIFIER, containerVariable, container.getRange()),
+                    container
+            ));
+
+            // while true { ... }
+            ArrayList<Statement> whileLoopStatements = new ArrayList<>();
+
+            // let valueVariable = containerVariable[iteratorVariable]
+            whileLoopStatements.add(new LetAssignStatement(
+                    forToken.getRange(),
+                    new Token(TokenType.IDENTIFIER, valueVariable, forToken.getRange()),
+                    new IndexExpression(
+                            new Identifier(new NameLiteral(container.getRange(), List.of(new Token(TokenType.IDENTIFIER, containerVariable, container.getRange())))),
+                            new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, iteratorVariable, forToken.getRange()))))
+                    )
+            ));
+
+            // if valueVariable? { ... }
+            ArrayList<Statement> trueBlockContents = new ArrayList<>(List.of(
+                    // let name = valueVariable!
+                    new LetAssignStatement(
+                            forToken.getRange(),
+                            name,
+                            new MaybeGetExpression(
+                                    new Token(TokenType.NOT, "!", forToken.getRange()),
+                                    new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, valueVariable, forToken.getRange()))))
+                            )
+                    ),
+                    // iteratorVariable = iteratorVariable + 1
+                    new AssignStatement(
+                            new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, iteratorVariable, forToken.getRange())))),
+                            new AddExpression(
+                                    new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, iteratorVariable, forToken.getRange())))),
+                                    new IntegerLiteral(new Token(TokenType.INTEGER_LITERAL, "1", forToken.getRange()))
+                            )
+                    ),
+                    // the actual block in the 'for' loop
+                    block
+            ));
+            Statement trueBlock = new CompoundStatement(totalRange, trueBlockContents);
+            Statement falseBlock = new BreakStatement(forToken.getRange());
+            whileLoopStatements.add(new IfStatement(
+                    new MaybeExistsExpression(
+                            new Token(TokenType.TYPE_MAYBE, "?", forToken.getRange()),
+                            new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, valueVariable, forToken.getRange()))))
+                    ),
+                    trueBlock,
+                    falseBlock
+            ));
+
+            // Add the while loop to the statements list.
+            statements.add(new WhileStatement(
+                    totalRange,
+                    new BooleanLiteral(new Token(TokenType.KW_TRUE, "true", forToken.getRange())),
+                    new CompoundStatement(totalRange, whileLoopStatements)
+            ));
+
+            CompoundStatement desugared = new CompoundStatement(totalRange, statements);
+            return Messenger.success(desugared);
         });
     }
 
