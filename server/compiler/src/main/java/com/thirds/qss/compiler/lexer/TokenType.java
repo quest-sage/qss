@@ -16,7 +16,7 @@ public enum TokenType {
 
     KW_INT, KW_BOOL, KW_STRING, KW_TEXT, KW_ENTITY, KW_RATIO, KW_COL, KW_POS, KW_TEXTURE, KW_PLAYER,
     KW_TRUE, KW_FALSE, KW_JUST, KW_NULL,
-    KW_LET, KW_RETURN, KW_NEW,
+    KW_LET, KW_RETURN, KW_NEW, KW_BREAK, KW_CONTINUE,
     KW_IF, KW_ELSE, KW_FOR, KW_IN, KW_WHILE,
     KW_RESULT,
 
@@ -106,6 +106,12 @@ public enum TokenType {
                 return "keyword 'let'";
             case KW_RETURN:
                 return "keyword 'return'";
+            case KW_NEW:
+                return "keyword 'new'";
+            case KW_BREAK:
+                return "keyword 'break'";
+            case KW_CONTINUE:
+                return "keyword 'continue'";
             case KW_IF:
                 return "keyword 'if'";
             case KW_ELSE:

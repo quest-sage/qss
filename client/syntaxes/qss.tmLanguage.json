@@ -26,7 +26,7 @@
 				{
 					"comment": "Control flow",
 					"name": "keyword.control.qss",
-					"match": "\\b(return|if|else|for|in|while|new)\\b"
+					"match": "\\b(return|if|else|for|in|while|new|break|continue)\\b"
 				},
 				{
 					"comment": "Variables",

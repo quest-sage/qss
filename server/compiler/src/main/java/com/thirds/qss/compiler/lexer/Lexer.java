@@ -373,6 +373,12 @@ public class Lexer {
                             case "new":
                                 type = TokenType.KW_NEW;
                                 break;
+                            case "break":
+                                type = TokenType.KW_BREAK;
+                                break;
+                            case "continue":
+                                type = TokenType.KW_CONTINUE;
+                                break;
                             case "result":
                                 type = TokenType.KW_RESULT;
                                 break;
@@ -490,6 +496,8 @@ public class Lexer {
             case KW_RESULT:
             case TYPE_MAYBE:
             case NOT:
+            case KW_BREAK:
+            case KW_CONTINUE:
                 return true;
             default:
                 return false;

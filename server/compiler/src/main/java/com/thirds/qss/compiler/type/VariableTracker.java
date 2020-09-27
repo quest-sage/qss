@@ -57,7 +57,7 @@ public class VariableTracker {
      *
      */
     private void track() {
-        ScopeTree scopeTree = new ScopeTree();
+        ScopeTree scopeTree = new ScopeTree(new FunctionState());
 
         // Add the function parameters to the scope tree.
         for (Param param : func.getParamList().getParams()) {
@@ -118,6 +118,22 @@ public class VariableTracker {
     }
 
     /**
+     * What is the state of the function at this point in its execution?
+     * E.g. have we already returned a value? Are we in a loop or not?
+     */
+    private static class FunctionState {
+        boolean returnedValue = false;
+        boolean inLoop = false;
+
+        public FunctionState copy() {
+            FunctionState result = new FunctionState();
+            result.returnedValue = returnedValue;
+            result.inLoop = inLoop;
+            return result;
+        }
+    }
+
+    /**
      * Walks through each branch of the function block to work out where variables are used.
      *
      * @return A map that maps variable IDs onto their states. When the variable leaves scope, the entry
@@ -141,6 +157,14 @@ public class VariableTracker {
     private ScopeTree deduceVariableUsageStatement(Statement statement, CompoundStatement block, ScopeTree scopeTree, ArrayList<String> namesDeclaredInThisScope) {
         if (statement == null)
             return scopeTree;
+
+        if (scopeTree.functionState.returnedValue) {
+            messages.add(new Message(
+                    statement.getRange(),
+                    Message.MessageSeverity.WARNING,
+                    "This statement is unreachable, the function already returned"
+            ));
+        }
 
         if (statement instanceof LetAssignStatement) {
             LetAssignStatement letAssignStatement = (LetAssignStatement) statement;
@@ -201,6 +225,7 @@ public class VariableTracker {
             scopeTree = deduceVariableUsage(compoundStatement, scopeTree);
         } else if (statement instanceof ReturnStatement) {
             ReturnStatement returnStatement = (ReturnStatement) statement;
+            scopeTree.functionState.returnedValue = true;
             if (func instanceof FuncHook && ((FuncHook) func).getTime().type == TokenType.KW_BEFORE) {
                 // We're not allowed to use "return" statements in "before" hooks.
                 messages.add(new Message(
@@ -266,11 +291,35 @@ public class VariableTracker {
                     variableType,
                     VariableType.Primitive.TYPE_BOOL
             ).getMessages()));
+
+            boolean alreadyInLoop = scopeTree.functionState.inLoop;
+            scopeTree.functionState.inLoop = true;
             // We don't know if any code will execute, so the scope tree may stay the same as it was before the block.
             scopeTree = parallel(List.of(
                     deduceVariableUsageStatement(whileStatement.getBlock(), block, scopeTree, namesDeclaredInThisScope),
                     scopeTree
             ));
+            scopeTree.functionState.inLoop = alreadyInLoop;
+        } else if (statement instanceof BreakStatement) {
+            // Check if the "break" statement was actually part of a loop.
+            // If it wasn't inside a loop, the statement is invalid.
+            if (!scopeTree.functionState.inLoop) {
+                messages.add(new Message(
+                        statement.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "'break' statement was not in a loop"
+                ));
+            }
+        } else if (statement instanceof ContinueStatement) {
+            // Check if the "continue" statement was actually part of a loop.
+            // If it wasn't inside a loop, the statement is invalid.
+            if (!scopeTree.functionState.inLoop) {
+                messages.add(new Message(
+                        statement.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "'continue' statement was not in a loop"
+                ));
+            }
         }
 
         return scopeTree;
@@ -394,6 +443,14 @@ public class VariableTracker {
         }
 
         // Now, execute the scope states in parallel.
+        FunctionState functionState = baseTree.functionState.copy();
+        for (int i = 1; i < scopes.size(); i++) {
+            ScopeTree scope = scopes.get(i);
+            if (!scope.functionState.returnedValue)
+                functionState.returnedValue = false;
+        }
+        baseTree.functionState = functionState;
+
         for (String name : names) {
             VariableUsageState state = baseTree.getState(name);
             for (int i = 1; i < scopes.size(); i++) {
@@ -408,17 +465,21 @@ public class VariableTracker {
 
     /**
      * Represents the state of each locally scoped variable in a given scope.
+     * It also encapsulates the state of the function's execution at this point in the function.
      */
     public static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
+        private FunctionState functionState;
 
-        public ScopeTree() {
+        public ScopeTree(FunctionState functionState) {
+            this.functionState = functionState;
         }
 
         public ScopeTree(ScopeTree outerScopes) {
             for (Map.Entry<String, VariableUsageState> entry : outerScopes.stateMap.entrySet()) {
                 stateMap.put(entry.getKey(), entry.getValue().duplicate());
             }
+            functionState = outerScopes.functionState.copy();
         }
 
         public void setVariableType(String variable, VariableType type) {

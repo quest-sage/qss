@@ -91,6 +91,8 @@ func for_test() {
     let something: Int
     for i in list {
         something = i + 2
+        for j in list {
+        }
     }
     something = 1
     something

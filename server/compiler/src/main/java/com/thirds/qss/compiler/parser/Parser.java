@@ -10,6 +10,7 @@ import com.thirds.qss.compiler.tree.expr.*;
 import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -389,6 +390,12 @@ public class Parser {
             case KW_RETURN:
                 result = parseReturnStmt(tokens);
                 break;
+            case KW_BREAK:
+                result = parseBreakStmt(tokens);
+                break;
+            case KW_CONTINUE:
+                result = parseContinueStmt(tokens);
+                break;
             case KW_IF:
                 result = parseIfStmt(tokens);
                 break;
@@ -500,6 +507,14 @@ public class Parser {
         } else {
             return ret.map(r -> Messenger.success(new ReturnStatement(r.getRange(), false)));
         }
+    }
+
+    private Messenger<Statement> parseBreakStmt(TokenStream tokens) {
+        return consumeToken(tokens, TokenType.KW_BREAK).map(tk -> Messenger.success(new BreakStatement(tk.getRange())));
+    }
+
+    private Messenger<Statement> parseContinueStmt(TokenStream tokens) {
+        return consumeToken(tokens, TokenType.KW_CONTINUE).map(tk -> Messenger.success(new ContinueStatement(tk.getRange())));
     }
 
     private Messenger<Statement> parseIfStmt(TokenStream tokens) {
