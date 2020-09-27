@@ -19,6 +19,26 @@
 		"keywords": {
 			"patterns": [
 				{
+					"comment": "Type declaration",
+					"name": "storage.type.qss",
+					"match": "\\b(struct|trait|impl)\\b"
+				},
+				{
+					"comment": "Trait implementation 'impl' keyword",
+					"name": "storage.type.qss",
+					"match": "\\bimpl\\b"
+				},
+				{
+					"comment": "Trait implementation 'for' keyword",
+					"name": "storage.type.qss",
+					"match": "\\b(?<=impl\\s*[a-zA-Z0-9_:]*\\s*)(for)\\b"
+				},
+				{
+					"comment": "Built-in type",
+					"name": "entity.name.type.qss",
+					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player|Func)\\b"
+				},
+				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
 					"match": "\\b(import|before|after|native|func|let|just|null)\\b"
@@ -32,16 +52,6 @@
 					"comment": "Variables",
 					"name": "variable.language.qss",
 					"match": "\\b(result|this)\\b"
-				},
-				{
-					"comment": "Type declaration",
-					"name": "storage.type.qss",
-					"match": "\\b(struct)\\b"
-				},
-				{
-					"comment": "Built-in type",
-					"name": "entity.name.type.qss",
-					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player|Func)\\b"
 				}
 			]
 		},

@@ -63,6 +63,8 @@ public class Parser {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             ArrayList<Documentable<Func>> funcs = new ArrayList<>();
             ArrayList<Documentable<FuncHook>> funcHooks = new ArrayList<>();
+            ArrayList<Documentable<Trait>> traits = new ArrayList<>();
+            ArrayList<Documentable<TraitImpl>> traitImpls = new ArrayList<>();
 
             for (Documentable<?> documentable : items2) {
                 Node content = documentable.getContent();
@@ -72,6 +74,10 @@ public class Parser {
                     funcs.add((Documentable<Func>) documentable);
                 else if (content instanceof FuncHook)
                     funcHooks.add((Documentable<FuncHook>) documentable);
+                else if (content instanceof Trait)
+                    traits.add((Documentable<Trait>) documentable);
+                else if (content instanceof TraitImpl)
+                    traitImpls.add((Documentable<TraitImpl>) documentable);
             }
 
             // Deduce what package the script is in by reversing directories until we hit the bundle.toml file.
@@ -104,7 +110,7 @@ public class Parser {
                     packageName,
                     packagePath,
                     imports2,
-                    structs, funcs, funcHooks
+                    structs, funcs, funcHooks, traits, traitImpls
             ), messages);
         }));
     }
@@ -138,6 +144,16 @@ public class Parser {
         Optional<Messenger<FuncHook>> funcHook = parseHook(tokens);
         if (funcHook.isPresent()) {
             return Optional.of(funcHook.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
+        }
+
+        Optional<Messenger<Trait>> trait = parseTrait(tokens);
+        if (trait.isPresent()) {
+            return Optional.of(trait.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
+        }
+
+        Optional<Messenger<TraitImpl>> traitImpl = parseTraitImpl(tokens);
+        if (traitImpl.isPresent()) {
+            return Optional.of(traitImpl.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         if (docs != null)
@@ -355,6 +371,125 @@ public class Parser {
             });
         }
         return parseCompoundStatement(tokens).map(block -> Messenger.success(new FuncBlock(new Range(tokens.currentPosition()), block)));
+    }
+
+    /**
+     * <code>Trait := "trait" Identifier "{" Func* "}"</code>
+     * @return Null if the token stream did not represent a trait.
+     */
+    @SuppressWarnings("unchecked")
+    private Optional<Messenger<Trait>> parseTrait(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_TRAIT)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_TRAIT),     // 0
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 2
+                () -> parseTraitFuncs(tokens),                      // 3
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 4
+        )).map(list -> {
+            Token identifier = (Token) list.get(1);
+            ArrayList<Documentable<TraitFunc>> fields = (ArrayList<Documentable<TraitFunc>>) list.get(3);
+
+            Trait trait = new Trait(
+                    new Range(start, tokens.currentEndPosition()),
+                    identifier, fields
+            );
+
+            return Messenger.success(trait);
+        }));
+    }
+
+    private Messenger<ArrayList<Documentable<TraitFunc>>> parseTraitFuncs(TokenStream tokens) {
+        return parseGreedy(() -> parseDocumentableTraitFunc(tokens));
+    }
+
+    private Optional<Messenger<Documentable<TraitFunc>>> parseDocumentableTraitFunc(TokenStream tokens) {
+        Token docs = null;
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
+            docs = tokens.next();
+        }
+
+        Token finalDocs = docs;
+        return parseTraitFunc(tokens).map(messenger -> messenger.map(traitFunc -> Messenger.success(new Documentable<>(finalDocs, traitFunc))));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<Messenger<TraitFunc>> parseTraitFunc(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_FUNC)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_FUNC),      // 0
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
+                () -> parseParamList(tokens),                       // 2
+                () -> parseReturnType(tokens),                      // 3
+                () -> consumeToken(tokens, TokenType.SEMICOLON)     // 4
+        )).map(list -> {
+            Token identifier = (Token) list.get(1);
+            ParamList paramList = (ParamList) list.get(2);
+            Optional<Type> returnType = (Optional<Type>) list.get(3);
+
+            TraitFunc func = new TraitFunc(
+                    new Range(start, tokens.currentEndPosition()),
+                    identifier, paramList, returnType.orElse(null)
+            );
+
+            return Messenger.success(func);
+        }));
+    }
+
+    /**
+     * <code>Trait := "impl" Name "for" Name "{" Func* "}"</code>
+     * @return Null if the token stream did not represent a trait.
+     */
+    @SuppressWarnings("unchecked")
+    private Optional<Messenger<TraitImpl>> parseTraitImpl(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_IMPL)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_IMPL),      // 0
+                () -> parseName(tokens),                            // 1
+                () -> consumeToken(tokens, TokenType.KW_FOR),       // 2
+                () -> parseType(tokens),                            // 3
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 4
+                () -> parseImplFuncs(tokens),                       // 5
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 6
+        )).map(list -> {
+            NameLiteral trait = ((NameLiteral) list.get(1));
+            Type type = ((Type) list.get(3));
+            ArrayList<Documentable<Func>> funcs = ((ArrayList<Documentable<Func>>) list.get(5));
+
+            TraitImpl impl = new TraitImpl(
+                    new Range(start, tokens.currentEndPosition()),
+                    trait, type, funcs
+            );
+
+            return Messenger.success(impl);
+        }));
+    }
+
+    private Messenger<ArrayList<Documentable<Func>>> parseImplFuncs(TokenStream tokens) {
+        return parseGreedy(() -> {
+            Token docs = null;
+            if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.DOCUMENTATION_COMMENT) {
+                docs = tokens.next();
+            }
+
+            Token finalDocs = docs;
+            return parseFunc(tokens).map(messenger ->
+                    consumeToken(tokens, TokenType.SEMICOLON).then(() ->
+                            messenger.map(func ->
+                                    Messenger.success(new Documentable<>(finalDocs, func)))));
+        });
     }
 
     //#endregion

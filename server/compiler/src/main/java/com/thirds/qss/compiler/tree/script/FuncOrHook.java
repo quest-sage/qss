@@ -41,6 +41,7 @@ public abstract class FuncOrHook extends Node {
         consumer.accept(paramList);
         if (returnType != null)
             consumer.accept(returnType);
-        consumer.accept(funcBlock);
+        if (funcBlock != null)  // only true if we're in a trait func
+            consumer.accept(funcBlock);
     }
 }

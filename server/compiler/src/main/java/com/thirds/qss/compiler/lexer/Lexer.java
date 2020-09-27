@@ -361,6 +361,12 @@ public class Lexer {
                             case "native":
                                 type = TokenType.KW_NATIVE;
                                 break;
+                            case "trait":
+                                type = TokenType.KW_TRAIT;
+                                break;
+                            case "impl":
+                                type = TokenType.KW_IMPL;
+                                break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
                                 break;

@@ -3,10 +3,7 @@ package com.thirds.qss.compiler.tree;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.ScriptPath;
-import com.thirds.qss.compiler.tree.script.Func;
-import com.thirds.qss.compiler.tree.script.FuncHook;
-import com.thirds.qss.compiler.tree.script.Import;
-import com.thirds.qss.compiler.tree.script.Struct;
+import com.thirds.qss.compiler.tree.script.*;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -27,9 +24,13 @@ public class Script extends Node {
     private final ArrayList<Documentable<Struct>> structs;
     private final ArrayList<Documentable<Func>> funcs;
     private final ArrayList<Documentable<FuncHook>> funcHooks;
+    private final ArrayList<Documentable<Trait>> traits;
+    private final ArrayList<Documentable<TraitImpl>> traitImpls;
 
     public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports,
-                  ArrayList<Documentable<Struct>> structs, ArrayList<Documentable<Func>> funcs, ArrayList<Documentable<FuncHook>> funcHooks) {
+                  ArrayList<Documentable<Struct>> structs,
+                  ArrayList<Documentable<Func>> funcs, ArrayList<Documentable<FuncHook>> funcHooks,
+                  ArrayList<Documentable<Trait>> traits, ArrayList<Documentable<TraitImpl>> traitImpls) {
         super(range);
         this.filePath = filePath;
         this.packageName = packageName;
@@ -38,6 +39,8 @@ public class Script extends Node {
         this.structs = structs;
         this.funcs = funcs;
         this.funcHooks = funcHooks;
+        this.traits = traits;
+        this.traitImpls = traitImpls;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
                 .collect(Collectors.toSet());
     }
@@ -53,6 +56,8 @@ public class Script extends Node {
                 ", structs=" + structs +
                 ", funcs=" + funcs +
                 ", funcHooks=" + funcHooks +
+                ", traits=" + traits +
+                ", traitImpls=" + traitImpls +
                 '}';
     }
 
@@ -74,6 +79,14 @@ public class Script extends Node {
 
     public ArrayList<Documentable<FuncHook>> getFuncHooks() {
         return funcHooks;
+    }
+
+    public ArrayList<Documentable<Trait>> getTraits() {
+        return traits;
+    }
+
+    public ArrayList<Documentable<TraitImpl>> getTraitImpls() {
+        return traitImpls;
     }
 
     public QualifiedName getPackageName() {
@@ -108,6 +121,12 @@ public class Script extends Node {
         }
         for (Documentable<FuncHook> funcHook : funcHooks) {
             consumer.accept(funcHook);
+        }
+        for (Documentable<Trait> trait : traits) {
+            consumer.accept(trait);
+        }
+        for (Documentable<TraitImpl> traitImpl : traitImpls) {
+            consumer.accept(traitImpl);
         }
     }
 }
