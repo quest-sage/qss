@@ -99,3 +99,13 @@ struct B {
     a: A
     c: C
 }
+
+trait Debug {
+    func debug(this: This) -> String
+}
+
+impl Debug for [Int] {
+    func debug(this: This) -> String {
+        return "abcde"
+    }
+}

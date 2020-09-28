@@ -21,6 +21,7 @@ import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.SymbolMap;
 import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.FuncHook;
+import com.thirds.qss.compiler.tree.script.TraitImpl;
 import com.thirds.qss.compiler.type.TypeDeducer;
 import com.thirds.qss.compiler.validator.Validator;
 
@@ -376,6 +377,11 @@ public class Compiler {
             }
             for (Documentable<FuncHook> funcHook : scriptParsed.getFuncHooks()) {
                 typeDeducer.computeTypesIn(funcHook.getContent(), allMessages);
+            }
+            for (Documentable<TraitImpl> traitImpl : scriptParsed.getTraitImpls()) {
+                for (Documentable<Func> funcImpl : traitImpl.getContent().getFuncImpls()) {
+                    typeDeducer.computeTypesIn(funcImpl.getContent(), allMessages);
+                }
             }
 
             // Now for the last step, we're going to execute some extra validation checks to ensure that the script

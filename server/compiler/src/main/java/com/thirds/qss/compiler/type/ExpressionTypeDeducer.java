@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.type;
 
+import com.thirds.qss.QualifiedName;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
@@ -52,7 +53,7 @@ public class ExpressionTypeDeducer {
         for (String variableName : scopeTree.allVariableNames()) {
             if (identifier.getName().matches(variableName)) {
                 VariableTracker.VariableUsageState state = scopeTree.getState(variableName);
-                identifier.getName().setTarget(new Location(filePath, state.variable.getRange()), null);
+                identifier.getName().setTarget(new QualifiedName(variableName), new Location(filePath, state.variable.getRange()), null);
                 identifier.setLocal(true);
                 scopeTree.getVariableType(variableName).ifPresent(identifier::setVariableType);
                 return;

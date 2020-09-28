@@ -8,6 +8,7 @@ import com.thirds.qss.compiler.tree.Documentable;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.script.Func;
 import com.thirds.qss.compiler.tree.script.Struct;
+import com.thirds.qss.compiler.tree.script.Trait;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,6 +64,24 @@ public class NameIndex {
         }
     }
 
+    public static class TraitDefinition {
+        private final String documentation;
+        private final Location location;
+
+        private TraitDefinition(String documentation, Location location) {
+            this.documentation = documentation;
+            this.location = location;
+        }
+
+        public String getDocumentation() {
+            return documentation;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+    }
+
     /**
      * Maps names of structs onto the struct itself.
      */
@@ -72,6 +91,11 @@ public class NameIndex {
      * Maps names of funcs onto the func itself.
      */
     private final Map<String, FuncDefinition> funcDefinitions = new HashMap<>();
+
+    /**
+     * Maps names of traits onto the func itself.
+     */
+    private final Map<String, TraitDefinition> traitDefinitions = new HashMap<>();
 
     public NameIndex(String bundleName, QualifiedName thePackage) {
         this.bundleName = bundleName;
@@ -111,7 +135,7 @@ public class NameIndex {
                         Message.MessageSeverity.ERROR,
                         "Func " + name + " was already defined"
                 ).addInfo(new Message.MessageRelatedInformation(
-                        structDefinitions.get(name).location,
+                        funcDefinitions.get(name).location,
                         "Previously defined here"
                 )));
             }
@@ -119,6 +143,24 @@ public class NameIndex {
             funcDefinitions.put(name, new FuncDefinition(
                     func.getDocumentation().map(tk -> tk.contents).orElse(null),
                     new Location(script.getFilePath(), func.getContent().getRange())
+            ));
+        }
+        for (Documentable<Trait> trait : script.getTraits()) {
+            String name = trait.getContent().getName().contents;
+            if (traitDefinitions.containsKey(name)) {
+                messages.add(new Message(
+                        trait.getContent().getName().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Trait " + name + " was already defined"
+                ).addInfo(new Message.MessageRelatedInformation(
+                        traitDefinitions.get(name).location,
+                        "Previously defined here"
+                )));
+            }
+
+            traitDefinitions.put(name, new TraitDefinition(
+                    trait.getDocumentation().map(tk -> tk.contents).orElse(null),
+                    new Location(script.getFilePath(), trait.getContent().getRange())
             ));
         }
         return Messenger.success(this, messages);
@@ -130,6 +172,10 @@ public class NameIndex {
 
     public Map<String, FuncDefinition> getFuncDefinitions() {
         return funcDefinitions;
+    }
+
+    public Map<String, TraitDefinition> getTraitDefinitions() {
+        return traitDefinitions;
     }
 
     @Override

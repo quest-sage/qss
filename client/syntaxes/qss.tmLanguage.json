@@ -49,9 +49,19 @@
 					"match": "\\b(return|if|else|for|in|while|new|break|continue)\\b"
 				},
 				{
-					"comment": "Variables",
+					"comment": "Built-in variables",
 					"name": "variable.language.qss",
 					"match": "\\b(result|this)\\b"
+				},
+				{
+					"comment": "Types",
+					"name": "support.class.qss",
+					"match": "\\b\\p{Lu}[\\p{L}\\p{N}_]*\\b"
+				},
+				{
+					"comment": "Variables",
+					"name": "variable.other.qss",
+					"match": "\\b\\p{L}[\\p{L}\\p{N}_]*\\b"
 				}
 			]
 		},
@@ -144,7 +154,7 @@
 				{
 					"comment": "Basic operators",
 					"name": "keyword.operator.qss",
-					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|\\?!])"
+					"match": "([\\+\\-\\*\\/\\.,:;<>=&\\|\\?!{}\\(\\)])"
 				}
 			]
 		}

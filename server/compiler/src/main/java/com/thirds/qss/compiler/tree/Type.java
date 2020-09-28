@@ -1,10 +1,9 @@
 package com.thirds.qss.compiler.tree;
 
-import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
+import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Range;
-import com.thirds.qss.compiler.indexer.NameIndex;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.resolve.ResolveAlternative;
 import com.thirds.qss.compiler.resolve.ResolveResult;
@@ -12,9 +11,8 @@ import com.thirds.qss.compiler.resolve.Resolver;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a data type.
@@ -116,30 +114,19 @@ public abstract class Type extends Node {
 
         @Override
         public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
-            AtomicReference<NameIndex.StructDefinition> matchedDefinition = new AtomicReference<>();
-            ResolveResult<VariableType> result = Resolver.resolveGlobalScopeName(compiler, script, nameIndex -> {
-                ArrayList<VariableType> alternatives = new ArrayList<>(0);
-                for (Map.Entry<String, NameIndex.StructDefinition> entry : nameIndex.getStructDefinitions().entrySet()) {
-                    String s = entry.getKey();
-                    NameIndex.StructDefinition definition = entry.getValue();
-
-                    QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(s);
-                    if (structName.matches(qualifiedName)) {
-                        matchedDefinition.set(definition);
-                        alternatives.add(new VariableType.Struct(qualifiedName));
-                    }
-                }
-                return alternatives;
-            });
-
-            if (result.alternatives.size() == 1) {
-                structName.setTarget(
-                        matchedDefinition.get().getLocation(),
-                        matchedDefinition.get().getDocumentation()
-                );
+            ArrayList<Message> messages = new ArrayList<>();
+            ResolveResult<Resolver.StructNameAlternative> result = Resolver.resolveStructName(compiler, script, messages, structName);
+            if (result.alternatives.size() >= 1) {
+                return ResolveResult.success(result.alternatives
+                        .stream()
+                        .map(alt -> new ResolveAlternative<>((VariableType) new VariableType.Struct(alt.value.name), alt.imports))
+                        .collect(Collectors.toList()));
+            } else {
+                return ResolveResult.nonImported(result.nonImportedAlternatives
+                        .stream()
+                        .map(alt -> new ResolveAlternative<>((VariableType) new VariableType.Struct(alt.value.name), alt.imports))
+                        .collect(Collectors.toList()));
             }
-
-            return result;
         }
 
         @Override

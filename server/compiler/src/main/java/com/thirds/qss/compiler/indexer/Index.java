@@ -9,14 +9,11 @@ import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Documentable;
+import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Script;
-import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.script.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -25,6 +22,12 @@ import java.util.stream.Collectors;
 public class Index {
     private final Map<String, StructDefinition> structDefinitions = new HashMap<>();
     private final Map<String, FuncDefinition> funcDefinitions = new HashMap<>();
+    private final Map<String, TraitDefinition> traitDefinitions = new HashMap<>();
+    /**
+     * Maps trait names -> variable types that they're implemented for -> the implementation.
+     */
+    private final Map<QualifiedName, Map<VariableType, TraitImplDefinition>> traitImplDefinitions = new HashMap<>();
+
     private final Compiler compiler;
     private final QualifiedName thePackage;
 
@@ -38,6 +41,14 @@ public class Index {
 
     public Map<String, FuncDefinition> getFuncDefinitions() {
         return funcDefinitions;
+    }
+
+    public Map<String, TraitDefinition> getTraitDefinitions() {
+        return traitDefinitions;
+    }
+
+    public Map<QualifiedName, Map<VariableType, TraitImplDefinition>> getTraitImplDefinitions() {
+        return traitImplDefinitions;
     }
 
     /**
@@ -180,7 +191,7 @@ public class Index {
         private final Location location;
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
         private ReturnTypeDefinition returnType;
-        private VariableType type;
+        private VariableType.Function type;
 
         private FuncDefinition(String documentation, Location location) {
             this.documentation = documentation;
@@ -211,7 +222,7 @@ public class Index {
         /**
          * @return The type of the function.
          */
-        public VariableType getType() {
+        public VariableType.Function getType() {
             return type;
         }
 
@@ -232,6 +243,54 @@ public class Index {
                     new ArrayList<>(paramTypes),
                     returnType == null ? null : returnType.variableType
             );
+        }
+    }
+
+    public static class TraitDefinition {
+        private final String documentation;
+        private final Location location;
+        private final Map<String, FuncDefinition> traitFuncDefinitions;
+
+        private TraitDefinition(String documentation, Location location, Map<String, FuncDefinition> traitFuncDefinitions) {
+            this.documentation = documentation;
+            this.location = location;
+            this.traitFuncDefinitions = traitFuncDefinitions;
+        }
+
+        public String getDocumentation() {
+            return documentation;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        public Map<String, FuncDefinition> getTraitFuncDefinitions() {
+            return traitFuncDefinitions;
+        }
+    }
+
+    public static class TraitImplDefinition {
+        private final String documentation;
+        private final Location location;
+        private final Map<String, FuncDefinition> funcImplDefinitions;
+
+        private TraitImplDefinition(String documentation, Location location, Map<String, FuncDefinition> funcImplDefinitions) {
+            this.documentation = documentation;
+            this.location = location;
+            this.funcImplDefinitions = funcImplDefinitions;
+        }
+
+        public String getDocumentation() {
+            return documentation;
+        }
+
+        public Location getLocation() {
+            return location;
+        }
+
+        public Map<String, FuncDefinition> getFuncImplDefinitions() {
+            return funcImplDefinitions;
         }
     }
 
@@ -275,88 +334,141 @@ public class Index {
         }
 
         for (Documentable<Func> func : script.getFuncs()) {
-            FuncDefinition def = new FuncDefinition(
-                    func.getDocumentation().map(tk -> tk.contents).orElse(null),
-                    new Location(script.getFilePath(), func.getContent().getRange())
-            );
-
-            for (Param param : func.getContent().getParamList().getParams()) {
-                Location paramDuplicateLocation = null;
-                for (ParamDefinition definition : def.params) {
-                    if (definition.name.equals(param.getName().contents)) {
-                        paramDuplicateLocation = definition.location;
-                        break;
-                    }
-                }
-
-                if (paramDuplicateLocation != null) {
-                    messages.add(new Message(
-                            param.getName().getRange(),
-                            Message.MessageSeverity.ERROR,
-                            "Parameter " + param.getName().contents + " was already defined"
-                    ).addInfo(new Message.MessageRelatedInformation(
-                            paramDuplicateLocation,
-                            "Previously defined here"
-                    )));
-                } else {
-                    // Resolve the parameter's type.
-                    Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
-
-                    def.params.add(new ParamDefinition(
-                            new Location(script.getFilePath(), param.getRange()), param.getName().contents,
-                            param.getType().getResolvedType()));
-                }
-            }
-
-            if (func.getContent().getReturnType() != null) {
-                Resolver.resolveType(compiler, script, messages, "result", func.getContent().getReturnType());
-                def.returnType = new ReturnTypeDefinition(
-                        new Location(script.getFilePath(), func.getContent().getReturnType().getRange()),
-                        func.getContent().getReturnType().getResolvedType()
-                );
-            }
-
-            def.computeType();
-
+            FuncDefinition def = generateFuncDefinition(script, messages, func);
             funcDefinitions.put(func.getContent().getName().contents, def);
         }
 
         // We don't index function hooks here, but we do resolve things like their parameter and return types.
         for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
-            ArrayList<ParamDefinition> paramDefinitions = new ArrayList<>();
-            for (Param param : funcHook.getContent().getParamList().getParams()) {
-                Location paramDuplicateLocation = null;
-                for (ParamDefinition definition : paramDefinitions) {
-                    if (definition.name.equals(param.getName().contents)) {
-                        paramDuplicateLocation = definition.location;
-                        break;
-                    }
-                }
+            generateFuncDefinition(script, messages, funcHook);
+        }
 
-                if (paramDuplicateLocation != null) {
+        for (Documentable<Trait> trait : script.getTraits()) {
+            // Order trait functions alphabetically to ensure consistency.
+            String traitName = trait.getContent().getName().contents;
+            Map<String, FuncDefinition> traitFuncDefinitions = new TreeMap<>();
+
+            for (Documentable<TraitFunc> traitFunc : trait.getContent().getTraitFuncs()) {
+                String name = traitFunc.getContent().getName().contents;
+                FuncDefinition def = generateFuncDefinition(script, messages, traitFunc);
+                // Was this a duplicate of a trait func with the same name?
+                if (traitFuncDefinitions.containsKey(name)) {
                     messages.add(new Message(
-                            param.getName().getRange(),
+                            traitFunc.getContent().getName().getRange(),
                             Message.MessageSeverity.ERROR,
-                            "Parameter " + param.getName().contents + " was already defined"
+                            "A trait function with this name was already defined"
                     ).addInfo(new Message.MessageRelatedInformation(
-                            paramDuplicateLocation,
+                            traitFuncDefinitions.get(name).getLocation(),
                             "Previously defined here"
                     )));
-                } else {
-                    // Resolve the parameter's type.
-                    Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
-
-                    paramDefinitions.add(new ParamDefinition(
-                            new Location(script.getFilePath(), param.getRange()), param.getName().contents,
-                            param.getType().getResolvedType()));
+                    continue;
                 }
+                traitFuncDefinitions.put(name, def);
             }
 
-            if (funcHook.getContent().getReturnType() != null)
-                Resolver.resolveType(compiler, script, messages, "result", funcHook.getContent().getReturnType());
+            traitDefinitions.put(traitName, new TraitDefinition(
+                    trait.getDocumentation().map(tk -> tk.contents).orElse(null),
+                    new Location(script.getFilePath(), trait.getRange()),
+                    traitFuncDefinitions
+            ));
+        }
+
+        for (Documentable<TraitImpl> traitImpl : script.getTraitImpls()) {
+            // Order trait functions alphabetically to ensure consistency.
+            NameLiteral traitName = traitImpl.getContent().getTrait();
+            Map<String, FuncDefinition> traitFuncDefinitions = new TreeMap<>();
+
+            for (Documentable<Func> funcImpl : traitImpl.getContent().getFuncImpls()) {
+                String name = funcImpl.getContent().getName().contents;
+                FuncDefinition def = generateFuncDefinition(script, messages, funcImpl);
+                // Was this a duplicate of a trait func with the same name?
+                if (traitFuncDefinitions.containsKey(name)) {
+                    messages.add(new Message(
+                            funcImpl.getContent().getName().getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "A trait function with this name was already defined"
+                    ).addInfo(new Message.MessageRelatedInformation(
+                            traitFuncDefinitions.get(name).getLocation(),
+                            "Previously defined here"
+                    )));
+                    continue;
+                }
+                traitFuncDefinitions.put(name, def);
+            }
+
+            Resolver.resolveTraitName(compiler, script, messages, traitName);
+            if (traitName.getTargetQualifiedName() != null) {
+                Map<VariableType, TraitImplDefinition> implMap = traitImplDefinitions.computeIfAbsent(traitName.getTargetQualifiedName(), k -> new HashMap<>());
+                Resolver.resolveType(compiler, script, messages, "impl type", traitImpl.getContent().getType());
+                VariableType implType = traitImpl.getContent().getType().getResolvedType();
+                if (implType != null) {
+                    if (implMap.containsKey(implType)) {
+                        messages.add(new Message(
+                                traitImpl.getContent().getType().getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "Trait " + traitName.getTargetQualifiedName() + " was already implemented for " + implType
+                        ).addInfo(new Message.MessageRelatedInformation(
+                                implMap.get(implType).getLocation(),
+                                "Previously implemented here"
+                        )));
+                    } else {
+                        implMap.put(implType, new TraitImplDefinition(
+                                traitImpl.getDocumentation().map(tk -> tk.contents).orElse(null),
+                                new Location(script.getFilePath(), traitImpl.getRange()),
+                                traitFuncDefinitions
+                        ));
+                    }
+                }
+            }
         }
 
         return Messenger.success(this, messages);
+    }
+
+    private FuncDefinition generateFuncDefinition(Script script, ArrayList<Message> messages, Documentable<? extends FuncOrHook> func) {
+        FuncDefinition def = new FuncDefinition(
+                func.getDocumentation().map(tk -> tk.contents).orElse(null),
+                new Location(script.getFilePath(), func.getContent().getRange())
+        );
+
+        for (Param param : func.getContent().getParamList().getParams()) {
+            Location paramDuplicateLocation = null;
+            for (ParamDefinition definition : def.params) {
+                if (definition.name.equals(param.getName().contents)) {
+                    paramDuplicateLocation = definition.location;
+                    break;
+                }
+            }
+
+            if (paramDuplicateLocation != null) {
+                messages.add(new Message(
+                        param.getName().getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Parameter " + param.getName().contents + " was already defined"
+                ).addInfo(new Message.MessageRelatedInformation(
+                        paramDuplicateLocation,
+                        "Previously defined here"
+                )));
+            } else {
+                // Resolve the parameter's type.
+                Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
+
+                def.params.add(new ParamDefinition(
+                        new Location(script.getFilePath(), param.getRange()), param.getName().contents,
+                        param.getType().getResolvedType()));
+            }
+        }
+
+        if (func.getContent().getReturnType() != null) {
+            Resolver.resolveType(compiler, script, messages, "result", func.getContent().getReturnType());
+            def.returnType = new ReturnTypeDefinition(
+                    new Location(script.getFilePath(), func.getContent().getReturnType().getRange()),
+                    func.getContent().getReturnType().getResolvedType()
+            );
+        }
+
+        def.computeType();
+        return def;
     }
 
     @Override

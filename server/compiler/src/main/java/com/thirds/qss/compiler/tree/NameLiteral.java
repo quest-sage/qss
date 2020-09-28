@@ -18,6 +18,11 @@ public class NameLiteral extends Node implements Symbol {
     private final List<Token> segments;
 
     /**
+     * What does this name literal point to?
+     */
+    private QualifiedName targetQualifiedName;
+
+    /**
      * Where does this name literal point to?
      */
     private Location targetLocation;
@@ -36,6 +41,10 @@ public class NameLiteral extends Node implements Symbol {
         return segments;
     }
 
+    public QualifiedName getTargetQualifiedName() {
+        return targetQualifiedName;
+    }
+
     @Override
     public Optional<Location> getTargetLocation() {
         return Optional.ofNullable(targetLocation);
@@ -46,7 +55,8 @@ public class NameLiteral extends Node implements Symbol {
         return Optional.ofNullable(targetDocumentation);
     }
 
-    public void setTarget(Location targetLocation, String targetDocumentation) {
+    public void setTarget(QualifiedName targetQualifiedName, Location targetLocation, String targetDocumentation) {
+        this.targetQualifiedName = targetQualifiedName;
         this.targetLocation = targetLocation;
         this.targetDocumentation = targetDocumentation;
     }

@@ -220,7 +220,7 @@ public class Resolver {
             ));
         } else if (structResolved.alternatives.size() == 1) {
             ResolveAlternative<StructNameAlternative> resolved = structResolved.alternatives.get(0);
-            funcName.setTarget(resolved.value.struct.getLocation(), resolved.value.struct.getDocumentation());
+            funcName.setTarget(resolved.value.name, resolved.value.struct.getLocation(), resolved.value.struct.getDocumentation());
         } else {
             messages.add(new Message(
                     funcName.getRange(),
@@ -231,6 +231,120 @@ public class Resolver {
         }
 
         return structResolved;
+    }
+
+    /**
+     * Represents a possible resolve alternative when searching for a trait's name.
+     */
+    public static class TraitNameAlternative {
+        public final QualifiedName name;
+        public final NameIndex.TraitDefinition trait;
+
+        public TraitNameAlternative(QualifiedName name, NameIndex.TraitDefinition trait) {
+            this.name = name;
+            this.trait = trait;
+        }
+    }
+
+    /**
+     * @param compiler The name index must be built.
+     */
+    public static ResolveResult<TraitNameAlternative> resolveTraitName(Compiler compiler, Script script, ArrayList<Message> messages, NameLiteral funcName) {
+        ResolveResult<TraitNameAlternative> traitResolved = resolveGlobalScopeName(compiler, script, nameIndex -> {
+            ArrayList<TraitNameAlternative> alternatives = new ArrayList<>(0);
+            nameIndex.getTraitDefinitions().forEach((name, trait) -> {
+                QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(name);
+                if (funcName.matches(qualifiedName)) {
+                    alternatives.add(new TraitNameAlternative(qualifiedName, trait));
+                }
+            });
+            return alternatives;
+        });
+
+        if (traitResolved.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve trait ").append(funcName);
+            if (!traitResolved.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<TraitNameAlternative> alt : traitResolved.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (traitResolved.alternatives.size() == 1) {
+            ResolveAlternative<TraitNameAlternative> resolved = traitResolved.alternatives.get(0);
+            funcName.setTarget(resolved.value.name, resolved.value.trait.getLocation(), resolved.value.trait.getDocumentation());
+        } else {
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Reference to trait " + funcName + " was ambiguous, possibilities were: " +
+                            traitResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
+            ));
+        }
+
+        return traitResolved;
+    }
+
+    /**
+     * Represents a possible resolve alternative when searching for a trait.
+     */
+    public static class TraitAlternative {
+        public final QualifiedName name;
+        public final Index.TraitDefinition trait;
+
+        public TraitAlternative(QualifiedName name, Index.TraitDefinition trait) {
+            this.name = name;
+            this.trait = trait;
+        }
+    }
+
+    /**
+     * @param compiler The index must be built.
+     */
+    public static ResolveResult<TraitAlternative> resolveTrait(Compiler compiler, Script script, ArrayList<Message> messages, NameLiteral funcName) {
+        ResolveResult<TraitAlternative> traitResolved = resolveGlobalScope(compiler, script, nameIndex -> {
+            ArrayList<TraitAlternative> alternatives = new ArrayList<>(0);
+            nameIndex.getTraitDefinitions().forEach((name, trait) -> {
+                QualifiedName qualifiedName = nameIndex.getPackage().appendSegment(name);
+                if (funcName.matches(qualifiedName)) {
+                    alternatives.add(new TraitAlternative(qualifiedName, trait));
+                }
+            });
+            return alternatives;
+        });
+
+        if (traitResolved.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve trait ").append(funcName);
+            if (!traitResolved.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<TraitAlternative> alt : traitResolved.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (traitResolved.alternatives.size() == 1) {
+            ResolveAlternative<TraitAlternative> resolved = traitResolved.alternatives.get(0);
+            funcName.setTarget(resolved.value.name, resolved.value.trait.getLocation(), resolved.value.trait.getDocumentation());
+        } else {
+            messages.add(new Message(
+                    funcName.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Reference to trait " + funcName + " was ambiguous, possibilities were: " +
+                            traitResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
+            ));
+        }
+
+        return traitResolved;
     }
 
     /**
@@ -280,7 +394,7 @@ public class Resolver {
             ));
         } else if (funcResolved.alternatives.size() == 1) {
             ResolveAlternative<FuncAlternative> resolved = funcResolved.alternatives.get(0);
-            funcName.getName().setTarget(resolved.value.func.getLocation(), resolved.value.func.getDocumentation());
+            funcName.getName().setTarget(resolved.value.name, resolved.value.func.getLocation(), resolved.value.func.getDocumentation());
             funcName.setVariableType(resolved.value.func.getType());
         } else {
             messages.add(new Message(
@@ -357,7 +471,7 @@ public class Resolver {
             ));
         } else if (fieldResolved.alternatives.size() == 1) {
             ResolveAlternative<StructFieldAlternative> resolved = fieldResolved.alternatives.get(0);
-            fieldName.setTarget(resolved.value.location, resolved.value.documentation);
+            fieldName.setTarget(resolved.value.name, resolved.value.location, resolved.value.documentation);
         } else {
             messages.add(new Message(
                     fieldName.getRange(),
