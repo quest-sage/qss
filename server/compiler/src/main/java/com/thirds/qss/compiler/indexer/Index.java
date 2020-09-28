@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.indexer;
 
+import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
@@ -452,6 +453,7 @@ public class Index {
             } else {
                 // Resolve the parameter's type.
                 Resolver.resolveType(compiler, script, messages, param.getName().contents, param.getType());
+                QssLogger.logger.atInfo().log("Params: %s", param.getType().getResolvedType());
 
                 def.params.add(new ParamDefinition(
                         new Location(script.getFilePath(), param.getRange()), param.getName().contents,

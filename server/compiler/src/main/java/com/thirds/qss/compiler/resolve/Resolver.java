@@ -1,20 +1,22 @@
 package com.thirds.qss.compiler.resolve;
 
 import com.thirds.qss.BundleQualifiedName;
+import com.thirds.qss.QssLogger;
 import com.thirds.qss.QualifiedName;
 import com.thirds.qss.VariableType;
+import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.Compiler;
-import com.thirds.qss.compiler.Location;
-import com.thirds.qss.compiler.Message;
-import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.indexer.Index;
 import com.thirds.qss.compiler.indexer.Indices;
 import com.thirds.qss.compiler.indexer.NameIndex;
 import com.thirds.qss.compiler.indexer.NameIndices;
 import com.thirds.qss.compiler.tree.NameLiteral;
+import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Identifier;
+import com.thirds.qss.compiler.tree.script.Trait;
+import com.thirds.qss.compiler.tree.script.TraitImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -151,6 +153,26 @@ public class Resolver {
      */
     public static ResolveResult<VariableType> resolveType(Compiler compiler, Script script, ArrayList<Message> messages, String variableName, Type type) {
         ResolveResult<VariableType> fieldTypeAlternatives = type.resolve(compiler, script);
+        TypeParameterInfo typeParameterInfo = generateTypeParameterInfo(type);
+        // Resolve all instances of generics such as This to concrete types.
+        fieldTypeAlternatives = new ResolveResult<>(
+                fieldTypeAlternatives.alternatives
+                        .stream()
+                        .map(alt -> new ResolveAlternative<>(
+                                resolveTypeParameters(type.getRange(), messages, alt.value, typeParameterInfo),
+                                alt.imports
+                        ))
+                        .collect(Collectors.toCollection(ArrayList::new)),
+                fieldTypeAlternatives.nonImportedAlternatives
+                        .stream()
+                        .map(alt -> new ResolveAlternative<>(
+                                resolveTypeParameters(type.getRange(), messages, alt.value, typeParameterInfo),
+                                alt.imports
+                        ))
+                        .collect(Collectors.toCollection(ArrayList::new))
+        );
+        if (fieldTypeAlternatives.alternatives.size() == 1)
+            type.setResolvedType(fieldTypeAlternatives.alternatives.get(0).value);
 
         if (fieldTypeAlternatives.alternatives.isEmpty()) {
             StringBuilder message = new StringBuilder("Could not resolve type of ").append(variableName);
@@ -538,8 +560,22 @@ public class Resolver {
          */
         private final VariableType thisType;
 
-        public TypeParameterInfo(VariableType thisType) {
+        private TypeParameterInfo(VariableType thisType) {
             this.thisType = thisType;
         }
+    }
+
+    /**
+     * Computes the type parameter info at a specific place in code.
+     */
+    public static TypeParameterInfo generateTypeParameterInfo(Node where) {
+        // Compute the This type.
+        VariableType thisType = where.getContainerOfType(Trait.class).map(trait ->
+                (VariableType) new VariableType.This()
+        ).or(() -> where.getContainerOfType(TraitImpl.class).map(traitImpl ->
+                traitImpl.getType().getResolvedType()
+        )).orElse(null);
+        QssLogger.logger.atInfo().log("Generated This=%s at %s", thisType, where);
+        return new TypeParameterInfo(thisType);
     }
 }

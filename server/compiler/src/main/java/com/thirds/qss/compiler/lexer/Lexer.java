@@ -506,6 +506,7 @@ public class Lexer {
             case T_TEXTURE:
             case T_PLAYER:
             case T_THIS:
+            case KW_THIS:
             case KW_TRUE:
             case KW_FALSE:
             case KW_RETURN:

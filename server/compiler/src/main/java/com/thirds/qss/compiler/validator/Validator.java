@@ -115,9 +115,7 @@ public class Validator {
 
             Resolver.TraitAlternative trait = resolved.alternatives.get(0).value;
 
-            Resolver.TypeParameterInfo typeParameterInfo = new Resolver.TypeParameterInfo(
-                    traitImpl.getContent().getType().getResolvedType()
-            );
+            Resolver.TypeParameterInfo typeParameterInfo = Resolver.generateTypeParameterInfo(traitImpl.getContent());
 
             // Check that all the required trait functions were correctly implemented.
             trait.trait.getTraitFuncDefinitions().forEach((funcName, funcDefinition) -> {

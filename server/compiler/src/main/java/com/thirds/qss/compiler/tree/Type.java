@@ -69,6 +69,13 @@ public abstract class Type extends Node {
         return resolvedType;
     }
 
+    /**
+     * FOR INTERNAL USE IN RESOLVER ONLY!
+     */
+    public void setResolvedType(VariableType value) {
+        resolvedType = value;
+    }
+
     public static class PrimitiveType extends Type {
         private final Token token;
 

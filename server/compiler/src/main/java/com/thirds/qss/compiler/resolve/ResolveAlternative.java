@@ -1,7 +1,6 @@
 package com.thirds.qss.compiler.resolve;
 
 import com.thirds.qss.BundleQualifiedName;
-import com.thirds.qss.VariableType;
 
 import java.util.List;
 
@@ -21,5 +20,13 @@ public class ResolveAlternative<T> {
     public ResolveAlternative(T value, List<BundleQualifiedName> imports) {
         this.value = value;
         this.imports = imports;
+    }
+
+    @Override
+    public String toString() {
+        return "ResolveAlternative{" +
+                "value=" + value +
+                ", imports=" + imports +
+                '}';
     }
 }
