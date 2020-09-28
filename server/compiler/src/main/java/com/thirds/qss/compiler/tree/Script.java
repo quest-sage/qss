@@ -43,6 +43,8 @@ public class Script extends Node {
         this.traitImpls = traitImpls;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
                 .collect(Collectors.toSet());
+
+        updateAllContainers();
     }
 
     @Override

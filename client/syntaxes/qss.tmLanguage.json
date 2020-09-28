@@ -36,7 +36,7 @@
 				{
 					"comment": "Built-in type",
 					"name": "entity.name.type.qss",
-					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player|Func)\\b"
+					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player|This|Func)\\b"
 				},
 				{
 					"comment": "Keyword",

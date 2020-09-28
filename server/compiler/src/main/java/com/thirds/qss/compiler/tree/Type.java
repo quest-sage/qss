@@ -8,6 +8,7 @@ import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.resolve.ResolveAlternative;
 import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
+import com.thirds.qss.compiler.tree.script.Trait;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +102,21 @@ public abstract class Type extends Node {
                     return ResolveResult.success(List.of(new ResolveAlternative<>(VariableType.Primitive.TYPE_PLAYER, List.of())));
             }
             throw new UnsupportedOperationException(token.toString());
+        }
+    }
+
+    public static class ThisType extends Type {
+        private final Token token;
+
+        public ThisType(Token token) {
+            super(token.getRange());
+            this.token = token;
+        }
+
+        @Override
+        public ResolveResult<VariableType> resolveImpl(Compiler compiler, Script script) {
+            // The keyword 'This' is resolved to an actual type in the type parameter substitution stage.
+            return ResolveResult.success(List.of(new ResolveAlternative<>(new VariableType.This(), List.of())));
         }
     }
 

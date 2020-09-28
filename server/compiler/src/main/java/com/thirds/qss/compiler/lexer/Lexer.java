@@ -421,6 +421,9 @@ public class Lexer {
                             case "Player":
                                 type = TokenType.T_PLAYER;
                                 break;
+                            case "This":
+                                type = TokenType.T_THIS;
+                                break;
                             case "Func":
                                 type = TokenType.T_FUNC;
                                 break;
@@ -502,6 +505,7 @@ public class Lexer {
             case T_POS:
             case T_TEXTURE:
             case T_PLAYER:
+            case T_THIS:
             case KW_TRUE:
             case KW_FALSE:
             case KW_RETURN:

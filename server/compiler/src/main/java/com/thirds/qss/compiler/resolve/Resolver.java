@@ -6,6 +6,7 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.Location;
 import com.thirds.qss.compiler.Message;
+import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.indexer.Index;
 import com.thirds.qss.compiler.indexer.Indices;
 import com.thirds.qss.compiler.indexer.NameIndex;
@@ -482,5 +483,63 @@ public class Resolver {
         }
 
         return fieldResolved;
+    }
+
+    /**
+     * Converts a variable type that may or may not contain type parameters (e.g. This, T) to a concrete
+     * variable type by substituting the given type parameters. If the concrete type of a type parameter was not
+     * listed in the type parameter info, an error message will be printed.
+     * @param where Where was this type from in the script? We need a location so we can print error messages there.
+     */
+    public static VariableType resolveTypeParameters(Range where, ArrayList<Message> messages, VariableType type, TypeParameterInfo typeParams) {
+        if (type instanceof VariableType.This) {
+            if (typeParams.thisType == null) {
+                messages.add(new Message(
+                        where,
+                        Message.MessageSeverity.ERROR,
+                        "'This' type is not allowed outside traits and impl blocks"
+                ));
+                return VariableType.Primitive.TYPE_UNKNOWN;
+            } else {
+                return typeParams.thisType;
+            }
+        } else if (type instanceof VariableType.Maybe) {
+            return new VariableType.Maybe(
+                    resolveTypeParameters(where, messages, ((VariableType.Maybe) type).getContentsType(), typeParams)
+            );
+        } else if (type instanceof VariableType.List) {
+            return new VariableType.List(
+                    resolveTypeParameters(where, messages, ((VariableType.List) type).getElementType(), typeParams)
+            );
+        } else if (type instanceof VariableType.Map) {
+            return new VariableType.Map(
+                    resolveTypeParameters(where, messages, ((VariableType.Map) type).getKeyType(), typeParams),
+                    resolveTypeParameters(where, messages, ((VariableType.Map) type).getValueType(), typeParams)
+            );
+        } else if (type instanceof VariableType.Function) {
+            VariableType.Function result = new VariableType.Function(
+                    ((VariableType.Function) type).isReceiverStyle(),
+                    ((VariableType.Function) type).getParams().stream().map(vt -> resolveTypeParameters(where, messages, vt, typeParams)).collect(Collectors.toCollection(ArrayList::new)),
+                    resolveTypeParameters(where, messages, ((VariableType.Function) type).getReturnType(), typeParams)
+            );
+            result.setPurity(((VariableType.Function) type).getPurity());
+            result.setNative(((VariableType.Function) type).isNative());
+            return result;
+        }
+
+        // No conversion is necessary.
+        return type;
+    }
+
+    public static class TypeParameterInfo {
+        /**
+         * If we're in a trait impl, this is set to the type we're implementing the trait for.
+         * If we're in a trait definition, this is set to VariableType.This.
+         */
+        private final VariableType thisType;
+
+        public TypeParameterInfo(VariableType thisType) {
+            this.thisType = thisType;
+        }
     }
 }

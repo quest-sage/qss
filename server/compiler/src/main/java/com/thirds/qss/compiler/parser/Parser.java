@@ -1190,6 +1190,9 @@ public class Parser {
                 case LBRACE:
                     result = parseMapType(tokens);
                     break;
+                case T_THIS:
+                    result = consumeToken(tokens, tokens.peek().get().type).map(tk -> Messenger.success(new Type.ThisType(tk)));
+                    break;
                 case T_FUNC:
                     result = parseFuncType(tokens);
                     break;

@@ -376,6 +376,8 @@ public class Index {
         for (Documentable<TraitImpl> traitImpl : script.getTraitImpls()) {
             // Order trait functions alphabetically to ensure consistency.
             NameLiteral traitName = traitImpl.getContent().getTrait();
+            Resolver.resolveTraitName(compiler, script, messages, traitName);
+            Resolver.resolveType(compiler, script, messages, "impl type", traitImpl.getContent().getType());
             Map<String, FuncDefinition> traitFuncDefinitions = new TreeMap<>();
 
             for (Documentable<Func> funcImpl : traitImpl.getContent().getFuncImpls()) {
@@ -396,10 +398,8 @@ public class Index {
                 traitFuncDefinitions.put(name, def);
             }
 
-            Resolver.resolveTraitName(compiler, script, messages, traitName);
             if (traitName.getTargetQualifiedName() != null) {
                 Map<VariableType, TraitImplDefinition> implMap = traitImplDefinitions.computeIfAbsent(traitName.getTargetQualifiedName(), k -> new HashMap<>());
-                Resolver.resolveType(compiler, script, messages, "impl type", traitImpl.getContent().getType());
                 VariableType implType = traitImpl.getContent().getType().getResolvedType();
                 if (implType != null) {
                     if (implMap.containsKey(implType)) {

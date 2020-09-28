@@ -114,6 +114,11 @@ public class Validator {
             }
 
             Resolver.TraitAlternative trait = resolved.alternatives.get(0).value;
+
+            Resolver.TypeParameterInfo typeParameterInfo = new Resolver.TypeParameterInfo(
+                    traitImpl.getContent().getType().getResolvedType()
+            );
+
             // Check that all the required trait functions were correctly implemented.
             trait.trait.getTraitFuncDefinitions().forEach((funcName, funcDefinition) -> {
                 boolean wasImplemented = false;
@@ -123,7 +128,9 @@ public class Validator {
 
                         // Check that the implementation of the trait func had the right type.
                         VariableType.Function actualType = generateFunctionType(funcImpl.getContent());
+                        actualType = (VariableType.Function) Resolver.resolveTypeParameters(funcImpl.getRange(), messages, actualType, typeParameterInfo);
                         VariableType.Function expectedType = funcDefinition.getType();
+                        expectedType = (VariableType.Function) Resolver.resolveTypeParameters(funcImpl.getRange(), messages, expectedType, typeParameterInfo);
                         if (!actualType.equals(expectedType)) {
                             messages.add(new Message(
                                     funcImpl.getContent().getName().getRange(),

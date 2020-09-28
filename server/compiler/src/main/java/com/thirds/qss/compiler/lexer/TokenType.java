@@ -16,7 +16,7 @@ public enum TokenType {
     IDENTIFIER,
 
     // T prefix = type name (distinguishes e.g. T_FUNC 'Func' from lowercase keywords like KW_FUNC 'func')
-    T_INT, T_BOOL, T_STRING, T_TEXT, T_ENTITY, T_RATIO, T_COL, T_POS, T_TEXTURE, T_PLAYER, T_FUNC,
+    T_INT, T_BOOL, T_STRING, T_TEXT, T_ENTITY, T_RATIO, T_COL, T_POS, T_TEXTURE, T_PLAYER, T_THIS, T_FUNC,
     KW_TRUE, KW_FALSE, KW_JUST, KW_NULL,
     KW_LET, KW_RETURN, KW_NEW, KW_BREAK, KW_CONTINUE,
     KW_IF, KW_ELSE, KW_FOR, KW_IN, KW_WHILE,
@@ -72,6 +72,10 @@ public enum TokenType {
                 return "keyword 'after'";
             case KW_NATIVE:
                 return "keyword 'native'";
+            case KW_TRAIT:
+                return "keyword 'trait'";
+            case KW_IMPL:
+                return "keyword 'impl'";
             case KW_IMPORT:
                 return "keyword 'import'";
             case IDENTIFIER:
@@ -96,6 +100,8 @@ public enum TokenType {
                 return "type 'Texture'";
             case T_PLAYER:
                 return "type 'Player'";
+            case T_THIS:
+                return "type 'This'";
             case T_FUNC:
                 return "type 'Func'";
             case KW_TRUE:
