@@ -72,6 +72,10 @@ public enum TokenType {
                 return "keyword 'after'";
             case KW_NATIVE:
                 return "keyword 'native'";
+            case KW_PURE:
+                return "purity 'pure'";
+            case KW_UI:
+                return "purity 'ui'";
             case KW_TRAIT:
                 return "keyword 'trait'";
             case KW_IMPL:
