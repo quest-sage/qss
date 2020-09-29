@@ -432,20 +432,14 @@ public abstract class VariableType {
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder("Func");
 
             switch (purity) {
-                case EAGER:
-                    sb.append("EagerFunc");
-                    break;
                 case UI:
-                    sb.append("UiFunc");
+                    sb.append("[ui]");
                     break;
                 case PURE:
-                    sb.append("PureFunc");
-                    break;
-                case IMPURE:
-                    sb.append("Func");
+                    sb.append("[pure]");
                     break;
             }
 

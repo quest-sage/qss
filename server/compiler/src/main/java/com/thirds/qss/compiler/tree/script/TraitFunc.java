@@ -1,5 +1,6 @@
 package com.thirds.qss.compiler.tree.script;
 
+import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Range;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.tree.Type;
@@ -10,8 +11,8 @@ import com.thirds.qss.compiler.tree.Type;
 public class TraitFunc extends FuncOrHook {
     private final Token name;
 
-    public TraitFunc(Range range, Token name, ParamList paramList, Type returnType) {
-        super(range, paramList, returnType, null);
+    public TraitFunc(Range range, VariableType.Function.Purity purity, Token name, ParamList paramList, Type returnType) {
+        super(range, purity, paramList, returnType, null);
         this.name = name;
     }
 

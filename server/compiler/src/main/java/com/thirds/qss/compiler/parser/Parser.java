@@ -1,6 +1,7 @@
 package com.thirds.qss.compiler.parser;
 
 import com.thirds.qss.QualifiedName;
+import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenStream;
@@ -230,18 +231,20 @@ public class Parser {
 
         return Optional.of(parseMulti(List.of(
                 () -> consumeToken(tokens, TokenType.KW_FUNC),      // 0
-                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
-                () -> parseParamList(tokens),                       // 2
-                () -> parseReturnType(tokens),                      // 3
-                () -> parseFuncBlock(tokens)                        // 4
+                () -> parsePurity(tokens),                          // 1
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 2
+                () -> parseParamList(tokens),                       // 3
+                () -> parseReturnType(tokens),                      // 4
+                () -> parseFuncBlock(tokens)                        // 5
         )).map(list -> {
-            Token identifier = (Token) list.get(1);
-            ParamList paramList = (ParamList) list.get(2);
-            Optional<Type> returnType = (Optional<Type>) list.get(3);
-            FuncBlock funcBlock = (FuncBlock) list.get(4);
+            VariableType.Function.Purity purity = (VariableType.Function.Purity) list.get(1);
+            Token identifier = (Token) list.get(2);
+            ParamList paramList = (ParamList) list.get(3);
+            Optional<Type> returnType = (Optional<Type>) list.get(4);
+            FuncBlock funcBlock = (FuncBlock) list.get(5);
 
             Func func = new Func(
-                    new Range(start, tokens.currentEndPosition()),
+                    new Range(start, tokens.currentEndPosition()), purity,
                     identifier, paramList, returnType.orElse(null), funcBlock
             );
 
@@ -268,15 +271,17 @@ public class Parser {
         if (target.type == TokenType.KW_FUNC) {
             // This is a func hook.
             return Optional.of(parseMulti(List.of(
-                    () -> parseName(tokens),                            // 0
-                    () -> parseParamList(tokens),                       // 1
-                    () -> parseReturnType(tokens),                      // 2
-                    () -> parseFuncBlock(tokens)                        // 3
+                    () -> parsePurity(tokens),                          // 0
+                    () -> parseName(tokens),                            // 1
+                    () -> parseParamList(tokens),                       // 2
+                    () -> parseReturnType(tokens),                      // 3
+                    () -> parseFuncBlock(tokens)                        // 4
             )).map(list -> {
-                NameLiteral name = (NameLiteral) list.get(0);
-                ParamList paramList = (ParamList) list.get(1);
-                Optional<Type> returnType = (Optional<Type>) list.get(2);
-                FuncBlock funcBlock = (FuncBlock) list.get(3);
+                VariableType.Function.Purity purity = (VariableType.Function.Purity) list.get(0);
+                NameLiteral name = (NameLiteral) list.get(1);
+                ParamList paramList = (ParamList) list.get(2);
+                Optional<Type> returnType = (Optional<Type>) list.get(3);
+                FuncBlock funcBlock = (FuncBlock) list.get(4);
 
                 ArrayList<Message> messages = new ArrayList<>(0);
                 if (funcBlock.isNative()) {
@@ -288,7 +293,7 @@ public class Parser {
                 }
 
                 FuncHook hook = new FuncHook(
-                        new Range(start, tokens.currentEndPosition()),
+                        new Range(start, tokens.currentEndPosition()), purity,
                         time, name, paramList, returnType.orElse(null), funcBlock
                 );
 
@@ -426,17 +431,19 @@ public class Parser {
 
         return Optional.of(parseMulti(List.of(
                 () -> consumeToken(tokens, TokenType.KW_FUNC),      // 0
-                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 1
-                () -> parseParamList(tokens),                       // 2
-                () -> parseReturnType(tokens),                      // 3
-                () -> consumeToken(tokens, TokenType.SEMICOLON)     // 4
+                () -> parsePurity(tokens),                          // 1
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 2
+                () -> parseParamList(tokens),                       // 3
+                () -> parseReturnType(tokens),                      // 4
+                () -> consumeToken(tokens, TokenType.SEMICOLON)     // 5
         )).map(list -> {
-            Token identifier = (Token) list.get(1);
-            ParamList paramList = (ParamList) list.get(2);
-            Optional<Type> returnType = (Optional<Type>) list.get(3);
+            VariableType.Function.Purity purity = (VariableType.Function.Purity) list.get(1);
+            Token identifier = (Token) list.get(2);
+            ParamList paramList = (ParamList) list.get(3);
+            Optional<Type> returnType = (Optional<Type>) list.get(4);
 
             TraitFunc func = new TraitFunc(
-                    new Range(start, tokens.currentEndPosition()),
+                    new Range(start, tokens.currentEndPosition()), purity,
                     identifier, paramList, returnType.orElse(null)
             );
 
@@ -1242,13 +1249,15 @@ public class Parser {
     private Messenger<Type> parseFuncType(TokenStream tokens) {
         Messenger<Token> funcToken = consumeToken(tokens, TokenType.T_FUNC);
 
+        Messenger<VariableType.Function.Purity> purity = parsePurity(tokens);
+
         // Parse the parameters, ignoring receiver style.
         Messenger<ArrayList<Type>> params = parseFuncTypeParams(tokens);
 
         // Parse the optional return type.
         Optional<Messenger<Type>> returnType = peekConsumeToken(tokens, TokenType.RETURNS).map(m -> m.map(tk -> parseType(tokens)));
 
-        return funcToken.map(funcToken2 -> params.map(params2 -> {
+        return funcToken.map(funcToken2 -> purity.map(purity2 -> params.map(params2 -> {
             Range totalRange;
             if (params2.isEmpty()) {
                 totalRange = funcToken2.getRange();
@@ -1256,14 +1265,41 @@ public class Parser {
                 totalRange = Range.combine(funcToken2.getRange(), params2.get(params2.size() - 1).getRange());
             }
             if (returnType.isEmpty()) {
-                return Messenger.success(new FuncType(totalRange, params2, null));
+                return Messenger.success(new FuncType(totalRange, params2, null, purity2));
             } else {
                 Range finalTotalRange = totalRange;
                 totalRange = returnType.get().getValue().map(type -> Range.combine(finalTotalRange, type.getRange())).orElse(totalRange);
                 Range finalTotalRange1 = totalRange;
-                return returnType.get().map(returnType2 -> Messenger.success(new FuncType(finalTotalRange1, params2, returnType2)));
+                return returnType.get().map(returnType2 -> Messenger.success(new FuncType(finalTotalRange1, params2, returnType2, purity2)));
             }
-        }));
+        })));
+    }
+
+    private Messenger<VariableType.Function.Purity> parsePurity(TokenStream tokens) {
+        return peekConsumeToken(tokens, TokenType.LSQUARE).map(lsquare -> {
+            if (!tokens.hasNext()) {
+                return Messenger.success(VariableType.Function.Purity.IMPURE, new ArrayList<>(List.of(new Message(
+                        new Range(tokens.currentPosition()),
+                        Message.MessageSeverity.ERROR,
+                        "Expected purity modifier, got end of file"
+                ))));
+            }
+            Token purityToken = tokens.next();
+            return consumeToken(tokens, TokenType.RSQUARE).then(() -> {
+                switch (purityToken.type) {
+                    case KW_PURE:
+                        return Messenger.success(VariableType.Function.Purity.PURE);
+                    case KW_UI:
+                        return Messenger.success(VariableType.Function.Purity.UI);
+                    default:
+                        return Messenger.success(VariableType.Function.Purity.IMPURE, new ArrayList<>(List.of(new Message(
+                                purityToken.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "Expected " + TokenType.KW_PURE + " or " + TokenType.KW_UI + ", got " + purityToken.type
+                        ))));
+                }
+            });
+        }).orElse(Messenger.success(VariableType.Function.Purity.IMPURE));
     }
 
     @SuppressWarnings("unchecked")

@@ -15,14 +15,16 @@ import java.util.List;
 public class FuncType extends Type {
     private final ArrayList<Type> params;
     private final Type returnType;
+    private final VariableType.Function.Purity purity;
 
     /**
      * @param returnType Nullable.
      */
-    public FuncType(Range totalRange, ArrayList<Type> params, Type returnType) {
+    public FuncType(Range totalRange, ArrayList<Type> params, Type returnType, VariableType.Function.Purity purity) {
         super(totalRange);
         this.params = params;
         this.returnType = returnType;
+        this.purity = purity;
     }
 
     @Override
@@ -45,9 +47,11 @@ public class FuncType extends Type {
             if (returnTypeResolved.alternatives.size() == 1) {
                 VariableType returnTypeVariableType = returnTypeResolved.alternatives.get(0).value;
                 imports.addAll(returnTypeResolved.alternatives.get(0).imports);
+                VariableType.Function funcType = new VariableType.Function(false, paramTypes, returnTypeVariableType);
+                funcType.setPurity(purity);
                 return ResolveResult.success(List.of(
                         new ResolveAlternative<>(
-                                new VariableType.Function(false, paramTypes, returnTypeVariableType),
+                                funcType,
                                 imports
                         )
                 ));
@@ -55,9 +59,11 @@ public class FuncType extends Type {
                 return ResolveResult.nonImported(List.of());
             }
         } else {
+            VariableType.Function funcType = new VariableType.Function(false, paramTypes, null);
+            funcType.setPurity(purity);
             return ResolveResult.success(List.of(
                     new ResolveAlternative<>(
-                            new VariableType.Function(false, paramTypes, null),
+                            funcType,
                             imports
                     )
             ));

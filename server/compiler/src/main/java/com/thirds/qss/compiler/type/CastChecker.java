@@ -93,7 +93,9 @@ public class CastChecker {
                             }
                         }
                         if (!fail) {
-                            return Messenger.success(new Object());
+                            if (expression1.getPurity().canExecuteInside(target1.getPurity())) {
+                                return Messenger.success(new Object());
+                            }
                         }
                     }
                 }

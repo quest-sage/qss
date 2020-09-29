@@ -193,6 +193,7 @@ public class Index {
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
         private ReturnTypeDefinition returnType;
         private QualifiedName containerTrait;
+        private VariableType.Function.Purity purity;
         private VariableType.Function type;
 
         private FuncDefinition(String documentation, Location location) {
@@ -247,6 +248,7 @@ public class Index {
             );
 
             type.setContainerTrait(containerTrait);
+            type.setPurity(purity);
         }
     }
 
@@ -436,6 +438,7 @@ public class Index {
                 new Location(script.getFilePath(), func.getContent().getRange())
         );
         def.containerTrait = containerTrait;
+        def.purity = func.getContent().getPurity();
 
         for (Param param : func.getContent().getParamList().getParams()) {
             Location paramDuplicateLocation = null;

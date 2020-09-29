@@ -74,7 +74,7 @@ func a(a: A, b: B) {
         3 => "world"; 4 => "something"
     }
 
-    let sum2: Func([Int]) -> Int
+    let sum2: Func[pure] ([Int]) -> Int
     sum2 = sum
 
     list.sum()
@@ -86,7 +86,7 @@ before func a(a: A, b: B) {
     let r = q
 }
 
-func sum(this: [Int]) -> Int {
+func[pure] sum(this: [Int]) -> Int {
     let something = 0
     for i in this {
         something = something + i
@@ -111,17 +111,17 @@ struct B {
 }
 
 trait Debug {
-    func debug(this: This) -> String
+    func[pure] debug(this: This) -> String
 }
 
 impl Debug for Int {
-    func debug(this: This) -> String {
+    func[pure] debug(this: This) -> String {
         return int_to_string(this)
     }
 }
 
 impl Debug for [Int] {
-    func debug(this: This) -> String {
+    func[pure] debug(this: This) -> String {
         for i in this {
             i.debug()
         }

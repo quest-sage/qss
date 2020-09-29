@@ -45,11 +45,13 @@ public class Validator {
         ArrayList<VariableType> params = func.getParamList().getParams()
                 .stream().map(param -> param.getType().getResolvedType())
                 .collect(Collectors.toCollection(ArrayList::new));
-        return new VariableType.Function(
+        VariableType.Function function = new VariableType.Function(
                 false,
                 params,
                 func.getReturnType() == null ? null : func.getReturnType().getResolvedType()
         );
+        function.setPurity(func.getPurity());
+        return function;
     }
 
     /**
