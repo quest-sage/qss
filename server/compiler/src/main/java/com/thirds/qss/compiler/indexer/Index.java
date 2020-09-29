@@ -192,6 +192,7 @@ public class Index {
         private final Location location;
         private final ArrayList<ParamDefinition> params = new ArrayList<>();
         private ReturnTypeDefinition returnType;
+        private QualifiedName containerTrait;
         private VariableType.Function type;
 
         private FuncDefinition(String documentation, Location location) {
@@ -244,6 +245,8 @@ public class Index {
                     new ArrayList<>(paramTypes),
                     returnType == null ? null : returnType.variableType
             );
+
+            type.setContainerTrait(containerTrait);
         }
     }
 
@@ -335,23 +338,24 @@ public class Index {
         }
 
         for (Documentable<Func> func : script.getFuncs()) {
-            FuncDefinition def = generateFuncDefinition(script, messages, func);
+            FuncDefinition def = generateFuncDefinition(script, messages, null, func);
             funcDefinitions.put(func.getContent().getName().contents, def);
         }
 
         // We don't index function hooks here, but we do resolve things like their parameter and return types.
         for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
-            generateFuncDefinition(script, messages, funcHook);
+            generateFuncDefinition(script, messages, null, funcHook);
         }
 
         for (Documentable<Trait> trait : script.getTraits()) {
             // Order trait functions alphabetically to ensure consistency.
             String traitName = trait.getContent().getName().contents;
+            QualifiedName qualifiedTraitName = getPackage().appendSegment(traitName);
             Map<String, FuncDefinition> traitFuncDefinitions = new TreeMap<>();
 
             for (Documentable<TraitFunc> traitFunc : trait.getContent().getTraitFuncs()) {
                 String name = traitFunc.getContent().getName().contents;
-                FuncDefinition def = generateFuncDefinition(script, messages, traitFunc);
+                FuncDefinition def = generateFuncDefinition(script, messages, qualifiedTraitName, traitFunc);
                 // Was this a duplicate of a trait func with the same name?
                 if (traitFuncDefinitions.containsKey(name)) {
                     messages.add(new Message(
@@ -383,7 +387,7 @@ public class Index {
 
             for (Documentable<Func> funcImpl : traitImpl.getContent().getFuncImpls()) {
                 String name = funcImpl.getContent().getName().contents;
-                FuncDefinition def = generateFuncDefinition(script, messages, funcImpl);
+                FuncDefinition def = generateFuncDefinition(script, messages, null, funcImpl);
                 // Was this a duplicate of a trait func with the same name?
                 if (traitFuncDefinitions.containsKey(name)) {
                     messages.add(new Message(
@@ -426,11 +430,12 @@ public class Index {
         return Messenger.success(this, messages);
     }
 
-    private FuncDefinition generateFuncDefinition(Script script, ArrayList<Message> messages, Documentable<? extends FuncOrHook> func) {
+    private FuncDefinition generateFuncDefinition(Script script, ArrayList<Message> messages, QualifiedName containerTrait, Documentable<? extends FuncOrHook> func) {
         FuncDefinition def = new FuncDefinition(
                 func.getDocumentation().map(tk -> tk.contents).orElse(null),
                 new Location(script.getFilePath(), func.getContent().getRange())
         );
+        def.containerTrait = containerTrait;
 
         for (Param param : func.getContent().getParamList().getParams()) {
             Location paramDuplicateLocation = null;

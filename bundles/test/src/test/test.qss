@@ -91,8 +91,18 @@ func sum(this: [Int]) -> Int {
     for i in this {
         something = something + i
     }
+    something.debug()
     return something
 }
+
+/*
+How should trait func hooks work?
+The 'This' type is illegal here normally.
+
+after func debug(this: This) -> String {
+
+}
+*/
 
 ** Abcdef **
 struct B {
@@ -113,7 +123,7 @@ impl Debug for Int {
 impl Debug for [Int] {
     func debug(this: This) -> String {
         for i in this {
-            
+            i.debug()
         }
     }
 }

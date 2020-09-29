@@ -20,6 +20,7 @@ public class ExpressionTypeDeducer {
     private final ScriptPath filePath;
     private final ArrayList<Message> messages;
     private final CastChecker castChecker;
+    private final TraitChecker traitChecker;
 
     public ExpressionTypeDeducer(Compiler compiler, Script script, ScriptPath filePath, ArrayList<Message> messages) {
         this.compiler = compiler;
@@ -27,6 +28,7 @@ public class ExpressionTypeDeducer {
         this.filePath = filePath;
         this.messages = messages;
         castChecker = new CastChecker();
+        traitChecker = new TraitChecker(compiler, script, messages);
     }
 
     public Compiler getCompiler() {
@@ -47,6 +49,10 @@ public class ExpressionTypeDeducer {
 
     public CastChecker getCastChecker() {
         return castChecker;
+    }
+
+    public TraitChecker getTraitChecker() {
+        return traitChecker;
     }
 
     public void resolveIdentifier(VariableTracker.ScopeTree scopeTree, Identifier identifier) {

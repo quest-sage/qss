@@ -398,6 +398,15 @@ public class Resolver {
                     alternatives.add(new FuncAlternative(qualifiedName, func));
                 }
             });
+            index.getTraitDefinitions().forEach((name, trait) -> {
+                // TODO should the qualified name include the trait name? e.g. std::Trait::foo vs std::foo?
+                trait.getTraitFuncDefinitions().forEach((traitFuncName, func) -> {
+                    QualifiedName qualifiedName = index.getPackage().appendSegment(traitFuncName);
+                    if (funcName.getName().matches(qualifiedName)) {
+                        alternatives.add(new FuncAlternative(qualifiedName, func));
+                    }
+                });
+            });
             return alternatives;
         });
 
@@ -429,6 +438,60 @@ public class Resolver {
         }
 
         return funcResolved;
+    }
+
+    /**
+     * Represents a possible resolve alternative when searching for a trait implementation.
+     */
+    public static class TraitImplAlternative {
+        public final Index.TraitImplDefinition impl;
+
+        public TraitImplAlternative(Index.TraitImplDefinition impl) {
+            this.impl = impl;
+        }
+    }
+
+    /**
+     * @param compiler The index must be built.
+     * @param where Where should errors be emitted from?
+     */
+    public static ResolveResult<TraitImplAlternative> resolveTraitImpl(Compiler compiler, Script script, ArrayList<Message> messages, Range where, VariableType thisType, QualifiedName trait) {
+        ResolveResult<TraitImplAlternative> implResolved = resolveGlobalScope(compiler, script, index -> {
+            ArrayList<TraitImplAlternative> alternatives = new ArrayList<>(0);
+            index.getTraitImplDefinitions().forEach((name, impls) -> {
+                if (impls.containsKey(thisType)) {
+                    alternatives.add(new TraitImplAlternative(impls.get(thisType)));
+                }
+            });
+            return alternatives;
+        });
+
+        if (implResolved.alternatives.isEmpty()) {
+            StringBuilder message = new StringBuilder("Could not resolve impl of ").append(trait).append(" for ").append(thisType);
+            if (!implResolved.nonImportedAlternatives.isEmpty()) {
+                message.append("; try one of the following:");
+                for (ResolveAlternative<TraitImplAlternative> alt : implResolved.nonImportedAlternatives) {
+                    // \u2022 is the bullet character
+                    message.append("\n").append("\u2022 import ").append(alt.imports.stream().map(i -> i.name.toString()).collect(Collectors.joining(", ")));
+                }
+            }
+            messages.add(new Message(
+                    where,
+                    Message.MessageSeverity.ERROR,
+                    message.toString()
+            ));
+        } else if (implResolved.alternatives.size() > 1) {
+            String message = "Reference to impl of " + trait + " for " + thisType +
+                    " was ambiguous, possibilities were: " +
+                    implResolved.alternatives.stream().map(alt -> alt.imports.get(0).getName().toString()).collect(Collectors.joining(", "));
+            messages.add(new Message(
+                    where,
+                    Message.MessageSeverity.ERROR,
+                    message
+            ));
+        }
+
+        return implResolved;
     }
 
     /**
@@ -560,7 +623,7 @@ public class Resolver {
          */
         private final VariableType thisType;
 
-        private TypeParameterInfo(VariableType thisType) {
+        public TypeParameterInfo(VariableType thisType) {
             this.thisType = thisType;
         }
     }

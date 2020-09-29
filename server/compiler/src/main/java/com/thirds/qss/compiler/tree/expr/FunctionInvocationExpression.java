@@ -4,6 +4,7 @@ import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Message;
 import com.thirds.qss.compiler.Messenger;
 import com.thirds.qss.compiler.Range;
+import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.type.ExpressionTypeDeducer;
 import com.thirds.qss.compiler.type.VariableTracker;
 
@@ -103,9 +104,23 @@ public class FunctionInvocationExpression extends Expression {
             return funcType.getReturnType();
         }
 
+        // If the function is a trait function, we need to assign the 'This' type using type parameter info
+        // for this specific function execution.
+        Resolver.TypeParameterInfo typeParameterInfo;
+        if (funcType.isTraitFunction()) {
+            // Check that the first argument's type implements the given trait.
+            VariableType thisType = argTypes.get(0);
+            expressionTypeDeducer.getTraitChecker().doesImplement(args.get(0).getRange(), thisType, funcType.getContainerTrait().get());
+            typeParameterInfo = new Resolver.TypeParameterInfo(thisType);
+        } else {
+            typeParameterInfo = new Resolver.TypeParameterInfo(null);
+        }
+
+        // Match the expected parameter types to the actual argument types.
         for (int i = 0; i < argTypes.size(); i++) {
             VariableType argType = argTypes.get(i);
             VariableType paramType = paramTypes.get(i);
+            paramType = Resolver.resolveTypeParameters(args.get(i).getRange(), expressionTypeDeducer.getMessages(), paramType, typeParameterInfo);
 
             Messenger<Object> downcast = expressionTypeDeducer.getCastChecker().attemptDowncast(
                     args.get(i).getRange(),

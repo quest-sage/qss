@@ -5,6 +5,7 @@ import com.thirds.qss.protos.TypeProtos;
 
 import java.util.ArrayList;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class VariableType {
@@ -378,6 +379,10 @@ public abstract class VariableType {
         private final ArrayList<VariableType> params;
         private final VariableType returnType;
 
+        /**
+         * If not null, this is the name of the trait that contains this function.
+         */
+        private QualifiedName containerTrait;
         private Purity purity = Purity.IMPURE;
         private boolean isNative = false;
 
@@ -385,12 +390,25 @@ public abstract class VariableType {
         protected VariableType copy() {
             Function function = new Function(receiverStyle, params.stream().map(VariableType::copy).collect(Collectors.toCollection(ArrayList::new)), returnType.copy());
             function.purity = purity;
+            function.containerTrait = containerTrait;
             return function;
         }
 
         @Override
         public TypeProtos.Type serialise() {
             throw new UnsupportedOperationException("haven't done this yet");
+        }
+
+        public void setContainerTrait(QualifiedName containerTrait) {
+            this.containerTrait = containerTrait;
+        }
+
+        public Optional<QualifiedName> getContainerTrait() {
+            return Optional.ofNullable(containerTrait);
+        }
+
+        public boolean isTraitFunction() {
+            return containerTrait != null;
         }
 
         public boolean isNative() {
