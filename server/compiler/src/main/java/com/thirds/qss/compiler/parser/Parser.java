@@ -757,7 +757,7 @@ public class Parser {
                     new IndexExpression(
                             new Identifier(new NameLiteral(container.getRange(), List.of(new Token(TokenType.IDENTIFIER, containerVariable, container.getRange())))),
                             new Identifier(new NameLiteral(forToken.getRange(), List.of(new Token(TokenType.IDENTIFIER, iteratorVariable, forToken.getRange()))))
-                    )
+                    ).requireList()
             ));
 
             // if valueVariable? { ... }
