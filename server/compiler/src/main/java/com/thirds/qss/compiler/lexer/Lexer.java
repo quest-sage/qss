@@ -183,7 +183,6 @@ public class Lexer {
                         // This is a documentation comment.
                         Position start = position.copy();
                         position.character += 2;
-                        codePoints.next();
 
                         StringBuilder content = new StringBuilder();
                         boolean failed = false;
@@ -235,7 +234,6 @@ public class Lexer {
                         // This is a block comment.
                         Position start = position.copy();
                         position.character += 2;
-                        codePoints.next();
 
                         boolean failed = false;
                         int codePoint;
