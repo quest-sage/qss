@@ -184,11 +184,14 @@ public class Input {
         public static final int F10 = 253;
         public static final int F11 = 254;
         public static final int F12 = 255;
-        private static Map<String, Integer> keyNames;
+        private static final Map<String, Integer> keyNames;
 
         /**
          * @return a human readable representation of the keycode. The returned value can be used in
          * {@link Input.Keys#valueOf(String)}
+         *
+         * This is NOT the same toString implementation as in libgdx - the names are changed so that they
+         * are compatible with QSS identifier names.
          */
         public static String toString(int keycode) {
             if (keycode < 0) throw new IllegalArgumentException("keycode cannot be negative, keycode: " + keycode);
@@ -196,12 +199,10 @@ public class Input {
                 throw new IllegalArgumentException("keycode cannot be greater than 255, keycode: " + keycode);
             switch (keycode) {
                 // META* variables should not be used with this method.
-                case UNKNOWN:
-                    return "Unknown";
                 case SOFT_LEFT:
-                    return "Soft Left";
+                    return "SoftLeft";
                 case SOFT_RIGHT:
-                    return "Soft Right";
+                    return "SoftRight";
                 case HOME:
                     return "Home";
                 case BACK:
@@ -209,31 +210,31 @@ public class Input {
                 case CALL:
                     return "Call";
                 case ENDCALL:
-                    return "End Call";
+                    return "EndCall";
                 case NUM_0:
-                    return "0";
+                    return "Num0";
                 case NUM_1:
-                    return "1";
+                    return "Num1";
                 case NUM_2:
-                    return "2";
+                    return "Num2";
                 case NUM_3:
-                    return "3";
+                    return "Num3";
                 case NUM_4:
-                    return "4";
+                    return "Num4";
                 case NUM_5:
-                    return "5";
+                    return "Num5";
                 case NUM_6:
-                    return "6";
+                    return "Num6";
                 case NUM_7:
-                    return "7";
+                    return "Num7";
                 case NUM_8:
-                    return "8";
+                    return "Num8";
                 case NUM_9:
-                    return "9";
+                    return "Num9";
                 case STAR:
-                    return "*";
+                    return "Star";
                 case POUND:
-                    return "#";
+                    return "Hash";
                 case UP:
                     return "Up";
                 case DOWN:
@@ -245,9 +246,9 @@ public class Input {
                 case CENTER:
                     return "Center";
                 case VOLUME_UP:
-                    return "Volume Up";
+                    return "VolumeUp";
                 case VOLUME_DOWN:
-                    return "Volume Down";
+                    return "VolumeDown";
                 case POWER:
                     return "Power";
                 case CAMERA:
@@ -307,17 +308,13 @@ public class Input {
                 case Z:
                     return "Z";
                 case COMMA:
-                    return ",";
+                    return "Comma";
                 case PERIOD:
-                    return ".";
+                    return "Period";
                 case ALT_LEFT:
-                    return "L-Alt";
-                case ALT_RIGHT:
-                    return "R-Alt";
+                    return "Alt";
                 case SHIFT_LEFT:
-                    return "L-Shift";
-                case SHIFT_RIGHT:
-                    return "R-Shift";
+                    return "Shift";
                 case TAB:
                     return "Tab";
                 case SPACE:
@@ -333,29 +330,29 @@ public class Input {
                 case DEL:
                     return "Delete"; // also BACKSPACE
                 case GRAVE:
-                    return "`";
+                    return "Grave";
                 case MINUS:
-                    return "-";
+                    return "Minus";
                 case EQUALS:
-                    return "=";
+                    return "Equals";
                 case LEFT_BRACKET:
-                    return "[";
+                    return "LeftSquare";
                 case RIGHT_BRACKET:
-                    return "]";
+                    return "RightSquare";
                 case BACKSLASH:
-                    return "\\";
+                    return "Backslash";
                 case SEMICOLON:
-                    return ";";
+                    return "Semicolon";
                 case APOSTROPHE:
-                    return "'";
+                    return "Apostrophe";
                 case SLASH:
-                    return "/";
+                    return "Slash";
                 case AT:
-                    return "@";
+                    return "At";
                 case NUM:
                     return "Num";
                 case HEADSETHOOK:
-                    return "Headset Hook";
+                    return "HeadsetHook";
                 case FOCUS:
                     return "Focus";
                 case PLUS:
@@ -367,63 +364,61 @@ public class Input {
                 case SEARCH:
                     return "Search";
                 case MEDIA_PLAY_PAUSE:
-                    return "Play/Pause";
+                    return "PlayPause";
                 case MEDIA_STOP:
-                    return "Stop Media";
+                    return "StopMedia";
                 case MEDIA_NEXT:
-                    return "Next Media";
+                    return "NextMedia";
                 case MEDIA_PREVIOUS:
-                    return "Prev Media";
+                    return "PrevMedia";
                 case MEDIA_REWIND:
                     return "Rewind";
                 case MEDIA_FAST_FORWARD:
-                    return "Fast Forward";
+                    return "FastForward";
                 case MUTE:
                     return "Mute";
                 case PAGE_UP:
-                    return "Page Up";
+                    return "PageUp";
                 case PAGE_DOWN:
-                    return "Page Down";
+                    return "PageDown";
                 case PICTSYMBOLS:
                     return "PICTSYMBOLS";
                 case SWITCH_CHARSET:
                     return "SWITCH_CHARSET";
                 case BUTTON_A:
-                    return "A Button";
+                    return "ButtonA";
                 case BUTTON_B:
-                    return "B Button";
+                    return "ButtonB";
                 case BUTTON_C:
-                    return "C Button";
+                    return "ButtonC";
                 case BUTTON_X:
-                    return "X Button";
+                    return "ButtonX";
                 case BUTTON_Y:
-                    return "Y Button";
+                    return "ButtonY";
                 case BUTTON_Z:
-                    return "Z Button";
+                    return "ButtonZ";
                 case BUTTON_L1:
-                    return "L1 Button";
+                    return "ButtonL1";
                 case BUTTON_R1:
-                    return "R1 Button";
+                    return "ButtonR1";
                 case BUTTON_L2:
-                    return "L2 Button";
+                    return "ButtonL2";
                 case BUTTON_R2:
-                    return "R2 Button";
+                    return "ButtonR2";
                 case BUTTON_THUMBL:
-                    return "Left Thumb";
+                    return "LeftThumb";
                 case BUTTON_THUMBR:
-                    return "Right Thumb";
+                    return "RightThumb";
                 case BUTTON_START:
                     return "Start";
                 case BUTTON_SELECT:
                     return "Select";
                 case BUTTON_MODE:
-                    return "Button Mode";
+                    return "ButtonMode";
                 case FORWARD_DEL:
-                    return "Forward Delete";
+                    return "ForwardDelete";
                 case CONTROL_LEFT:
-                    return "L-Ctrl";
-                case CONTROL_RIGHT:
-                    return "R-Ctrl";
+                    return "Ctrl";
                 case ESCAPE:
                     return "Escape";
                 case END:
@@ -431,27 +426,27 @@ public class Input {
                 case INSERT:
                     return "Insert";
                 case NUMPAD_0:
-                    return "Numpad 0";
+                    return "Numpad0";
                 case NUMPAD_1:
-                    return "Numpad 1";
+                    return "Numpad1";
                 case NUMPAD_2:
-                    return "Numpad 2";
+                    return "Numpad2";
                 case NUMPAD_3:
-                    return "Numpad 3";
+                    return "Numpad3";
                 case NUMPAD_4:
-                    return "Numpad 4";
+                    return "Numpad4";
                 case NUMPAD_5:
-                    return "Numpad 5";
+                    return "Numpad5";
                 case NUMPAD_6:
-                    return "Numpad 6";
+                    return "Numpad6";
                 case NUMPAD_7:
-                    return "Numpad 7";
+                    return "Numpad7";
                 case NUMPAD_8:
-                    return "Numpad 8";
+                    return "Numpad8";
                 case NUMPAD_9:
-                    return "Numpad 9";
+                    return "Numpad9";
                 case COLON:
-                    return ":";
+                    return "Colon";
                 case F1:
                     return "F1";
                 case F2:
@@ -488,18 +483,19 @@ public class Input {
          * @return the int keycode
          */
         public static int valueOf(String keyname) {
-            if (keyNames == null) initializeKeyNames();
             return Objects.requireNonNullElse(keyNames.get(keyname.toLowerCase()), -1);
         }
 
-        /**
-         * lazily intialized in {@link Keys#valueOf(String)}
-         */
-        private static void initializeKeyNames() {
+        static {
             keyNames = new HashMap<>();
             for (int i = 0; i < 256; i++) {
                 String name = toString(i);
-                if (name != null) keyNames.put(name.toLowerCase(), i);
+                if (name != null) {
+                    if (keyNames.containsKey(name.toLowerCase())) {
+                        throw new UnsupportedOperationException("Keys have duplicate names: " + i + ", " + keyNames.get(name.toLowerCase()));
+                    }
+                    keyNames.put(name.toLowerCase(), i);
+                }
             }
         }
     }

@@ -8,43 +8,6 @@ public class ShortcutKey {
         this.key = key;
     }
 
-    /**
-     * @return Null on a failed parse.
-     */
-    public static ShortcutKey parse(String keybind) {
-        // TODO fix this to include Ctrl, Alt, Shift
-        if (keybind == null || keybind.isEmpty()) {
-            return null;
-        }
-
-        String[] parts = keybind.split(" ");
-
-        int key = Input.Keys.valueOf(parts[parts.length - 1]);
-        if (key == -1)
-            return null;
-
-        ShortcutKey shortcutKey = new ShortcutKey(key);
-
-        // Parse modifiers e.g. ctrl, alt
-        for (int i = 0; i < parts.length - 1; i++) {
-            switch (parts[i].toLowerCase()) {
-                case "ctrl":
-                    shortcutKey.ctrl();
-                    break;
-                case "alt":
-                    shortcutKey.alt();
-                    break;
-                case "shift":
-                    shortcutKey.shift();
-                    break;
-                default:
-                    return null;
-            }
-        }
-
-        return shortcutKey;
-    }
-
     public ShortcutKey ctrl() {
         this.ctrl = true;
         return this;

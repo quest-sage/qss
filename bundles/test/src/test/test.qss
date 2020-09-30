@@ -1,6 +1,18 @@
 import test::internal
 import bundle1
 
+func spawn_entity() {
+    native
+}
+
+action DoSomething {
+    shortcut Ctrl + E
+
+    {
+        spawn_entity()
+    }
+}
+
 **
 Sample code `something`:
 

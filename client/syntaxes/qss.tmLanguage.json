@@ -21,7 +21,7 @@
 				{
 					"comment": "Type declaration",
 					"name": "storage.type.qss",
-					"match": "\\b(struct|trait|impl)\\b"
+					"match": "\\b(struct|trait|impl|action)\\b"
 				},
 				{
 					"comment": "Purity",
@@ -46,7 +46,12 @@
 				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
-					"match": "\\b(import|before|after|native|func|let|just|null)\\b"
+					"match": "\\b(import|before|after|native|func|let|just|null|selection|shortcut|menu)\\b"
+				},
+				{
+					"comment": "Shortcut",
+					"name": "string.interpolated.shortcut.qss",
+					"match": "\\b(?<=shortcut\\s*)[^\\n;]*[\\n;]"
 				},
 				{
 					"comment": "Control flow",

@@ -1,6 +1,8 @@
 package com.thirds.qss.compiler.parser;
 
+import com.thirds.qss.Input;
 import com.thirds.qss.QualifiedName;
+import com.thirds.qss.ShortcutKey;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.*;
 import com.thirds.qss.compiler.lexer.Token;
@@ -79,6 +81,10 @@ public class Parser {
                     traits.add((Documentable<Trait>) documentable);
                 else if (content instanceof TraitImpl)
                     traitImpls.add((Documentable<TraitImpl>) documentable);
+                else if (content instanceof Action) {
+                    structs.add(new Documentable<>(documentable.getDocumentation().orElse(null), ((Action) content).getStruct()));
+                    funcs.add(new Documentable<>(documentable.getDocumentation().orElse(null), ((Action) content).getFunc()));
+                }
             }
 
             // Deduce what package the script is in by reversing directories until we hit the bundle.toml file.
@@ -155,6 +161,11 @@ public class Parser {
         Optional<Messenger<TraitImpl>> traitImpl = parseTraitImpl(tokens);
         if (traitImpl.isPresent()) {
             return Optional.of(traitImpl.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
+        }
+
+        Optional<Messenger<Action>> action = parseAction(tokens);
+        if (action.isPresent()) {
+            return Optional.of(action.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         if (docs != null)
@@ -496,6 +507,97 @@ public class Parser {
                     consumeToken(tokens, TokenType.SEMICOLON).then(() ->
                             messenger.map(func ->
                                     Messenger.success(new Documentable<>(finalDocs, func)))));
+        });
+    }
+
+    /**
+     * <code>Action := "action" Purity? Identifier "{" ActionField* CompoundStmt "}"</code>
+     * @return Null if the token stream did not represent an action.
+     */
+    @SuppressWarnings("unchecked")
+    private Optional<Messenger<Action>> parseAction(TokenStream tokens) {
+        if (tokens.peek().isEmpty() || tokens.peek().get().type != TokenType.KW_ACTION)
+            return Optional.empty();
+
+        Position start = tokens.currentPosition();
+
+        return Optional.of(parseMulti(List.of(
+                () -> consumeToken(tokens, TokenType.KW_ACTION),    // 0
+                () -> parsePurity(tokens),                          // 1
+                () -> consumeToken(tokens, TokenType.IDENTIFIER),   // 2
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 3
+
+                () -> consumeToken(tokens, TokenType.KW_SHORTCUT),  // 4
+                () -> parseShortcut(tokens),                        // 5
+                () -> consumeToken(tokens, TokenType.SEMICOLON),    // 6
+
+                () -> parseFields(tokens),                          // 7
+
+                () -> parseCompoundStatement(tokens),               // 8
+                () -> consumeToken(tokens, TokenType.SEMICOLON),    // 9
+
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 10
+        )).map(list -> {
+            VariableType.Function.Purity purity = (VariableType.Function.Purity) list.get(1);
+            Token identifier = (Token) list.get(2);
+            Shortcut shortcut = (Shortcut) list.get(5);
+            ArrayList<Documentable<Field>> structFields = (ArrayList<Documentable<Field>>) list.get(7);
+            CompoundStatement compoundStatement = (CompoundStatement) list.get(8);
+
+            Struct struct = new Struct(
+                    new Range(start, tokens.currentEndPosition()),
+                    identifier, structFields
+            );
+            struct.setAction(new ActionInfo(
+                    shortcut
+            ));
+            Func func = new Func(
+                    compoundStatement.getRange(),
+                    purity,
+                    new Token(TokenType.IDENTIFIER, CaseChanger.toLowerSnakeCase(identifier.contents) + "_action", identifier.getRange()),
+                    new ParamList(identifier.getRange(), new ArrayList<>(List.of(new Param(
+                            identifier.getRange(), new Token(TokenType.KW_THIS, "this", identifier.getRange()),
+                            new Type.StructType(identifier.getRange(), new NameLiteral(identifier.getRange(), List.of(identifier)))
+                    )))),
+                    null,
+                    new FuncBlock(compoundStatement.getRange(), compoundStatement)
+            );
+
+            return Messenger.success(new Action(struct, func));
+        }));
+    }
+
+    private Messenger<Shortcut> parseShortcut(TokenStream tokens) {
+        return consumeToken(tokens, TokenType.IDENTIFIER).map(tk -> {
+            int key = Input.Keys.valueOf(tk.contents);
+            switch (key) {
+                case -1:
+                    return Messenger.fail(new ArrayList<>(List.of(new Message(
+                            tk.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Unrecognised shortcut '" + tk.contents + "'"
+                    ))));
+                case Input.Keys.CONTROL_LEFT:
+                    return consumeToken(tokens, TokenType.PLUS).then(() -> parseShortcut(tokens).map(shortcut ->
+                            Messenger.success(new Shortcut(
+                                    Range.combine(tk.getRange(), shortcut.getRange()),
+                                    shortcut.getShortcutKey().ctrl()
+                            ))));
+                case Input.Keys.SHIFT_LEFT:
+                    return consumeToken(tokens, TokenType.PLUS).then(() -> parseShortcut(tokens).map(shortcut ->
+                            Messenger.success(new Shortcut(
+                                    Range.combine(tk.getRange(), shortcut.getRange()),
+                                    shortcut.getShortcutKey().shift()
+                            ))));
+                case Input.Keys.ALT_LEFT:
+                    return consumeToken(tokens, TokenType.PLUS).then(() -> parseShortcut(tokens).map(shortcut ->
+                            Messenger.success(new Shortcut(
+                                    Range.combine(tk.getRange(), shortcut.getRange()),
+                                    shortcut.getShortcutKey().alt()
+                            ))));
+                default:
+                    return Messenger.success(new Shortcut(tk.getRange(), new ShortcutKey(key)));
+            }
         });
     }
 

@@ -371,6 +371,18 @@ public class Lexer {
                             case "impl":
                                 type = TokenType.KW_IMPL;
                                 break;
+                            case "action":
+                                type = TokenType.KW_ACTION;
+                                break;
+                            case "shortcut":
+                                type = TokenType.KW_SHORTCUT;
+                                break;
+                            case "menu":
+                                type = TokenType.KW_MENU;
+                                break;
+                            case "selection":
+                                type = TokenType.KW_SELECTION;
+                                break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
                                 break;

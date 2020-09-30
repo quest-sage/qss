@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Encapsulates a variable, but may also carry errors and other messages.
+ * Encapsulates a variable, but may also carry errors and other messages. Acts like a monad.
  * This is often returned by functions that may emit errors.
  *
  * The method {@link #map} allows you to use the variable inside the messenger if the prior computation succeeded.
@@ -22,6 +22,9 @@ public class Messenger<T> {
         this.messages = messages;
     }
 
+    /**
+     * The unit value of the monad.
+     */
     public static <T> Messenger<T> success(T value) {
         return success(value, new ArrayList<>(0));
     }
@@ -39,6 +42,8 @@ public class Messenger<T> {
     /**
      * If this messenger was a <code>success</code>, the given function is applied to the result.
      * The messages from this messenger and from the resultant messenger are combined to form the returned message.
+     *
+     * Acts like the <code>bind</code> function in monad theory.
      */
     public <U> Messenger<U> map(Function<T, Messenger<U>> func) {
         if (value != null) {
@@ -61,6 +66,8 @@ public class Messenger<T> {
     /**
      * If this messenger was a <code>success</code>, the given supplier is evaluated.
      * The messages from this messenger and from the resultant messenger are combined to form the returned message.
+     *
+     * Acts like the <code>bind</code> function in monad theory.
      */
     public <U> Messenger<U> then(Supplier<Messenger<U>> func) {
         return map(m -> func.get());

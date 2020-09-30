@@ -12,6 +12,7 @@ import java.util.function.Consumer;
 public class Struct extends Node {
     private final Token name;
     private final ArrayList<Documentable<Field>> fields;
+    private ActionInfo info;
 
     public Struct(Range range, Token name, ArrayList<Documentable<Field>> fields) {
         super(range);
@@ -40,5 +41,9 @@ public class Struct extends Node {
     @Override
     public String toString() {
         return "struct " + name.contents + "@" + getRange();
+    }
+
+    public void setAction(ActionInfo info) {
+        this.info = info;
     }
 }

@@ -123,7 +123,7 @@ message Expr {
     string textLiteral = 3;
     // Represents "true" if true and "false" if false.
     bool booleanLiteral = 4;
-    // Represents the local variable with the given ID. See NameResolver for more info on local variable IDs.
+    // Represents the local variable with the given ID.
     int32 localVariable = 5;
     Binary addInt = 6;
     Binary subtractInt = 7;
@@ -135,6 +135,7 @@ message Expr {
     Expr notBool = 11;
     Binary andBool = 12;
     Binary orBool = 13;
+    // Represents the parameter with the given ID.
     int32 parameter = 14;
     // If true, represents the containing function itself. If false, represents the result of the current function.
     bool functionOrResult = 15;
