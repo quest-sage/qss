@@ -24,6 +24,11 @@
 					"match": "\\b(struct|trait|impl)\\b"
 				},
 				{
+					"comment": "Purity",
+					"name": "storage.modifier.qss",
+					"match": "\\b(pure|ui)\\b"
+				},
+				{
 					"comment": "Trait implementation 'impl' keyword",
 					"name": "storage.type.qss",
 					"match": "\\bimpl\\b"

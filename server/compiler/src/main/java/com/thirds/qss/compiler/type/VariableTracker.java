@@ -57,7 +57,7 @@ public class VariableTracker {
      *
      */
     private void track() {
-        ScopeTree scopeTree = new ScopeTree(new FunctionState());
+        ScopeTree scopeTree = new ScopeTree(new FunctionState(), func.getPurity());
 
         // Add the function parameters to the scope tree.
         for (Param param : func.getParamList().getParams()) {
@@ -383,6 +383,7 @@ public class VariableTracker {
     private Optional<VariableType> deduceVariableUsageLvalue(Expression expr, ScopeTree scopeTree) {
         expr.deduceAndAssignVariableType(expressionTypeDeducer, scopeTree);
         Optional<VariableType> type = expr.getVariableType();
+        boolean localVariable = false;
         if (expr instanceof Identifier) {
             Identifier identifier = (Identifier) expr;
             if (identifier.isLocal()) {
@@ -391,6 +392,7 @@ public class VariableTracker {
                 if (state != null) {
                     scopeTree.setState(variableName, state.assign(expr));
                 }
+                localVariable = true;
             }
         } else if (expr instanceof ResultExpression) {
             VariableUsageState resultState = scopeTree.getState("result");
@@ -398,11 +400,24 @@ public class VariableTracker {
                 // The function returns something.
                 scopeTree.setState("result", resultState.assign(expr));
             }
+            localVariable = true;
         } else {
             expr.forAllChildren(n -> {
                 if (n instanceof Expression)
                     deduceVariableUsageRvalue((Expression) n, scopeTree);
             });
+        }
+
+        if (!localVariable) {
+            // We're assigning to a non-local variable - so this may have side effects. This is therefore
+            // invalid behaviour in [pure] and [ui] functions.
+            if (scopeTree.purity == VariableType.Function.Purity.PURE || scopeTree.purity == VariableType.Function.Purity.UI) {
+                messages.add(new Message(
+                        expr.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Cannot assign to non-local variables in " + scopeTree.purity + " blocks"
+                ));
+            }
         }
 
         return type;
@@ -470,9 +485,11 @@ public class VariableTracker {
     public static class ScopeTree {
         private final Map<String, VariableUsageState> stateMap = new HashMap<>();
         private FunctionState functionState;
+        private VariableType.Function.Purity purity;
 
-        public ScopeTree(FunctionState functionState) {
+        public ScopeTree(FunctionState functionState, VariableType.Function.Purity purity) {
             this.functionState = functionState;
+            this.purity = purity;
         }
 
         public ScopeTree(ScopeTree outerScopes) {
@@ -480,6 +497,7 @@ public class VariableTracker {
                 stateMap.put(entry.getKey(), entry.getValue().duplicate());
             }
             functionState = outerScopes.functionState.copy();
+            purity = outerScopes.purity;
         }
 
         public void setVariableType(String variable, VariableType type) {
@@ -536,6 +554,10 @@ public class VariableTracker {
             if (state == null)
                 return Optional.of(VariableType.Primitive.TYPE_UNKNOWN);
             return Optional.ofNullable(state.variableType);
+        }
+
+        public VariableType.Function.Purity getPurity() {
+            return purity;
         }
     }
 

@@ -129,6 +129,15 @@ public class FunctionInvocationExpression extends Expression {
             expressionTypeDeducer.getMessages().addAll(downcast.getMessages());
         }
 
+        // Make sure that we're allowed to execute a function of this purity inside the containing function.
+        if (!funcType.getPurity().canExecuteInside(scopeTree.getPurity())) {
+            expressionTypeDeducer.getMessages().add(new Message(
+                    function.getRange(),
+                    Message.MessageSeverity.ERROR,
+                    "Cannot execute function of purity " + funcType.getPurity() + " inside function of purity " + scopeTree.getPurity()
+            ));
+        }
+
         return funcType.getReturnType();
     }
 
