@@ -68,6 +68,7 @@ public class Parser {
             ArrayList<Documentable<FuncHook>> funcHooks = new ArrayList<>();
             ArrayList<Documentable<GetHook>> getHooks = new ArrayList<>();
             ArrayList<Documentable<SetHook>> setHooks = new ArrayList<>();
+            ArrayList<Documentable<NewStructHook>> newStructHooks = new ArrayList<>();
             ArrayList<Documentable<Trait>> traits = new ArrayList<>();
             ArrayList<Documentable<TraitImpl>> traitImpls = new ArrayList<>();
 
@@ -83,6 +84,8 @@ public class Parser {
                     getHooks.add((Documentable<GetHook>) documentable);
                 else if (content instanceof SetHook)
                     setHooks.add((Documentable<SetHook>) documentable);
+                else if (content instanceof NewStructHook)
+                    newStructHooks.add((Documentable<NewStructHook>) documentable);
                 else if (content instanceof Trait)
                     traits.add((Documentable<Trait>) documentable);
                 else if (content instanceof TraitImpl)
@@ -123,7 +126,7 @@ public class Parser {
                     packageName,
                     packagePath,
                     imports2,
-                    structs, funcs, funcHooks, getHooks, setHooks, traits, traitImpls
+                    structs, funcs, funcHooks, getHooks, setHooks, newStructHooks, traits, traitImpls
             ), messages);
         }));
     }
@@ -347,7 +350,7 @@ public class Parser {
                     messages.add(new Message(
                             time.getRange(),
                             Message.MessageSeverity.ERROR,
-                            "'before get' hooks are illegal (since 'get' hooks are pure functions, 'before get' hooks would have no effect)"
+                            "'before get' hooks are invalid (since 'get' hooks are pure functions, 'before get' hooks would have no effect)"
                     ));
                 }
 
@@ -388,6 +391,41 @@ public class Parser {
                 SetHook hook = new SetHook(
                         new Range(start, tokens.currentEndPosition()), target,
                         time, structName, fieldName, fieldType, funcBlock
+                );
+
+                return Messenger.success(hook, messages);
+            }));
+        } else if (target.type == TokenType.KW_NEW) {
+            // This is a new-struct hook.
+            // The block is simulated as being part of a function with no parameters, and the return value being the
+            // struct we've just made.
+            // The block has purity [pure].
+            return Optional.of(parseMulti(List.of(
+                    () -> parseName(tokens),                            // 0
+                    () -> parseFuncBlock(tokens)                        // 1
+            )).map(list -> {
+                NameLiteral structName = (NameLiteral) list.get(0);
+                FuncBlock funcBlock = (FuncBlock) list.get(1);
+
+                ArrayList<Message> messages = new ArrayList<>(0);
+                if (funcBlock.isNative()) {
+                    messages.add(new Message(
+                            funcBlock.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Native blocks are not allowed in hooks"
+                    ));
+                }
+                if (time.type == TokenType.KW_BEFORE) {
+                    messages.add(new Message(
+                            time.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "'before new' hooks are invalid (since 'new' hooks are pure functions, 'before new' hooks would have no effect)"
+                    ));
+                }
+
+                NewStructHook hook = new NewStructHook(
+                        new Range(start, tokens.currentEndPosition()), target,
+                        time, structName, funcBlock
                 );
 
                 return Messenger.success(hook, messages);

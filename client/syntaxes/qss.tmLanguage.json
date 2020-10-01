@@ -39,6 +39,11 @@
 					"match": "\\b(?<=impl\\s*[a-zA-Z0-9_:]*\\s*)(for)\\b"
 				},
 				{
+					"comment": "After hook 'new' keyword",
+					"name": "storage.type.qss",
+					"match": "\\b(?<=after\\s*)(new)\\b"
+				},
+				{
 					"comment": "Built-in type",
 					"name": "entity.name.type.qss",
 					"match": "\\b(Int|Bool|String|Text|Entity|Ratio|Col|Pos|Texture|Player|This|Func)\\b"

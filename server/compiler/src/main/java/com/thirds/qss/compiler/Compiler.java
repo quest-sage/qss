@@ -382,6 +382,9 @@ public class Compiler {
             for (Documentable<SetHook> setHook : scriptParsed.getSetHooks()) {
                 typeDeducer.computeTypesIn(setHook.getContent(), allMessages);
             }
+            for (Documentable<NewStructHook> newStructHook : scriptParsed.getNewStructHooks()) {
+                typeDeducer.computeTypesIn(newStructHook.getContent(), allMessages);
+            }
             for (Documentable<TraitImpl> traitImpl : scriptParsed.getTraitImpls()) {
                 for (Documentable<Func> funcImpl : traitImpl.getContent().getFuncImpls()) {
                     typeDeducer.computeTypesIn(funcImpl.getContent(), allMessages);

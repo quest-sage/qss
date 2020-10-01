@@ -26,6 +26,7 @@ public class Script extends Node {
     private final ArrayList<Documentable<FuncHook>> funcHooks;
     private final ArrayList<Documentable<GetHook>> getHooks;
     private final ArrayList<Documentable<SetHook>> setHooks;
+    private final ArrayList<Documentable<NewStructHook>> newStructHooks;
     private final ArrayList<Documentable<Trait>> traits;
     private final ArrayList<Documentable<TraitImpl>> traitImpls;
 
@@ -33,6 +34,7 @@ public class Script extends Node {
                   ArrayList<Documentable<Struct>> structs,
                   ArrayList<Documentable<Func>> funcs, ArrayList<Documentable<FuncHook>> funcHooks,
                   ArrayList<Documentable<GetHook>> getHooks, ArrayList<Documentable<SetHook>> setHooks,
+                  ArrayList<Documentable<NewStructHook>> newStructHooks,
                   ArrayList<Documentable<Trait>> traits, ArrayList<Documentable<TraitImpl>> traitImpls) {
         super(range);
         this.filePath = filePath;
@@ -44,6 +46,7 @@ public class Script extends Node {
         this.funcHooks = funcHooks;
         this.getHooks = getHooks;
         this.setHooks = setHooks;
+        this.newStructHooks = newStructHooks;
         this.traits = traits;
         this.traitImpls = traitImpls;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
@@ -65,6 +68,7 @@ public class Script extends Node {
                 ", funcHooks=" + funcHooks +
                 ", getHooks=" + getHooks +
                 ", setHooks=" + setHooks +
+                ", newStructHooks=" + newStructHooks +
                 ", traits=" + traits +
                 ", traitImpls=" + traitImpls +
                 '}';
@@ -96,6 +100,10 @@ public class Script extends Node {
 
     public ArrayList<Documentable<SetHook>> getSetHooks() {
         return setHooks;
+    }
+
+    public ArrayList<Documentable<NewStructHook>> getNewStructHooks() {
+        return newStructHooks;
     }
 
     public ArrayList<Documentable<Trait>> getTraits() {

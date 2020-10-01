@@ -161,3 +161,7 @@ after get A.q: Int {
     result = "a"
     result = result + 1
 }
+
+after new A {
+    result.q = result.q + 1
+}

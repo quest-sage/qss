@@ -352,6 +352,9 @@ public class Index {
         for (Documentable<SetHook> setHook : script.getSetHooks()) {
             generateFuncDefinition(script, messages, null, setHook);
         }
+        for (Documentable<NewStructHook> newStructHook : script.getNewStructHooks()) {
+            generateFuncDefinition(script, messages, null, newStructHook);
+        }
 
         for (Documentable<Trait> trait : script.getTraits()) {
             // Order trait functions alphabetically to ensure consistency.

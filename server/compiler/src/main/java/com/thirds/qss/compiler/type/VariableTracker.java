@@ -10,9 +10,7 @@ import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Script;
 import com.thirds.qss.compiler.tree.Type;
-import com.thirds.qss.compiler.tree.expr.Expression;
-import com.thirds.qss.compiler.tree.expr.Identifier;
-import com.thirds.qss.compiler.tree.expr.ResultExpression;
+import com.thirds.qss.compiler.tree.expr.*;
 import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
 
@@ -384,6 +382,14 @@ public class VariableTracker {
                 scopeTree.setState("result", resultState.assign(expr));
             }
             localVariable = true;
+        } else if (expr instanceof ThisExpression) {
+            if (func.getParamList().getParams().isEmpty() || func.getParamList().getParams().get(0).getName().type != TokenType.KW_THIS) {
+                messages.add(new Message(
+                        expr.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "This function was not written in receiver style (first parameter named 'this') so the 'this' keyword is unavailable"
+                ));
+            }
         } else {
             expr.forAllChildren(n -> {
                 if (n instanceof Expression)
@@ -395,11 +401,33 @@ public class VariableTracker {
             // We're assigning to a non-local variable - so this may have side effects. This is therefore
             // invalid behaviour in [pure] and [ui] functions.
             if (scopeTree.purity == VariableType.Function.Purity.PURE || scopeTree.purity == VariableType.Function.Purity.UI) {
-                messages.add(new Message(
-                        expr.getRange(),
-                        Message.MessageSeverity.ERROR,
-                        "Can only assign to local variables in " + scopeTree.purity + " blocks"
-                ));
+                // One final check - we're allowed to assign to fields of the 'result' variable in 'after new' hooks.
+                if (expr instanceof FieldExpression && ((FieldExpression) expr).getValue() instanceof ResultExpression) {
+                    if (func instanceof NewStructHook) {
+                        // This was actually valid.
+                    } else {
+                        // This would only be valid if we were in a 'new' hook.
+                        messages.add(new Message(
+                                expr.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "In " + scopeTree.purity + " blocks, you may only assign values to local variables; assigning to fields of the result variable is only allowed in 'after new' hooks"
+                        ));
+                    }
+                } else {
+                    if (func instanceof NewStructHook) {
+                        messages.add(new Message(
+                                expr.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "In 'after new' blocks, you may only assign values to local variables and fields of the result variable"
+                        ));
+                    } else {
+                        messages.add(new Message(
+                                expr.getRange(),
+                                Message.MessageSeverity.ERROR,
+                                "In " + scopeTree.purity + " blocks, you may only assign values to local variables"
+                        ));
+                    }
+                }
             }
         }
 
