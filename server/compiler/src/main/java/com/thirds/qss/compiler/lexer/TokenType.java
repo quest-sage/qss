@@ -12,7 +12,7 @@ public enum TokenType {
 
     KW_STRUCT, KW_FUNC, KW_BEFORE, KW_AFTER, KW_NATIVE, KW_PURE, KW_UI,
     KW_TRAIT, KW_IMPL,
-    KW_ACTION, KW_SHORTCUT, KW_MENU, KW_SELECTION,
+    KW_ACTION, KW_SHORTCUT, KW_MENU,
     KW_IMPORT,
     IDENTIFIER,
 
@@ -87,8 +87,6 @@ public enum TokenType {
                 return "keyword 'shortcut'";
             case KW_MENU:
                 return "keyword 'menu'";
-            case KW_SELECTION:
-                return "keyword 'selection'";
             case KW_IMPORT:
                 return "keyword 'import'";
             case IDENTIFIER:

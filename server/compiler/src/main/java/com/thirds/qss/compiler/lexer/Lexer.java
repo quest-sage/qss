@@ -380,9 +380,6 @@ public class Lexer {
                             case "menu":
                                 type = TokenType.KW_MENU;
                                 break;
-                            case "selection":
-                                type = TokenType.KW_SELECTION;
-                                break;
                             case "import":
                                 type = TokenType.KW_IMPORT;
                                 break;

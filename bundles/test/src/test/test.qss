@@ -10,6 +10,16 @@ action DoSomething {
 
     {
         spawn_entity()
+        new A {
+            q = 1
+            b = new B {
+                c = new C {}
+            }
+            aa = new Internal {}
+            b1 = new Bundle1 {
+                b2 = 1
+            }
+        }
     }
 }
 
@@ -118,7 +128,6 @@ after func debug(this: This) -> String {
 
 ** Abcdef **
 struct B {
-    a: A
     c: C
 }
 

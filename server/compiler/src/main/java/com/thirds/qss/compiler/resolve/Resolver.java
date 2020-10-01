@@ -542,7 +542,7 @@ public class Resolver {
         });
 
         if (fieldResolved.alternatives.isEmpty()) {
-            StringBuilder message = new StringBuilder("Could not resolve field ").append(fieldName.toQualifiedName());
+            StringBuilder message = new StringBuilder("Could not resolve field ").append(fieldName.toQualifiedName()).append(" belonging to struct ").append(structName);
             if (!fieldResolved.nonImportedAlternatives.isEmpty()) {
                 message.append("; try one of the following:");
                 for (ResolveAlternative<StructFieldAlternative> alt : fieldResolved.nonImportedAlternatives) {
@@ -562,7 +562,7 @@ public class Resolver {
             messages.add(new Message(
                     fieldName.getRange(),
                     Message.MessageSeverity.ERROR,
-                    "Reference to field " + fieldName.toQualifiedName() + " was ambiguous, possibilities were: " +
+                    "Reference to field " + fieldName.toQualifiedName() + " belonging to struct " + structName + " was ambiguous, possibilities were: " +
                             fieldResolved.alternatives.stream().map(alt -> alt.value.name.toString()).collect(Collectors.joining(", "))
             ));
         }

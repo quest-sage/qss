@@ -156,6 +156,10 @@ public abstract class Type extends Node {
         public void forChildren(Consumer<Node> consumer) {
             consumer.accept(structName);
         }
+
+        public NameLiteral getStructName() {
+            return structName;
+        }
     }
 
     public static class MaybeType extends Type {

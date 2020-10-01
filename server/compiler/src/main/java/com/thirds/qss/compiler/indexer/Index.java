@@ -65,9 +65,6 @@ public class Index {
         private final Location location;
         private final VariableType variableType;
 
-        /**
-         * @param variableType May be null; if so, the type in the index will show as <code>&lt;unknown&gt;</code>.
-         */
         private FieldDefinition(String documentation, Location location, VariableType variableType) {
             this.documentation = documentation;
             this.location = location;
@@ -158,7 +155,8 @@ public class Index {
     public static class StructDefinition {
         private final String documentation;
         private final Location location;
-        private final Map<String, FieldDefinition> fields = new HashMap<>();
+        // Order struct fields alphabetically.
+        private final Map<String, FieldDefinition> fields = new TreeMap<>();
 
         private StructDefinition(String documentation, Location location) {
             this.documentation = documentation;
@@ -331,7 +329,7 @@ public class Index {
                     def.fields.put(field.getContent().getName().contents, new FieldDefinition(
                             field.getDocumentation().map(tk -> tk.contents).orElse(null),
                             new Location(script.getFilePath(), field.getRange()),
-                            fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).value : null
+                            fieldTypeAlternatives.alternatives.size() == 1 ? fieldTypeAlternatives.alternatives.get(0).value : VariableType.Primitive.TYPE_UNKNOWN
                     ));
                 }
             }

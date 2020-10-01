@@ -681,6 +681,7 @@ public class Parser {
             case KW_JUST:
             case KW_NULL:
             case KW_THIS:
+            case KW_NEW:
                 return true;
         }
         return false;
@@ -1209,6 +1210,9 @@ public class Parser {
         } else if (tokens.peek().get().type == TokenType.LBRACE) {
             // We're making a new map.
             return parseNewMap(newToken, tokens);
+        } else if (tokens.peek().get().type == TokenType.IDENTIFIER) {
+            // We're making a new instance of a struct.
+            return parseNewStruct(newToken, tokens);
         } else {
             return Messenger.fail(new ArrayList<>(List.of(new Message(
                     new Range(tokens.currentPosition()),
@@ -1265,6 +1269,32 @@ public class Parser {
     private Optional<Messenger<MapField>> parseMapValue(TokenStream tokens) {
         if (peekExpr(tokens)) {
             return Optional.of(parseExpr(tokens).map(key -> consumeToken(tokens, TokenType.TYPE_MAPS_TO).then(() -> parseExpr(tokens).map(value -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new MapField(key, value)))))));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Messenger<Expression> parseNewStruct(Token newToken, TokenStream tokens) {
+        return parseMulti(List.of(
+                () -> parseType(tokens),                            // 0
+                () -> consumeToken(tokens, TokenType.LBRACE),       // 1
+                () -> parseGreedy(() -> parseStructValue(tokens)),  // 2
+                () -> consumeToken(tokens, TokenType.RBRACE)        // 3
+        )).map(list -> {
+            Type type = (Type) list.get(0);
+            ArrayList<StructField> expressions = (ArrayList<StructField>) list.get(2);
+            Token endToken = (Token) list.get(3);
+
+            Range totalRange = Range.combine(newToken.getRange(), endToken.getRange());
+
+            return Messenger.success(new NewStructExpression(totalRange, type, expressions));
+        });
+    }
+
+    private Optional<Messenger<StructField>> parseStructValue(TokenStream tokens) {
+        if (tokens.peek().isPresent() && tokens.peek().get().type == TokenType.IDENTIFIER) {
+            return Optional.of(parseName(tokens).map(key -> consumeToken(tokens, TokenType.ASSIGN).then(() -> parseExpr(tokens).map(value -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new StructField(key, value)))))));
         } else {
             return Optional.empty();
         }

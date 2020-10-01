@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.function.Consumer;
 
 /**
- * Creates a new list containing the supplied values.
+ * Creates a new map containing the supplied values.
  */
 public class NewMapExpression extends Expression {
     private final Type type;
