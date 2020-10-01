@@ -365,6 +365,12 @@ public class Lexer {
                             case "ui":
                                 type = TokenType.KW_UI;
                                 break;
+                            case "get":
+                                type = TokenType.KW_GET;
+                                break;
+                            case "set":
+                                type = TokenType.KW_SET;
+                                break;
                             case "trait":
                                 type = TokenType.KW_TRAIT;
                                 break;

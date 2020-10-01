@@ -9,7 +9,9 @@ import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.resolve.ResolveResult;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Documentable;
+import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Script;
+import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.script.*;
 
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class Validator {
         messages.clear();
 
         checkFuncHookType();
+        checkGetSetHookType();
         checkFuncThis();
         checkTraitImpl();
 
@@ -72,6 +75,49 @@ public class Validator {
                             "Hook was of incorrect type; expected " + expectedType + ", got " + actualType
                     ).addInfo(new Message.MessageRelatedInformation(
                             result.alternatives.get(0).value.func.getLocation(),
+                            "Original function was defined here"
+                    )));
+                }
+            }
+        }
+    }
+
+    /**
+     * Ensure that all get/set hooks' signatures match the type of the original struct and field.
+     * This resolves the jump-to-definition links on the get/set hook.
+     */
+    private void checkGetSetHookType() {
+        for (Documentable<GetHook> getHook : script.getGetHooks()) {
+            checkGetSetHookType(
+                    getHook.getContent().getStructName(),
+                    getHook.getContent().getFieldName(),
+                    getHook.getContent().getFieldType()
+            );
+        }
+        for (Documentable<SetHook> setHook : script.getSetHooks()) {
+            checkGetSetHookType(
+                    setHook.getContent().getStructName(),
+                    setHook.getContent().getFieldName(),
+                    setHook.getContent().getFieldType()
+            );
+        }
+    }
+
+    private void checkGetSetHookType(NameLiteral structName, NameLiteral fieldName, Type fieldType) {
+        ResolveResult<Resolver.StructNameAlternative> structResolved = Resolver.resolveStructName(compiler, script, messages, structName);
+        if (structResolved.alternatives.size() == 1) {
+            ResolveResult<Resolver.StructFieldAlternative> fieldResolved = Resolver.resolveStructField(compiler, script, messages, structResolved.alternatives.get(0).value.name, fieldName);
+            if (fieldResolved.alternatives.size() == 1) {
+                // The resolve succeeded.
+                VariableType actualType = fieldType.getResolvedType();
+                VariableType expectedType = fieldResolved.alternatives.get(0).value.type;
+                if (!actualType.equals(expectedType)) {
+                    messages.add(new Message(
+                            fieldType.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Hook was of incorrect type; expected " + expectedType + ", got " + actualType
+                    ).addInfo(new Message.MessageRelatedInformation(
+                            fieldResolved.alternatives.get(0).value.location,
                             "Original function was defined here"
                     )));
                 }

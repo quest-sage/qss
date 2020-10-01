@@ -70,6 +70,12 @@ public class CastChecker {
                     }
                 }
             }
+        } else if (expression instanceof VariableType.Struct) {
+            if (target instanceof VariableType.Struct) {
+                if (((VariableType.Struct) expression).getName().equals(((VariableType.Struct) target).getName())) {
+                    return Messenger.success(new Object());
+                }
+            }
         } else if (expression instanceof VariableType.Function) {
             if (target instanceof VariableType.Function) {
                 VariableType.Function expression1 = (VariableType.Function) expression;

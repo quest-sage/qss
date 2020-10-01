@@ -46,7 +46,7 @@
 				{
 					"comment": "Keyword",
 					"name": "keyword.other.qss",
-					"match": "\\b(import|before|after|native|func|let|just|null|shortcut|menu)\\b"
+					"match": "\\b(import|before|after|native|func|let|just|null|shortcut|menu|get|set)\\b"
 				},
 				{
 					"comment": "Shortcut",

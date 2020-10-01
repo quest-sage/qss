@@ -148,3 +148,11 @@ impl Debug for [Int] {
         }
     }
 }
+
+before set A.q: Int {
+    value = value + 1
+}
+
+after set A.q: Int {
+    result = result + 1
+}

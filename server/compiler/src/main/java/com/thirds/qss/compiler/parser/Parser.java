@@ -66,6 +66,8 @@ public class Parser {
             ArrayList<Documentable<Struct>> structs = new ArrayList<>();
             ArrayList<Documentable<Func>> funcs = new ArrayList<>();
             ArrayList<Documentable<FuncHook>> funcHooks = new ArrayList<>();
+            ArrayList<Documentable<GetHook>> getHooks = new ArrayList<>();
+            ArrayList<Documentable<SetHook>> setHooks = new ArrayList<>();
             ArrayList<Documentable<Trait>> traits = new ArrayList<>();
             ArrayList<Documentable<TraitImpl>> traitImpls = new ArrayList<>();
 
@@ -77,6 +79,10 @@ public class Parser {
                     funcs.add((Documentable<Func>) documentable);
                 else if (content instanceof FuncHook)
                     funcHooks.add((Documentable<FuncHook>) documentable);
+                else if (content instanceof GetHook)
+                    getHooks.add((Documentable<GetHook>) documentable);
+                else if (content instanceof SetHook)
+                    setHooks.add((Documentable<SetHook>) documentable);
                 else if (content instanceof Trait)
                     traits.add((Documentable<Trait>) documentable);
                 else if (content instanceof TraitImpl)
@@ -117,7 +123,7 @@ public class Parser {
                     packageName,
                     packagePath,
                     imports2,
-                    structs, funcs, funcHooks, traits, traitImpls
+                    structs, funcs, funcHooks, getHooks, setHooks, traits, traitImpls
             ), messages);
         }));
     }
@@ -148,9 +154,9 @@ public class Parser {
             return Optional.of(func.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
-        Optional<Messenger<FuncHook>> funcHook = parseHook(tokens);
-        if (funcHook.isPresent()) {
-            return Optional.of(funcHook.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
+        Optional<Messenger<FuncOrHook>> hook = parseHook(tokens);
+        if (hook.isPresent()) {
+            return Optional.of(hook.get().map(s -> consumeToken(tokens, TokenType.SEMICOLON).then(() -> Messenger.success(new Documentable<>(docs, s)))));
         }
 
         Optional<Messenger<Trait>> trait = parseTrait(tokens);
@@ -264,7 +270,7 @@ public class Parser {
     }
 
     @SuppressWarnings("unchecked")
-    private Optional<Messenger<FuncHook>> parseHook(TokenStream tokens) {
+    private Optional<Messenger<FuncOrHook>> parseHook(TokenStream tokens) {
         if (tokens.peek().isEmpty() || (tokens.peek().get().type != TokenType.KW_BEFORE && tokens.peek().get().type != TokenType.KW_AFTER))
             return Optional.empty();
 
@@ -276,7 +282,7 @@ public class Parser {
             return Optional.of(Messenger.fail(new ArrayList<>(List.of(new Message(
                     new Range(tokens.currentPosition()),
                     Message.MessageSeverity.ERROR,
-                    "Expected hook target (func), got end of file"
+                    "Expected hook target (func, get, set, new), got end of file"
             )))));
         Token target = tokens.next();
         if (target.type == TokenType.KW_FUNC) {
@@ -288,6 +294,7 @@ public class Parser {
                     () -> parseReturnType(tokens),                      // 3
                     () -> parseFuncBlock(tokens)                        // 4
             )).map(list -> {
+                // TODO check if this purity is validated against the original function's purity
                 VariableType.Function.Purity purity = (VariableType.Function.Purity) list.get(0);
                 NameLiteral name = (NameLiteral) list.get(1);
                 ParamList paramList = (ParamList) list.get(2);
@@ -310,11 +317,86 @@ public class Parser {
 
                 return Messenger.success(hook, messages);
             }));
+        } else if (target.type == TokenType.KW_GET) {
+            // This is a get hook.
+            // The block is simulated as being part of a function with one parameter (the struct we're getting
+            // the field from, named 'this') and a return type equal to the field's type.
+            // The block has purity [pure].
+            return Optional.of(parseMulti(List.of(
+                    () -> parseName(tokens),                            // 0
+                    () -> consumeToken(tokens, TokenType.DOT),          // 1
+                    () -> parseName(tokens),                            // 2
+                    () -> consumeToken(tokens, TokenType.TYPE),         // 3
+                    () -> parseType(tokens),                            // 4
+                    () -> parseFuncBlock(tokens)                        // 5
+            )).map(list -> {
+                NameLiteral structName = (NameLiteral) list.get(0);
+                NameLiteral fieldName = (NameLiteral) list.get(2);
+                Type fieldType = (Type) list.get(4);
+                FuncBlock funcBlock = (FuncBlock) list.get(5);
+
+                ArrayList<Message> messages = new ArrayList<>(0);
+                if (funcBlock.isNative()) {
+                    messages.add(new Message(
+                            funcBlock.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Native blocks are not allowed in hooks"
+                    ));
+                }
+                if (time.type == TokenType.KW_BEFORE) {
+                    messages.add(new Message(
+                            time.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "'before get' hooks are illegal (since 'get' hooks are pure functions, 'before get' hooks would have no effect)"
+                    ));
+                }
+
+                GetHook hook = new GetHook(
+                        new Range(start, tokens.currentEndPosition()), target,
+                        time, structName, fieldName, fieldType, funcBlock
+                );
+
+                return Messenger.success(hook, messages);
+            }));
+        } else if (target.type == TokenType.KW_SET) {
+            // This is a set hook.
+            // The block is simulated as being part of a function with two parameters (the struct we're getting
+            // the field from, named 'this'; and the field's new value, named 'value').
+            // The block has purity [impure].
+            return Optional.of(parseMulti(List.of(
+                    () -> parseName(tokens),                            // 0
+                    () -> consumeToken(tokens, TokenType.DOT),          // 1
+                    () -> parseName(tokens),                            // 2
+                    () -> consumeToken(tokens, TokenType.TYPE),         // 3
+                    () -> parseType(tokens),                            // 4
+                    () -> parseFuncBlock(tokens)                        // 5
+            )).map(list -> {
+                NameLiteral structName = (NameLiteral) list.get(0);
+                NameLiteral fieldName = (NameLiteral) list.get(2);
+                Type fieldType = (Type) list.get(4);
+                FuncBlock funcBlock = (FuncBlock) list.get(5);
+
+                ArrayList<Message> messages = new ArrayList<>(0);
+                if (funcBlock.isNative()) {
+                    messages.add(new Message(
+                            funcBlock.getRange(),
+                            Message.MessageSeverity.ERROR,
+                            "Native blocks are not allowed in hooks"
+                    ));
+                }
+
+                SetHook hook = new SetHook(
+                        new Range(start, tokens.currentEndPosition()), target,
+                        time, structName, fieldName, fieldType, funcBlock
+                );
+
+                return Messenger.success(hook, messages);
+            }));
         } else {
             return Optional.of(Messenger.fail(new ArrayList<>(List.of(new Message(
                     new Range(tokens.currentPosition()),
                     Message.MessageSeverity.ERROR,
-                    "Expected hook target (func), got " + target.type
+                    "Expected hook target (func, get, set, new), got " + target.type
             )))));
         }
     }

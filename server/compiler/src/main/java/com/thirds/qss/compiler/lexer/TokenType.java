@@ -11,6 +11,7 @@ public enum TokenType {
     IMPLICIT_SEMICOLON,  // inserted after newlines in certain situations (see lexer)
 
     KW_STRUCT, KW_FUNC, KW_BEFORE, KW_AFTER, KW_NATIVE, KW_PURE, KW_UI,
+    KW_GET, KW_SET,
     KW_TRAIT, KW_IMPL,
     KW_ACTION, KW_SHORTCUT, KW_MENU,
     KW_IMPORT,

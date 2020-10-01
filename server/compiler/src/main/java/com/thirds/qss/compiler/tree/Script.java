@@ -24,12 +24,15 @@ public class Script extends Node {
     private final ArrayList<Documentable<Struct>> structs;
     private final ArrayList<Documentable<Func>> funcs;
     private final ArrayList<Documentable<FuncHook>> funcHooks;
+    private final ArrayList<Documentable<GetHook>> getHooks;
+    private final ArrayList<Documentable<SetHook>> setHooks;
     private final ArrayList<Documentable<Trait>> traits;
     private final ArrayList<Documentable<TraitImpl>> traitImpls;
 
     public Script(ScriptPath filePath, Range range, QualifiedName packageName, ScriptPath bundleRoot, ArrayList<Import> imports,
                   ArrayList<Documentable<Struct>> structs,
                   ArrayList<Documentable<Func>> funcs, ArrayList<Documentable<FuncHook>> funcHooks,
+                  ArrayList<Documentable<GetHook>> getHooks, ArrayList<Documentable<SetHook>> setHooks,
                   ArrayList<Documentable<Trait>> traits, ArrayList<Documentable<TraitImpl>> traitImpls) {
         super(range);
         this.filePath = filePath;
@@ -39,6 +42,8 @@ public class Script extends Node {
         this.structs = structs;
         this.funcs = funcs;
         this.funcHooks = funcHooks;
+        this.getHooks = getHooks;
+        this.setHooks = setHooks;
         this.traits = traits;
         this.traitImpls = traitImpls;
         importedPackages = Stream.concat(Stream.of(packageName), imports.stream().map(i -> i.packageName.toQualifiedName()))
@@ -58,6 +63,8 @@ public class Script extends Node {
                 ", structs=" + structs +
                 ", funcs=" + funcs +
                 ", funcHooks=" + funcHooks +
+                ", getHooks=" + getHooks +
+                ", setHooks=" + setHooks +
                 ", traits=" + traits +
                 ", traitImpls=" + traitImpls +
                 '}';
@@ -81,6 +88,14 @@ public class Script extends Node {
 
     public ArrayList<Documentable<FuncHook>> getFuncHooks() {
         return funcHooks;
+    }
+
+    public ArrayList<Documentable<GetHook>> getGetHooks() {
+        return getHooks;
+    }
+
+    public ArrayList<Documentable<SetHook>> getSetHooks() {
+        return setHooks;
     }
 
     public ArrayList<Documentable<Trait>> getTraits() {
@@ -123,6 +138,12 @@ public class Script extends Node {
         }
         for (Documentable<FuncHook> funcHook : funcHooks) {
             consumer.accept(funcHook);
+        }
+        for (Documentable<GetHook> getHook : getHooks) {
+            consumer.accept(getHook);
+        }
+        for (Documentable<SetHook> setHook : setHooks) {
+            consumer.accept(setHook);
         }
         for (Documentable<Trait> trait : traits) {
             consumer.accept(trait);

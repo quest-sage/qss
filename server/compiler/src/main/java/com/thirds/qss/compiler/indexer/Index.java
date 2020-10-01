@@ -342,9 +342,15 @@ public class Index {
             funcDefinitions.put(func.getContent().getName().contents, def);
         }
 
-        // We don't index function hooks here, but we do resolve things like their parameter and return types.
+        // We don't index hooks here, but we do resolve things like their parameter and return types.
         for (Documentable<FuncHook> funcHook : script.getFuncHooks()) {
             generateFuncDefinition(script, messages, null, funcHook);
+        }
+        for (Documentable<GetHook> getHook : script.getGetHooks()) {
+            generateFuncDefinition(script, messages, null, getHook);
+        }
+        for (Documentable<SetHook> setHook : script.getSetHooks()) {
+            generateFuncDefinition(script, messages, null, setHook);
         }
 
         for (Documentable<Trait> trait : script.getTraits()) {
