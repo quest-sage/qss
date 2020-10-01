@@ -45,6 +45,10 @@ func add(a: Int, b: Int) -> Int {
     return a + b
 }
 
+before func add(a: Int, b: Int) -> Int {
+    result = 1
+}
+
 after func add(a: Int, b: Int) -> Int {
     return result + 1
 }
@@ -153,6 +157,7 @@ before set A.q: Int {
     value = value + 1
 }
 
-after set A.q: Int {
+after get A.q: Int {
+    result = "a"
     result = result + 1
 }

@@ -7,7 +7,6 @@ import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.tree.NameLiteral;
 import com.thirds.qss.compiler.tree.Node;
 import com.thirds.qss.compiler.tree.Type;
-import com.thirds.qss.compiler.tree.expr.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +26,7 @@ public class SetHook extends FuncOrHook {
 
     public SetHook(Range range, Token time, Token getToken, NameLiteral structName, NameLiteral fieldName, Type fieldType, FuncBlock funcBlock) {
         super(
-                range, VariableType.Function.Purity.PURE,
+                range, VariableType.Function.Purity.IMPURE,
                 new ParamList(getToken.getRange(), new ArrayList<>(List.of(new Param(
                         getToken.getRange(), new Token(TokenType.KW_THIS, "this", getToken.getRange()), new Type.StructType(structName.getRange(), structName)
                 ), new Param(

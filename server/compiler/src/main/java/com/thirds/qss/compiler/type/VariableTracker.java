@@ -4,6 +4,7 @@ import com.thirds.qss.QssLogger;
 import com.thirds.qss.VariableType;
 import com.thirds.qss.compiler.Compiler;
 import com.thirds.qss.compiler.*;
+import com.thirds.qss.compiler.lexer.Token;
 import com.thirds.qss.compiler.lexer.TokenType;
 import com.thirds.qss.compiler.resolve.Resolver;
 import com.thirds.qss.compiler.tree.Node;
@@ -12,10 +13,7 @@ import com.thirds.qss.compiler.tree.Type;
 import com.thirds.qss.compiler.tree.expr.Expression;
 import com.thirds.qss.compiler.tree.expr.Identifier;
 import com.thirds.qss.compiler.tree.expr.ResultExpression;
-import com.thirds.qss.compiler.tree.script.Func;
-import com.thirds.qss.compiler.tree.script.FuncHook;
-import com.thirds.qss.compiler.tree.script.FuncOrHook;
-import com.thirds.qss.compiler.tree.script.Param;
+import com.thirds.qss.compiler.tree.script.*;
 import com.thirds.qss.compiler.tree.statement.*;
 
 import java.util.*;
@@ -342,30 +340,7 @@ public class VariableTracker {
                 }
             }
         } else if (expr instanceof ResultExpression) {
-            if (func instanceof Func) {
-                messages.add(new Message(
-                        expr.getRange(),
-                        Message.MessageSeverity.ERROR,
-                        "The 'result' variable is not available in functions"
-                ));
-            } else if (func instanceof FuncHook) {
-                if (((FuncHook) func).getTime().type == TokenType.KW_BEFORE) {
-                    messages.add(new Message(
-                            expr.getRange(),
-                            Message.MessageSeverity.ERROR,
-                            "The 'result' variable is not available in 'before' hooks"
-                    ));
-                } else {
-                    // Time is 'after'.
-                    if (func.getReturnType() == null || func.getReturnType().getResolvedType() == VariableType.Primitive.TYPE_VOID) {
-                        messages.add(new Message(
-                                expr.getRange(),
-                                Message.MessageSeverity.ERROR,
-                                "This function doesn't return a value, so the 'result' variable is not available"
-                        ));
-                    }
-                }
-            }
+            checkResultUsage(expr.getRange());
         } else {
             expr.forAllChildren(n -> {
                 if (n instanceof Expression)
@@ -393,10 +368,18 @@ public class VariableTracker {
                     scopeTree.setState(variableName, state.assign(expr));
                 }
                 localVariable = true;
+            } else {
+                messages.add(new Message(
+                        expr.getRange(),
+                        Message.MessageSeverity.ERROR,
+                        "Cannot assign to non-local variables"
+                ));
             }
         } else if (expr instanceof ResultExpression) {
             VariableUsageState resultState = scopeTree.getState("result");
-            if (func.getReturnType() != null) {
+            if (func.getReturnType() == null) {
+                checkResultUsage(expr.getRange());
+            } else {
                 // The function returns something.
                 scopeTree.setState("result", resultState.assign(expr));
             }
@@ -415,12 +398,51 @@ public class VariableTracker {
                 messages.add(new Message(
                         expr.getRange(),
                         Message.MessageSeverity.ERROR,
-                        "Cannot assign to non-local variables in " + scopeTree.purity + " blocks"
+                        "Can only assign to local variables in " + scopeTree.purity + " blocks"
                 ));
             }
         }
 
         return type;
+    }
+
+    /**
+     * @param where Where should error messages be emitted from?
+     */
+    private void checkResultUsage(Range where) {
+        if (func instanceof Func) {
+            messages.add(new Message(
+                    where,
+                    Message.MessageSeverity.ERROR,
+                    "The 'result' variable is not available in functions"
+            ));
+        } else if (func instanceof FuncHook || func instanceof GetHook || func instanceof SetHook) {
+            Token time;
+            if (func instanceof FuncHook) {
+                time = ((FuncHook) func).getTime();
+            } else if (func instanceof GetHook) {
+                time = ((GetHook) func).getTime();
+            } else {
+                time = ((SetHook) func).getTime();
+            }
+
+            if (time.type == TokenType.KW_BEFORE) {
+                messages.add(new Message(
+                        where,
+                        Message.MessageSeverity.ERROR,
+                        "The 'result' variable is not available in 'before' hooks"
+                ));
+            } else {
+                // Time is 'after'.
+                if (func.getReturnType() == null || func.getReturnType().getResolvedType() == VariableType.Primitive.TYPE_VOID) {
+                    messages.add(new Message(
+                            where,
+                            Message.MessageSeverity.ERROR,
+                            "This function doesn't return a value, so the 'result' variable is not available"
+                    ));
+                }
+            }
+        }
     }
 
     /**
